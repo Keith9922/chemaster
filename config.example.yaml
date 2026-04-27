@@ -1,0 +1,122 @@
+# ChemMaster 配置示例
+#
+# 复制到 ~/.chemaster/config.yaml 后按需修改。
+# 不要把真正含 API key 的配置文件 commit 进 git！
+
+# ---------------------------------------------------------------
+# LLM 后端
+# ---------------------------------------------------------------
+llm:
+  # 可选: anthropic | openai | qwen | deepseek | local
+  provider: anthropic
+
+  # 推荐用环境变量传 key（更安全）：
+  #   export ANTHROPIC_API_KEY=sk-ant-...
+  # 这里如果留空，会读环境变量
+  api_key: null
+
+  # 模型名（按 provider 不同）
+  model: claude-sonnet-4-6
+
+  # 本地模型示例（vLLM / ollama）
+  # provider: local
+  # base_url: http://localhost:8000/v1
+  # model: qwen2.5-72b-instruct
+
+  # 限流与超时
+  max_tokens: 8192
+  timeout_s: 120
+
+# ---------------------------------------------------------------
+# 计算引擎
+# ---------------------------------------------------------------
+engines:
+  psi4:
+    enabled: true
+    # 留 null 自动从 PATH 找
+    path: null
+    default_memory_gb: 4
+    default_threads: 4
+
+  xtb:
+    enabled: true
+    path: null
+
+  orca:
+    enabled: false           # 未装则关掉
+    path: ~/orca_6_0_0
+    openmpi_bin: ~/orca_6_0_0/openmpi/bin
+
+  bdf:
+    enabled: false
+    home: ~/bdf-pkg-pro
+
+  multiwfn:
+    enabled: false
+    path: ~/Multiwfn_3.8
+
+# ---------------------------------------------------------------
+# HPC（Phase 3）
+# ---------------------------------------------------------------
+hpc:
+  default_cluster: null      # 留 null 表示默认本地
+
+  clusters:
+    school:
+      type: slurm
+      host: hpc.your-school.edu.cn
+      user: <your-username>
+      ssh_key: ~/.ssh/id_rsa
+      # 如果需要跳板机：
+      # proxy_jump: jump.your-school.edu.cn
+      remote_work_dir: /scratch/<user>/chemaster-runs
+      pre_run_hook: |
+        module load orca/6.0
+        module load openmpi/4.1
+      partitions:
+        - name: cpu
+          max_walltime: "72:00:00"
+          cpus_per_node: 32
+          memory_per_node_gb: 128
+
+# ---------------------------------------------------------------
+# 默认计算偏好
+# ---------------------------------------------------------------
+defaults:
+  method: B3LYP-D3(BJ)
+  basis: def2-TZVP
+  solvent: null              # null = 气相
+  temperature_K: 298.15
+  pressure_atm: 1.0
+  charge: 0
+  multiplicity: auto         # auto: 偶电子→1, 奇电子→2
+
+# ---------------------------------------------------------------
+# 工作目录
+# ---------------------------------------------------------------
+runs:
+  dir: ./runs                # 相对路径基于当前 cwd
+  keep_intermediate: true
+  cleanup_older_than_days: 90
+
+# ---------------------------------------------------------------
+# 隐私与日志
+# ---------------------------------------------------------------
+privacy:
+  # 给 LLM 的 prompt 中是否隐藏具体几何（用 hash + 元数据替代）
+  minimize_pii: false
+
+  # 是否上报匿名遥测（开发统计，无个人/化学数据）
+  telemetry: false
+
+logging:
+  level: INFO                # DEBUG | INFO | WARNING | ERROR
+  file: ~/.chemaster/chemaster.log
+
+# ---------------------------------------------------------------
+# TUI
+# ---------------------------------------------------------------
+tui:
+  theme: dark                # dark | light
+  inline_images: auto        # auto | always | never
+                             # auto: 探测终端能力（iTerm2/Kitty/WezTerm）

@@ -1,0 +1,124 @@
+# 工作流元信息 —— Skill 路由用。
+# 每个 entry 对应一个 chemaster/skills/<name>/SKILL.md。
+# Planner 用这里的 trigger_keywords 做初筛，确认后真加载 SKILL.md。
+
+workflows:
+
+  - name: opt-freq
+    skill_path: skills/opt-freq/SKILL.md
+    description: 几何优化 + 频率确认
+    trigger_keywords:
+      - "算 X 的能量"
+      - "优化 X 的结构"
+      - "找 X 的极小点"
+      - "ground state energy"
+      - "geometry optimization"
+    required_engines: [psi4, orca, xtb]
+    estimated_time_min: [1, 30]
+    phase: 1
+
+  - name: conformer
+    skill_path: skills/conformer/SKILL.md
+    description: 多构象搜索（xTB+CREST 粗筛 + DFT 精筛）
+    trigger_keywords:
+      - "构象搜索"
+      - "找最稳构象"
+      - "conformer search"
+    required_engines: [xtb, crest]
+    estimated_time_min: [5, 120]
+    phase: 2
+
+  - name: tddft
+    skill_path: skills/tddft/SKILL.md
+    description: TDDFT 激发态计算
+    trigger_keywords:
+      - "激发态"
+      - "S1 / T1"
+      - "UV-Vis"
+      - "振子强度"
+      - "TDDFT"
+      - "excited state"
+    required_engines: [orca, psi4]
+    estimated_time_min: [5, 120]
+    phase: 2
+
+  - name: soc
+    skill_path: skills/soc/SKILL.md
+    description: 自旋轨道耦合计算（优先 BDF）
+    trigger_keywords:
+      - "SOC"
+      - "自旋轨道耦合"
+      - "ISC / RISC 速率"
+    required_engines: [bdf, orca]
+    estimated_time_min: [10, 120]
+    phase: 2
+
+  - name: ts-search
+    skill_path: skills/ts-search/SKILL.md
+    description: 过渡态搜索 + IRC
+    trigger_keywords:
+      - "过渡态"
+      - "活化能"
+      - "transition state"
+      - "TS"
+    required_engines: [orca]
+    estimated_time_min: [30, 360]
+    phase: 3
+
+  - name: pes-scan
+    skill_path: skills/pes-scan/SKILL.md
+    description: 势能面扫描
+    trigger_keywords:
+      - "势能面"
+      - "PES scan"
+    required_engines: [orca, psi4]
+    estimated_time_min: [10, 240]
+    phase: 3
+
+  - name: dlpno-ccsdt
+    skill_path: skills/dlpno-ccsdt/SKILL.md
+    description: DLPNO-CCSD(T) 高精度单点
+    trigger_keywords:
+      - "DLPNO"
+      - "CCSD(T)"
+      - "高精度参考能"
+    required_engines: [orca]
+    estimated_time_min: [10, 360]
+    phase: 3
+
+  - name: solvation
+    skill_path: skills/solvation/SKILL.md
+    description: 隐式溶剂选择决策（PCM/SMD/COSMO-RS）
+    trigger_keywords:
+      - "溶剂"
+      - "PCM"
+      - "SMD"
+      - "ΔG_solv"
+    required_engines: [orca, psi4]
+    estimated_time_min: [5, 60]
+    phase: 3
+
+  - name: pka
+    skill_path: skills/pka/SKILL.md
+    description: pKa 预测
+    trigger_keywords:
+      - "pKa"
+      - "酸度"
+    required_engines: [orca]
+    estimated_time_min: [30, 300]
+    phase: 4
+
+  - name: tadf-pipeline
+    skill_path: skills/tadf-pipeline/SKILL.md
+    description: ★ 完整 TADF 发光体计算流水线
+    trigger_keywords:
+      - "TADF"
+      - "ΔE_ST"
+      - "kRISC"
+      - "OLED 发光体"
+      - "热激活延迟荧光"
+    required_engines: [xtb, orca, bdf, multiwfn]
+    required_skills: [conformer, opt-freq, tddft, soc]
+    estimated_time_min: [120, 480]
+    phase: 4
+    is_anchor: true   # 毕设标杆

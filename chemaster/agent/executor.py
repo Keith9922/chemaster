@@ -57,7 +57,21 @@ class Executor:
 
         找不到的 server 跳过并记录 warning；运行时不存在的 MCP 不影响
         其他 MCP 的调用。
+
+        note: psi4 对 OpenMP 初始化顺序敏感。rdkit 先导入会导致 psi4
+        在 SCF 迭代时 segfault。因此在加载任何 MCP 之前先初始化 psi4
+        的线程配置（确保 OMP_NUM_THREADS=1 写入环境）。
         """
+        # 预先初始化 psi4 全局状态（rdkit 兼容性 hack，PITFALLS §8）
+        try:
+            import psi4
+            import os
+            os.environ.setdefault("OMP_NUM_THREADS", "1")
+            psi4.set_num_threads(1)
+            logger.debug("psi4 全局线程数已预设为 1")
+        except Exception as exc:
+            logger.warning("psi4 预初始化失败（可能未安装）: %s", exc)
+
         for server_name in _MCP_SERVER_NAMES:
             full_module = f"chemaster.mcp.{server_name}.server"
             try:
@@ -66,12 +80,30 @@ class Executor:
                 logger.warning("MCP server '%s' 无法导入，跳过: %s", server_name, exc)
                 continue
 
-            # 收集该 module 中被 @mcp.tool() 装饰的函数
+            # 收集该 module 中公开的 tool 函数（返回 annotation 为 dict 的 callable）
+            # 注意：FastMCP 的 @mcp.tool() 装饰器不设 _mcp_tool 属性，
+            # 故改用 inspect 校验返回类型 annotation。
+            import inspect
             tool_funcs: dict[str, Any] = {}
             for attr_name in dir(mod):
+                if attr_name.startswith("_"):
+                    continue
                 attr = getattr(mod, attr_name)
-                if callable(attr) and hasattr(attr, "_mcp_tool"):
-                    tool_funcs[attr_name] = attr
+                if not callable(attr):
+                    continue
+                try:
+                    sig = inspect.signature(attr)
+                    ann = sig.return_annotation
+                    if ann is inspect.Parameter.empty:
+                        continue
+                    # 兼容 'dict' 和 'dict[str, Any]' 两种写法
+                    if ann not in (dict, "dict", "Dict[str, Any]"):
+                        # 也接受 from __future__ annotations 下的小写 dict
+                        if str(ann).replace(" ", "").lower() not in ("dict", "dict[str,any]"):
+                            continue
+                except (ValueError, TypeError):
+                    continue
+                tool_funcs[attr_name] = attr
 
             if tool_funcs:
                 self._mcp_funcs[server_name] = tool_funcs

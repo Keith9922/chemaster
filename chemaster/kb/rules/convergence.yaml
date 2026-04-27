@@ -1,0 +1,91 @@
+# 收敛阈值与失败恢复策略 —— 供 chem.kb RAG。
+# 当 Skill 遇到 SCF / 几何 / 频率 不收敛时按此查恢复策略。
+
+scf:
+  default_thresholds:
+    energy: 1.0e-8           # Hartree
+    density: 1.0e-7
+    max_iter: 200
+
+  recovery_strategies:
+    - name: switch_guess
+      try_in_order: [SAD, GWH, CORE, READ_FROM_SMALLER_BASIS]
+      notes: "SAD 默认；失败常用 GWH"
+
+    - name: damping
+      params: {damping_factor: 0.5, n_initial_no_diis: 5}
+
+    - name: reduce_basis_first
+      steps:
+        - basis: def2-SVP
+          run: SCF
+        - read_density: true
+          basis: def2-TZVP
+          run: SCF
+
+    - name: disable_symmetry
+      param: {symmetry: c1}
+      notes: "对称性突跳常导致 SCF 震荡"
+
+    - name: increase_max_iter
+      param: {max_iter: 500}
+      notes: "本质不解决问题，但偶尔够用"
+
+
+geometry_optimization:
+  default_thresholds:
+    energy_change: 1.0e-6      # Hartree
+    rms_gradient: 3.0e-4       # Hartree/Bohr
+    max_gradient: 4.5e-4
+    max_iter: 100
+
+  recovery_strategies:
+    - name: switch_to_redundant_internal
+      param: {coordinate_system: redundant_internal}
+
+    - name: smaller_trust_radius
+      param: {trust_radius_initial: 0.1}
+
+    - name: rfo_optimizer
+      param: {optimizer: RFO}
+      notes: "Restricted Step Rational Function Optimizer"
+
+    - name: increase_max_iter
+      param: {max_iter: 500}
+
+
+frequency:
+  imaginary_threshold_cm_inv: -10
+  recovery_strategies:
+    - name: displace_along_imaginary_mode
+      param: {amplitude_bohr: 0.1, mode: largest_imaginary}
+      notes: "PITFALLS §2.2 标准做法；最多 3 轮"
+
+    - name: tighter_optimization_first
+      param: {convergence: very_tight}
+      notes: "若虚频很小 (~10 cm^-1)，可能是优化精度不够"
+
+    - name: route_to_ts_search
+      condition: "n_imaginary >= 1 and amplitude_large"
+      notes: "若是过渡态，停 opt-freq，路由 ts-search"
+
+
+tddft:
+  default:
+    n_singlets: 5
+    n_triplets: 5
+    use_tda_for_triplets: true
+    convergence: tight
+  warnings:
+    - "三重态默认 TDA（防 triplet instability，PITFALLS §2.8）"
+    - "CT 态用 ωB97X-D / CAM-B3LYP，不用 B3LYP"
+
+
+memory:
+  per_atom_estimate_gb:
+    psi4_dft: 0.05
+    psi4_ccsd: 0.5
+    orca_dft: 0.04
+    orca_dlpno_ccsd_t: 0.3
+
+  reservation_factor: 0.7    # 实际可用内存的 70%

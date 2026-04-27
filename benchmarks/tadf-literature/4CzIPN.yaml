@@ -1,0 +1,25 @@
+# 4CzIPN — TADF 经典基准分子
+# Phase 4 anchor case；首次跑通 tadf-pipeline 的小白鼠。
+
+name: 4CzIPN
+full_name: 1,2,3,5-Tetrakis(carbazol-9-yl)-4,6-dicyanobenzene
+cas: 1416881-52-9
+smiles: "N#Cc1c(N2c3ccccc3c3ccccc32)c(N2c3ccccc3c3ccccc32)c(C#N)c(N2c3ccccc3c3ccccc32)c1N1c2ccccc2c2ccccc21"
+charge: 0
+multiplicity: 1
+n_atoms: 76
+
+literature_values:
+  delta_E_ST_eV: 0.10
+  oscillator_f_S1: 0.06
+  krisc_per_s: 5.0e+6
+  source: |
+    Uoyama, H.; Goushi, K.; Shizu, K.; Nomura, H.; Adachi, C.
+    "Highly efficient organic light-emitting diodes from delayed fluorescence."
+    Nature 2012, 492, 234-238. DOI: 10.1038/nature11687
+
+notes: |
+  - 经典 D-A-D 设计：4 个 carbazole 给体 + 二腈基受体
+  - 适合作为 TADF 流水线的首个验证案例
+  - 计算成本：本地 ~ 4 hours / 8 cores 跑全套
+  - 已知陷阱：构象搜索关键（咔唑环朝向影响 ΔE_ST）

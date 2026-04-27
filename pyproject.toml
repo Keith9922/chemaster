@@ -1,0 +1,169 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chemaster"
+version = "0.1.0"
+description = "AI agent for computational chemistry: TADF, DFT workflows, HPC integration"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [
+    { name = "Sophie", email = "fhoueff41082@outlook.com" },
+]
+keywords = [
+    "computational-chemistry",
+    "agent",
+    "llm",
+    "tadf",
+    "dft",
+    "psi4",
+    "orca",
+    "bdf",
+    "xtb",
+    "mcp",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Agent / LLM
+    "anthropic>=0.39",
+    "claude-agent-sdk>=0.1",     # 占位；按实际包名调整
+    "mcp>=1.0",
+
+    # TUI
+    "textual>=0.85",
+    "rich>=13.7",
+
+    # Chemistry & data
+    "ase>=3.23",
+    "rdkit>=2024.3",
+    "cclib>=1.8",
+    "pint>=0.23",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "matplotlib>=3.8",
+    "py3Dmol>=2.1",
+
+    # IO / utilities
+    "pyyaml>=6.0",
+    "pydantic>=2.6",
+    "click>=8.1",
+    "platformdirs>=4.2",
+    "paramiko>=3.4",            # SSH for HPC
+    "fabric>=3.2",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+    "build>=1.2",
+    "twine>=5.1",
+    "mkdocs-material>=9.5",
+    "mkdocs-include-markdown-plugin>=6.0",
+]
+
+# Optional: 把现有 PDF 抽取作为 extra
+pdf = [
+    "pymupdf>=1.24",
+    "opencv-python>=4.10",
+    "pillow>=10.3",
+    "decimer>=2.5",
+    "decimer-segmentation>=1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/chemaster"
+Documentation = "https://your-username.github.io/chemaster"
+Repository = "https://github.com/your-username/chemaster"
+Issues = "https://github.com/your-username/chemaster/issues"
+
+[project.scripts]
+chemaster = "chemaster.cli:main"
+chemaster-mcp = "chemaster.mcp:dispatcher_main"
+
+# 已注册 MCP server 入口；新增 MCP 时往下加。
+[project.entry-points."chemaster.mcps"]
+const             = "chemaster.mcp.const.server:mcp"
+io_ase            = "chemaster.mcp.io_ase.server:mcp"
+calc_psi4         = "chemaster.mcp.calc_psi4.server:mcp"
+calc_orca         = "chemaster.mcp.calc_orca.server:mcp"
+calc_bdf          = "chemaster.mcp.calc_bdf.server:mcp"
+calc_xtb          = "chemaster.mcp.calc_xtb.server:mcp"
+parse_cclib       = "chemaster.mcp.parse_cclib.server:mcp"
+analysis_multiwfn = "chemaster.mcp.analysis_multiwfn.server:mcp"
+viz               = "chemaster.mcp.viz.server:mcp"
+hpc_slurm         = "chemaster.mcp.hpc_slurm.server:mcp"
+kb                = "chemaster.mcp.kb.server:mcp"
+pdf               = "chemaster.mcp.pdf.server:mcp"
+
+[tool.hatch.build.targets.wheel]
+packages = ["chemaster"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/chemaster",
+    "/docs",
+    "/tests",
+    "/benchmarks",
+    "/README.md",
+    "/CLAUDE.md",
+    "/pyproject.toml",
+    "/LICENSE",
+]
+exclude = [
+    "**/__pycache__",
+    "**/*.pyc",
+    "/runs",
+    "/output",
+    "/scripts",
+    "/.venv",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "RUF"]
+ignore = ["E501"]   # line-length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: real-runs an external chemistry engine (slow)",
+    "hpc: requires HPC connection",
+    "gpu: requires GPU",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["chemaster"]
+omit = ["chemaster/mcp/*/server.py"]   # MCP servers tested via integration
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

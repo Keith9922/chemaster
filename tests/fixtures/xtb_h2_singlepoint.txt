@@ -1,0 +1,104 @@
+ ------------------------------------------------------------
+  xtb version 6.7.1 (4bbc3e7) compiled by gcc 13.2.0
+ ------------------------------------------------------------
+  adjustment of screening thresholds based on global thresholds:
+  G_thresh = 1.0000e-08  etemp = 298.15  bfcm0 =    0.07
+ ------------------------------------------------------------
+  hostname:         localhost
+  OMP thread count: 1
+  CALC stacksize:   2097152
+  load:   0.14   0.17   0.10   1 of 4
+ ------------------------------------------------------------
+ :: reading coordinates from file struc.xyz
+
+   H2 neutral (2 atoms, 0 charges, doublet):
+   total molecules          :           1
+   symmetry                 :        D*h
+   number of irreps         :           1
+   charge                   :           0
+   unpaired electrons       :           0
+   multiplicity             :           1
+   use @ (triplet) channel  :           F
+
+ :: setting up calculator: GFN2-xTB
+
+ using fragment model:
+   periodic boundaries      :           no
+   solvatation model       :         none
+   dispersion              :        dft-d3
+   self-consistency        :         dft-scc
+   third order dispersion   :          on
+   account for hyperconj.   :          on
+   ATM force contribution   :          on
+   running in normal SRN mode
+   real space cutoff        :      70.000 a0
+   Poisson solver          :        none
+   SCF convergence         :      dft-d4
+   max. SCC iterations      :         250
+   secondary solver         :        on
+   electronic temperature   :      298.15 K
+ :: starting self-consistent charge iteration
+   --- Start of SCC loop ---
+     iteration   1 : time  0.0s, total energy =    -0.752389725514 Eh
+                    Delta SCF =  ****
+                    diis     =  ****
+     iteration   2 : time  0.0s, total energy =    -0.766521875124 Eh
+                    Delta SCF =  1.41E-02
+                    diis     =  1.00E+00
+     iteration   3 : time  0.0s, total energy =    -0.767201348756 Eh
+                    Delta SCF =  6.79E-04
+                    diis     =  6.83E-04
+     iteration   4 : time  0.0s, total energy =    -0.767265432108 Eh
+                    Delta SCF =  6.41E-05
+                    diis     =  6.43E-05
+     iteration   5 : time  0.0s, total energy =    -0.767281987213 Eh
+                    Delta SCF =  1.66E-05
+                    diis     =  1.67E-05
+     iteration   6 : time  0.0s, total energy =    -0.767289012547 Eh
+                    Delta SCF =  7.03E-06
+                    diis     =  7.07E-06
+     iteration   7 : time  0.0s, total energy =    -0.767291483729 Eh
+                    Delta SCF =  2.47E-06
+                    diis     =  2.49E-06
+     iteration   8 : time  0.0s, total energy =    -0.767292876412 Eh
+                    Delta SCF =  1.39E-06
+                    diis     =  1.41E-06
+     iteration   9 : time  0.0s, total energy =    -0.767293321098 Eh
+                    Delta SCF =  4.45E-07
+                    diis     =  4.50E-07
+     iteration  10 : time  0.0s, total energy =    -0.767293412387 Eh
+                    Delta SCF =  9.13E-08
+                    diis     =  9.24E-08
+     iteration  11 : time  0.0s, total energy =    -0.767293456821 Eh
+                    Delta SCF =  4.44E-08
+                    diis     =  4.51E-08
+     iteration  12 : time  0.0s, total energy =    -0.767293478901 Eh
+                    Delta SCF =  2.21E-08
+                    diis     =  2.25E-08
+     iteration  13 : time  0.0s, total energy =    -0.767293488234 Eh
+                    Delta SCF =  9.33E-09
+                    diis     =  9.51E-09
+     SCC converged after 13 iterations
+   --- End of SCC loop ---
+ :: molecule fixed at reference orientation
+ :: writing wfx file for visualization
+
+              =========================================
+               TOTAL ENERGY      =     -0.76729349 Eh
+               GRADIENT NORM     =      0.00002276 Eh/α
+               HOMO-LUMO GAP     =     22.63778629 eV
+               DIPOLE MOMENT     =      0.00000000 Debye
+               TOTAL SPIN        =      0.0000
+               SCF CONVERGED     =        yes
+              =========================================
+
+              ::
+              ::  semi-numerical quality :: use --dvloose for a looser setup
+              ::
+
+ ------------------------------------------------------------
+  SCF time                  :     0.000 sec
+  total time                :     0.080 sec
+  total geometry            :     0.000 sec
+ ------------------------------------------------------------
+  >>  done <<

@@ -1,0 +1,153 @@
+# 基组推荐表 —— 供 chem.kb RAG 检索。
+# 数据基于 Goerigk 等 benchmark 文章 + ORCA / psi4 官方手册。
+# 新增基组请追加；不要改格式。
+
+basis_sets:
+
+  - name: STO-3G
+    family: minimal
+    elements: H-Xe
+    use_cases:
+      - 教学示例
+      - 不要用于实际研究
+    cost_factor: 0.1
+    notes: 历史最简单基组，定性都不可靠
+
+  - name: 6-31G
+    family: pople
+    elements: H-Cl
+    use_cases:
+      - 极其粗略的初筛
+    cost_factor: 0.3
+    notes: 现已较少用，建议升级到 6-31G(d)
+
+  - name: 6-31G(d)
+    aliases: [6-31G*]
+    family: pople
+    elements: H-Cl
+    use_cases:
+      - 中等精度有机分子优化
+    cost_factor: 0.5
+    notes: 经典老基组，便宜但精度有限；不支持过渡金属
+
+  - name: 6-311+G(d,p)
+    family: pople
+    elements: H-Br
+    use_cases:
+      - 含弥散函数，适合阴离子、激发态
+    cost_factor: 1.5
+
+  - name: def2-SVP
+    family: ahlrichs
+    elements: H-Rn
+    use_cases:
+      - 第一步几何优化（漏斗的快档）
+      - 大分子粗算
+    cost_factor: 1.0
+    notes: 推荐基组族；def2 系列覆盖全周期表
+
+  - name: def2-TZVP
+    family: ahlrichs
+    elements: H-Rn
+    use_cases:
+      - 单点能 / 激发态默认推荐
+      - TADF 流水线 TDDFT 步骤
+    cost_factor: 3.0
+    notes: 精度-成本平衡点；含极化函数
+
+  - name: def2-TZVPP
+    family: ahlrichs
+    elements: H-Rn
+    use_cases:
+      - 高精度激发态
+      - DLPNO-CCSD(T) 单点
+    cost_factor: 5.0
+
+  - name: def2-QZVPP
+    family: ahlrichs
+    elements: H-Rn
+    use_cases:
+      - 高精度参考计算
+      - 不适合大体系
+    cost_factor: 12.0
+    notes: 仅 < 30 原子可负担
+
+  - name: cc-pVDZ
+    family: dunning
+    elements: H-Ar
+    use_cases:
+      - 后 HF 方法（CCSD(T)）漏斗的最低档
+    cost_factor: 1.2
+
+  - name: cc-pVTZ
+    family: dunning
+    elements: H-Kr
+    use_cases:
+      - DLPNO-CCSD(T) 推荐
+    cost_factor: 4.0
+
+  - name: aug-cc-pVDZ
+    family: dunning-augmented
+    elements: H-Ar
+    use_cases:
+      - 阴离子
+      - Rydberg 态
+    cost_factor: 2.5
+    warnings:
+      - 加弥散函数后 SCF 收敛性下降；用 GWH guess
+      - 体系大时易线性相关
+
+  - name: aug-cc-pVTZ
+    family: dunning-augmented
+    elements: H-Kr
+    use_cases:
+      - 高精度激发态、阴离子
+    cost_factor: 8.0
+
+  - name: def2-TZVP-J
+    family: ahlrichs
+    elements: H-Rn
+    use_cases:
+      - BDF SOC 计算（X2C 方法兼容）
+    cost_factor: 3.5
+    notes: BDF 在 SOC 流程中常用
+
+# ----------------------------------------------------
+# 体系 → 推荐基组的快速映射（Planner 用）
+# ----------------------------------------------------
+recommendations:
+
+  small_organic_optimization:
+    primary: def2-SVP
+    fallback: 6-31G(d)
+    reasoning: "几何优化对基组不敏感；def2-SVP 平衡好"
+
+  small_organic_single_point:
+    primary: def2-TZVP
+    fallback: cc-pVTZ
+    reasoning: "单点能要更大基组；TZ-double-polarization 是最低门槛"
+
+  organic_excited_states:
+    primary: def2-TZVP
+    fallback: def2-TZVPP
+    reasoning: "TDDFT 对极化函数敏感；不推荐弥散除非真有 Rydberg/CT"
+
+  anion_or_rydberg:
+    primary: aug-cc-pVTZ
+    fallback: def2-TZVPPD
+    reasoning: "必须有弥散；注意 SCF 收敛性"
+
+  transition_metal:
+    primary: def2-TZVP
+    fallback: cc-pVTZ-DK
+    reasoning: "Pople 6-31G* 不支持，必须用 def2 或相对论修正基组"
+
+  dlpno_ccsdt:
+    primary: cc-pVTZ
+    fallback: def2-TZVPP
+    reasoning: "DLPNO 论文里的 well-tested 组合"
+
+  bdf_soc:
+    primary: def2-TZVP-J
+    fallback: cc-pVTZ-DK
+    reasoning: "BDF X2C 兼容性最好"

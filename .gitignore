@@ -1,0 +1,107 @@
+# ChemMaster .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+MANIFEST
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# IDE
+.vscode/
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+.hypothesis/
+.ruff_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Run artifacts (任务产物，不入库)
+runs/
+*.runs/
+
+# Logs
+logs/
+*.log
+
+# Calculation engine outputs (本地调试时常出现)
+*.molden
+*.gbw
+*.cube
+*.fchk
+*.chk
+*.scr/
+psi.*.clean
+
+# Secrets / config (用户机器特定)
+.env
+.env.local
+config.yaml
+!config.example.yaml
+~/.chemaster/
+.chemaster/
+
+# Big data
+*.h5
+*.hdf5
+*.parquet
+*.npz
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Docs build
+site/
+.cache/
+
+# Ignore but keep current PDF extraction outputs (现有产物，用户不要清理)
+# output/ 已经存在，但里面的内容用户希望保留 → 不进 .gitignore
+# 保留现状：output/ 内容入库，但新会话的 runs/ 不入库
+
+# Benchmarks 数据（可能很大）
+benchmarks/*/data/
+benchmarks/*/raw/
+
+# Node (如果未来加 TS plugin)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Misc
+*.tmp
+*.bak
+*.orig

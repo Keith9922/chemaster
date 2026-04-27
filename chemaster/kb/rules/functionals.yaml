@@ -1,0 +1,151 @@
+# 泛函推荐表 —— 供 chem.kb RAG 检索。
+# 数据基于 Goerigk-Grimme GMTKN55 系列文章 + 各软件手册。
+# 新增泛函请追加；不要改格式。
+
+functionals:
+
+  # ---- GGA ----
+  - name: BLYP
+    type: GGA
+    cost_factor: 1.0
+    use_cases: [DFT 入门, 大体系粗算]
+    avoid_for: [激发态, 弱相互作用, 反应能垒]
+
+  - name: PBE
+    type: GGA
+    cost_factor: 1.0
+    use_cases: [固体, 周期性体系]
+    avoid_for: [有机反应能垒, 激发态]
+
+  # ---- meta-GGA ----
+  - name: TPSS
+    type: meta-GGA
+    cost_factor: 1.2
+    use_cases: [过渡金属配合物]
+
+  - name: M06-L
+    type: meta-GGA
+    cost_factor: 1.5
+    use_cases: [过渡金属催化, 弱相互作用]
+
+  # ---- 杂化 ----
+  - name: B3LYP
+    type: hybrid-GGA
+    hf_exchange: 0.20
+    cost_factor: 1.5
+    use_cases:
+      - 有机小分子优化（不含 D3 时不要用作能学）
+      - 教学
+    avoid_for:
+      - 长程电荷转移激发态
+      - 弱相互作用（除非加 D3/D4）
+    notes: "经典工作泛函；现代研究必须 + D3(BJ) 修正"
+
+  - name: B3LYP-D3(BJ)
+    type: hybrid-GGA + dispersion
+    based_on: B3LYP
+    cost_factor: 1.5
+    use_cases:
+      - 有机分子几何优化（最常用默认）
+      - 反应能垒（精度可接受）
+    notes: "ChemMaster 默认值，见 config.example.yaml"
+
+  - name: PBE0
+    aliases: [PBE1PBE]
+    type: hybrid-GGA
+    hf_exchange: 0.25
+    cost_factor: 1.5
+    use_cases: [中等精度激发态, 一般有机]
+    notes: "比 B3LYP 略快，激发态时 LE 性质准"
+
+  # ---- 长程修正杂化 ----
+  - name: ωB97X-D
+    type: range-separated hybrid + dispersion
+    cost_factor: 2.0
+    use_cases:
+      - **TADF 激发态首选**（CT 态准）
+      - 反应能垒
+      - D-A 体系
+    notes: "ChemMaster TADF 流水线默认；含 D2 修正"
+
+  - name: ωB97X-V
+    type: range-separated hybrid + nonlocal correlation
+    cost_factor: 2.5
+    use_cases: [更准的激发态]
+
+  - name: CAM-B3LYP
+    type: range-separated hybrid
+    cost_factor: 2.0
+    use_cases: [CT 态, Rydberg 态]
+    notes: "B3LYP 的长程修正版"
+
+  - name: LC-ωPBE
+    type: range-separated hybrid
+    cost_factor: 1.8
+    use_cases: [严格的长程, 大共轭体系激发态]
+
+  # ---- 双杂化 ----
+  - name: B2PLYP
+    type: double-hybrid
+    cost_factor: 4.0
+    use_cases: [基准精度], 反应能学
+    avoid_for: [大体系（计算成本高）]
+
+  - name: ωB97X-3c
+    type: composite (range-sep hybrid + tailored basis)
+    cost_factor: 1.0
+    use_cases: [快速准确单点]
+    notes: "Grimme 组的 composite 方法，无需选基组"
+
+  # ---- 半经验 / 简洁方法 ----
+  - name: GFN2-xTB
+    type: tight-binding
+    engine: xtb
+    cost_factor: 0.01
+    use_cases: [构象搜索, 大体系预筛]
+    avoid_for: [反应能垒精度, 激发态]
+
+  - name: HF-3c
+    type: composite
+    cost_factor: 0.5
+    use_cases: [预优化]
+
+# ----------------------------------------------------
+# 场景 → 推荐泛函
+# ----------------------------------------------------
+recommendations:
+
+  organic_optimization_default:
+    primary: B3LYP-D3(BJ)
+    fallback: ωB97X-D
+    reasoning: "有机闭壳层最常用；D3 修正必要"
+
+  tadf_excited_states:
+    primary: ωB97X-D
+    fallback: CAM-B3LYP
+    reasoning: "TADF 中 CT 态主导，必须长程修正"
+
+  ct_excited_state:
+    primary: ωB97X-D
+    fallback: LC-ωPBE
+    reasoning: "B3LYP/PBE0 严重低估 CT 能"
+
+  reaction_barrier:
+    primary: ωB97X-D
+    fallback: M06-2X
+    reasoning: "经典 hybrid 偏低估能垒"
+
+  weak_interaction:
+    primary: ωB97X-V
+    fallback: B3LYP-D3(BJ)
+    reasoning: "色散修正必须；vdW DF 系列也可"
+
+  transition_metal:
+    primary: TPSSh-D3(BJ)
+    fallback: B3LYP-D3(BJ)
+    reasoning: "对自旋态平衡好"
+
+  benchmark_reference:
+    primary: DLPNO-CCSD(T)/cc-pVTZ
+    fallback: ωB97X-D/def2-QZVPP
+    reasoning: "金标准；不在毕设范围用作基准"
