@@ -274,6 +274,7 @@ class BaseAgent:
             if cb is not None:
                 reason = self._confirmation_reason(tool)
                 approved = bool(cb(tc.name, tc.arguments, reason))
+                self._record_confirmation(tc, reason, approved)
                 if not approved:
                     return ToolMessage(
                         content=(
@@ -282,7 +283,7 @@ class BaseAgent:
                         ),
                         tool_call_id=tc.id,
                         name=tc.name,
-                        meta={"declined": True},
+                        meta={"declined": True, "reason": reason},
                     )
 
         try:
@@ -326,6 +327,32 @@ class BaseAgent:
         if tool.is_long_running:
             reasons.append("long-running (>30 s expected)")
         return ", ".join(reasons) or "requires confirmation"
+
+    def _record_confirmation(self, tc: ToolCall, reason: str, approved: bool) -> None:
+        """Log every confirmation prompt to runs/<task_id>/confirmations.jsonl."""
+        if self.trajectory is None:
+            return
+        meta = self.trajectory.meta
+        meta.setdefault("confirmations", {"approved": 0, "declined": 0, "log": []})
+        record = {
+            "tool": tc.name,
+            "args": tc.arguments,
+            "reason": reason,
+            "approved": approved,
+        }
+        meta["confirmations"]["log"].append(record)
+        meta["confirmations"]["approved" if approved else "declined"] += 1
+
+        # Append to disk so the user can audit even after long runs.
+        try:
+            task_dir = self.config.runs_dir / self.trajectory.task_id
+            task_dir.mkdir(parents=True, exist_ok=True)
+            log_path = task_dir / "confirmations.jsonl"
+            import json
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+        except Exception as exc:
+            logger.warning("Failed to persist confirmation log: %s", exc)
 
     # ------------------------------------------------------------------
     # No-tool-call handling
