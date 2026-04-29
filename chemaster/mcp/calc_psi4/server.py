@@ -855,7 +855,9 @@ def _parse_frequencies_from_output(log_path: str) -> list[float]:
 
     freqs: list[float] = []
 
-    # 新格式：提取含 'Freq [cm^-1]' 行中的所有数字
+    # 新格式：提取所有含 'Freq [cm^-1]' 行中的数字。
+    # 注意：高对称分子（如 CH4 / Td）会按 irrep 分块输出多组 'Freq [cm^-1]'，
+    # 不能只取第一行（早期 bug：methane 9 个模式只解析出 3 个）。
     for line in text.splitlines():
         if "Freq [cm^-1]" in line:
             nums = re.findall(r"([-+]?\d+\.\d+)", line)
@@ -863,7 +865,8 @@ def _parse_frequencies_from_output(log_path: str) -> list[float]:
                 v = float(s)
                 if v != 0.0:
                     freqs.append(v)
-            return freqs
+    if freqs:
+        return freqs
 
     # 旧格式：逐行匹配 'Frequency' 关键字
     pattern = re.compile(r"^\s*Frequency\s+([-+]?\d+\.\d+)", re.MULTILINE)
