@@ -137,6 +137,13 @@ def _run_xtb(
             "tmpdir": None,
             "warnings": warnings,
             "error_code": "ENGINE_NOT_FOUND",
+            "suggestion": (
+                "xtb binary not found in PATH. Install via "
+                "`conda install -c conda-forge xtb` or download a release "
+                "from https://github.com/grimme-lab/xtb/releases. "
+                "If installed but not on PATH, set the XTBPATH environment "
+                "variable or pass the absolute path."
+            ),
         }
 
     # 构建命令
