@@ -111,8 +111,27 @@ class MCPToolAdapter(BaseTool):
         self.is_read_only = is_read_only
         self.is_destructive = is_destructive
         self.is_long_running = is_long_running
+        # Cache the parameter types for runtime coercion. Use typing.get_type_hints
+        # to resolve `from __future__ import annotations` string forms
+        # ("int", "float", "bool") back to the actual types.
+        try:
+            import typing as _typing
+            type_hints: dict[str, Any] = {}
+            try:
+                type_hints = _typing.get_type_hints(fn)
+            except Exception:
+                pass
+            self._param_types: dict[str, Any] = {}
+            for name, param in inspect.signature(fn).parameters.items():
+                if name in type_hints:
+                    self._param_types[name] = type_hints[name]
+                elif param.annotation is not inspect.Parameter.empty:
+                    self._param_types[name] = param.annotation
+        except (TypeError, ValueError):
+            self._param_types = {}
 
     def run(self, **kwargs) -> ToolResult:
+        kwargs = self._coerce_args(kwargs)
         try:
             result = self._fn(**kwargs)
         except TypeError as exc:
@@ -192,6 +211,55 @@ class MCPToolAdapter(BaseTool):
             message = w.get("message", str(w))
             return f"{code}: {message}".lstrip(": ")
         return str(w)
+
+    def _coerce_args(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """Coerce string args from the LLM to the annotated parameter types.
+
+        LLMs (MiniMax, Anthropic, OpenAI) sometimes serialise `int` / `float`
+        / `bool` parameters as JSON strings ('0', '1.5', 'true'). We apply a
+        best-effort conversion so the underlying MCP function doesn't crash
+        with TypeError. Anything we can't convert we pass through unchanged.
+        """
+        if not self._param_types or not isinstance(kwargs, dict):
+            return kwargs
+        out: dict[str, Any] = {}
+        for k, v in kwargs.items():
+            ann = self._param_types.get(k)
+            out[k] = self._coerce_value(v, ann)
+        return out
+
+    @staticmethod
+    def _coerce_value(value: Any, ann: Any) -> Any:
+        if ann is None or ann is inspect.Parameter.empty:
+            return value
+        if value is None:
+            return value
+        # bool — must come BEFORE int because bool is subclass of int in Python.
+        # Accept "true"/"false" (case-insensitive) and "1"/"0".
+        if ann is bool and isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in ("true", "1", "yes"):
+                return True
+            if lowered in ("false", "0", "no", ""):
+                return False
+            return value
+        # int
+        if ann is int and isinstance(value, str):
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                # Maybe it's a stringified float — round-trip via float.
+                try:
+                    return int(float(value))
+                except (ValueError, TypeError):
+                    return value
+        # float
+        if ann is float and isinstance(value, str):
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return value
+        return value
 
     @staticmethod
     def _infer_schema(fn: Callable) -> dict:

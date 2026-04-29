@@ -21,7 +21,7 @@ from chemaster.agent.llm_client import (
     stub_assistant_message,
     stub_tool_call,
 )
-from chemaster.agent.tool_registry import BaseTool, ToolRegistry, ToolResult
+from chemaster.agent.tool_registry import BaseTool, MCPToolAdapter, ToolRegistry, ToolResult
 from chemaster.agent.types import (
     AssistantMessage,
     Dialog,
@@ -465,3 +465,124 @@ def test_registry_enabled_tools_filter():
     register_builtins(registry)
     specs = registry.specs(enabled=["finish"])
     assert [s.name for s in specs] == ["finish"]
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# 11. AgentConfig path coercion
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_agent_config_coerces_string_runs_dir(tmp_path):
+    """runs_dir passed as a str should be coerced to Path automatically."""
+    from chemaster.agent.agent import AgentConfig
+    cfg = AgentConfig(runs_dir=str(tmp_path))
+    assert isinstance(cfg.runs_dir, Path)
+    assert cfg.runs_dir == tmp_path
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# 12. MiniMaxLLM provider wiring
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_minimax_llm_uses_minimax_endpoint_and_model(monkeypatch):
+    """MiniMaxLLM(LLMConfig(provider='minimax')) → MiniMax base URL + default model."""
+    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig
+
+    monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    llm = MiniMaxLLM(LLMConfig(provider="minimax"))
+    assert llm.config.base_url == "https://api.minimaxi.com/anthropic"
+    assert llm.config.model == "MiniMax-M2.7"
+
+
+def test_minimax_llm_keeps_explicit_minimax_model(monkeypatch):
+    """An explicit MiniMax-prefixed model id wins over the default."""
+    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig
+    monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
+    llm = MiniMaxLLM(LLMConfig(provider="minimax", model="MiniMax-M2.7-highspeed"))
+    assert llm.config.model == "MiniMax-M2.7-highspeed"
+
+
+def test_minimax_llm_overrides_anthropic_default_model(monkeypatch):
+    """LLMConfig defaults to claude-sonnet-4-6; MiniMaxLLM should swap that
+    out (otherwise the API call will be routed weirdly)."""
+    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig
+    monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
+    llm = MiniMaxLLM(LLMConfig(provider="minimax", model="claude-sonnet-4-6"))
+    assert llm.config.model == "MiniMax-M2.7"
+
+
+def test_minimax_llm_raises_without_api_key(monkeypatch):
+    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig, LLMError
+    monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(LLMError, match="MINIMAX_API_KEY"):
+        MiniMaxLLM(LLMConfig(provider="minimax"))
+
+
+def test_create_llm_factory_routes_minimax(monkeypatch):
+    from chemaster.agent.llm_client import create_llm, LLMConfig, MiniMaxLLM
+    monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
+    llm = create_llm(LLMConfig(provider="minimax"))
+    assert isinstance(llm, MiniMaxLLM)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# 13. MCPToolAdapter type coercion (LLMs send strings for ints/floats/bools)
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _make_adapter(fn):
+    return MCPToolAdapter(
+        fn=fn, name=fn.__name__, description=(fn.__doc__ or fn.__name__),
+    )
+
+
+def test_mcp_adapter_coerces_int_string_to_int():
+    def add_charges(charge: int = 0, multiplicity: int = 1) -> dict:
+        return {"ok": True, "result": {"sum": charge + multiplicity}}
+    tool = _make_adapter(add_charges)
+    res = tool.run(charge="2", multiplicity="3")
+    assert res.ok
+    assert res.data["result"]["sum"] == 5
+
+
+def test_mcp_adapter_coerces_float_string_to_float():
+    def scale(value: float = 1.0, factor: float = 2.0) -> dict:
+        return {"ok": True, "result": {"x": value * factor}}
+    tool = _make_adapter(scale)
+    res = tool.run(value="1.5", factor="4.0")
+    assert res.ok
+    assert abs(res.data["result"]["x"] - 6.0) < 1e-9
+
+
+def test_mcp_adapter_coerces_bool_strings():
+    def toggle(flag: bool = False) -> dict:
+        return {"ok": True, "result": {"flag": flag, "type": type(flag).__name__}}
+    tool = _make_adapter(toggle)
+    for s in ("true", "True", "TRUE", "1", "yes"):
+        assert tool.run(flag=s).data["result"]["flag"] is True
+    for s in ("false", "False", "0", "no", ""):
+        assert tool.run(flag=s).data["result"]["flag"] is False
+
+
+def test_mcp_adapter_does_not_coerce_unrelated_types():
+    def echo(geometry_xyz: str = "") -> dict:
+        return {"ok": True, "result": {"got": geometry_xyz}}
+    tool = _make_adapter(echo)
+    res = tool.run(geometry_xyz="3\nH 0 0 0\n")
+    assert res.ok
+    assert res.data["result"]["got"].startswith("3\n")
+
+
+def test_mcp_adapter_passes_through_uncoercible_strings():
+    def needs_int(charge: int = 0) -> dict:
+        # Force a real type error by doing arithmetic.
+        return {"ok": True, "result": {"x": charge - 0}}
+    tool = _make_adapter(needs_int)
+    # "abc" can't become int; we should pass through and let the function
+    # complain (which is then caught and surfaced as INVALID_ARGS).
+    res = tool.run(charge="abc")
+    assert not res.ok
+    assert res.data["error_code"] in ("INVALID_ARGS", "TOOL_EXCEPTION")

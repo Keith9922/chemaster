@@ -78,6 +78,12 @@ class AgentConfig:
     max_tool_observation_chars: int = 30_000
     finish_on_no_tool_calls: bool = False        # treat plain text as completion?
 
+    def __post_init__(self) -> None:
+        # Coerce string paths to Path so callers can pass tempfile.TemporaryDirectory
+        # results, str literals, etc.
+        if not isinstance(self.runs_dir, Path):
+            self.runs_dir = Path(self.runs_dir)
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Agent

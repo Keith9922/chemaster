@@ -68,12 +68,12 @@ def main(ctx: click.Context, version: bool, check_engines: bool) -> None:
               help="Where to write per-task artefacts.")
 @click.option("--max-turns", type=int, default=30, show_default=True,
               help="Maximum agent loop iterations.")
-@click.option("--llm-provider", type=click.Choice(["mock", "anthropic"]),
+@click.option("--llm-provider", type=click.Choice(["mock", "anthropic", "minimax"]),
               default=None,
-              help="LLM provider. Defaults to 'anthropic' if ANTHROPIC_API_KEY is "
-                   "set, otherwise 'mock' (no real LLM).")
+              help="LLM provider. Defaults to 'anthropic' (if ANTHROPIC_API_KEY) "
+                   "→ 'minimax' (if MINIMAX_API_KEY) → 'mock' (no real LLM).")
 @click.option("--llm-model", default=None,
-              help="Override LLM model id (e.g. claude-sonnet-4-6).")
+              help="Override LLM model id (e.g. claude-sonnet-4-6, MiniMax-M2.7).")
 @click.option("--no-confirm", is_flag=True,
               help="Auto-approve all destructive / long-running tool calls.")
 @click.option("--enabled-tool", multiple=True,
@@ -101,23 +101,34 @@ def run(
     from chemaster.agent.tool_loader import build_default_registry
     from chemaster.agent.types import TaskInstance
 
-    # Pick provider.
+    # Pick provider (auto-detect from env vars unless explicitly overridden).
     provider = llm_provider
     if provider is None:
-        provider = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "mock"
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            provider = "anthropic"
+        elif os.environ.get("MINIMAX_API_KEY"):
+            provider = "minimax"
+        else:
+            provider = "mock"
 
     if provider == "mock":
         click.secho(
-            "⚠ No ANTHROPIC_API_KEY set — using MockLLM. "
+            "⚠ No LLM API key set — using MockLLM. "
             "The agent cannot reason; this run will exit immediately.",
             fg="yellow", err=True,
         )
         click.secho(
-            "  To run with a real model: export ANTHROPIC_API_KEY=… and re-run.",
+            "  Set ANTHROPIC_API_KEY or MINIMAX_API_KEY to enable a real model.",
             fg="yellow", err=True,
         )
 
-    cfg = LLMConfig(provider=provider, model=llm_model or "claude-sonnet-4-6")
+    # Sensible default model per provider.
+    default_model = {
+        "anthropic": "claude-sonnet-4-6",
+        "minimax": "MiniMax-M2.7",
+        "mock": "mock",
+    }.get(provider, "")
+    cfg = LLMConfig(provider=provider, model=llm_model or default_model)
     try:
         llm = create_llm(cfg)
     except Exception as exc:

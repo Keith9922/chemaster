@@ -254,6 +254,64 @@ class AnthropicLLM(BaseLLM):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# MiniMax (Anthropic-compatible endpoint)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class MiniMaxLLM(AnthropicLLM):
+    """MiniMax LLM via its Anthropic-compatible endpoint.
+
+    Reference: https://platform.minimaxi.com/docs/token-plan/quickstart
+
+    The MiniMax token-plan endpoint at `https://api.minimaxi.com/anthropic`
+    speaks the same wire protocol as Anthropic's `messages.create` (system
+    prompt, messages with role/content blocks, tool_use / tool_result, etc.),
+    so we just point AnthropicLLM at it.
+
+    Auth: pass `config.api_key` or set the `MINIMAX_API_KEY` env var. If
+    neither is set we fall back to `ANTHROPIC_API_KEY` (handy when the same
+    key is reused).
+
+    Default model: `MiniMax-M2.7` (the most capable model in their token-plan
+    catalogue at the time of writing). Use `MiniMax-M2.7-highspeed` for a
+    cheaper / faster variant.
+    """
+
+    DEFAULT_BASE_URL = "https://api.minimaxi.com/anthropic"
+    DEFAULT_MODEL = "MiniMax-M2.7"
+
+    def __init__(self, config: LLMConfig) -> None:
+        # Normalize config so AnthropicLLM finds an api key + base url.
+        api_key = (
+            config.api_key
+            or os.environ.get("MINIMAX_API_KEY")
+            or os.environ.get("ANTHROPIC_API_KEY")
+        )
+        if not api_key:
+            raise LLMError(
+                "MINIMAX_API_KEY not set. Pass config.api_key or export the env var."
+            )
+        # Choose model: keep an explicit MiniMax model id, otherwise force the
+        # default MiniMax model. The default LLMConfig.model is an Anthropic
+        # id ("claude-sonnet-4-6"), so we swap it here unless the user really
+        # supplied a MiniMax-prefixed id.
+        model = config.model
+        if not model or not model.startswith("MiniMax"):
+            model = self.DEFAULT_MODEL
+        cfg = LLMConfig(
+            provider="minimax",
+            model=model,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            api_key=api_key,
+            base_url=config.base_url or self.DEFAULT_BASE_URL,
+            timeout_s=config.timeout_s,
+            extra=config.extra,
+        )
+        super().__init__(cfg)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # OpenAI-compatible (Qwen / DeepSeek / vLLM)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -269,7 +327,8 @@ class OpenAICompatLLM(BaseLLM):
         super().__init__(config)
         raise NotImplementedError(
             "OpenAICompatLLM not yet wired up. Use MockLLM for tests or "
-            "AnthropicLLM with ANTHROPIC_API_KEY for real runs."
+            "AnthropicLLM with ANTHROPIC_API_KEY for real runs, or "
+            "MiniMaxLLM with MINIMAX_API_KEY."
         )
 
     def query(self, dialog: Dialog) -> AssistantMessage:  # pragma: no cover
@@ -288,6 +347,8 @@ def create_llm(config: LLMConfig | None = None) -> BaseLLM:
         return MockLLM(config=cfg)
     if cfg.provider == "anthropic":
         return AnthropicLLM(cfg)
+    if cfg.provider == "minimax":
+        return MiniMaxLLM(cfg)
     if cfg.provider == "openai_compat":
         return OpenAICompatLLM(cfg)
     raise LLMError(f"Unknown LLM provider: {cfg.provider}")

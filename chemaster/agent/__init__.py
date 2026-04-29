@@ -46,6 +46,7 @@ from chemaster.agent.llm_client import (
     BaseLLM,
     LLMConfig,
     LLMError,
+    MiniMaxLLM,
     MockLLM,
     create_llm,
 )
@@ -103,6 +104,7 @@ __all__ = [
     "BaseLLM",
     "LLMConfig",
     "LLMError",
+    "MiniMaxLLM",
     "MockLLM",
     "create_llm",
     # Context
