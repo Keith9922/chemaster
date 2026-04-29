@@ -63,7 +63,7 @@ functionals:
     type: range-separated hybrid + dispersion
     cost_factor: 2.0
     use_cases:
-      - **TADF 激发态首选**（CT 态准）
+      - "TADF 激发态首选（CT 态准）"
       - 反应能垒
       - D-A 体系
     notes: "ChemMaster TADF 流水线默认；含 D2 修正"
