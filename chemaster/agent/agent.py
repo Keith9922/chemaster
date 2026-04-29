@@ -285,7 +285,23 @@ class BaseAgent:
                         meta={"declined": True},
                     )
 
-        result = tool.run(**tc.arguments)
+        try:
+            result = tool.run(**tc.arguments)
+        except TypeError as exc:
+            result = ToolResult(
+                ok=False,
+                observation=f"[error] Tool {tc.name} called with invalid arguments: {exc}",
+                data={"error_code": "INVALID_ARGS", "details": str(exc)},
+                is_error=True,
+            )
+        except Exception as exc:
+            logger.exception("Tool %s raised", tc.name)
+            result = ToolResult(
+                ok=False,
+                observation=f"[error] Tool {tc.name} raised: {type(exc).__name__}: {exc}",
+                data={"error_code": "TOOL_EXCEPTION", "details": str(exc)},
+                is_error=True,
+            )
         observation = result.observation
         if len(observation) > self.config.max_tool_observation_chars:
             half = self.config.max_tool_observation_chars // 2
