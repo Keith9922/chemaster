@@ -1,9 +1,17 @@
-"""Executor —— 按 ApprovedPlan 顺序调 MCP 工具，写产物到 runs/<task-id>/。
+"""Executor — legacy linear Plan runner (V1 compatibility).
 
-约束：
-- 只接受 ApprovedPlan（必须经过 ConfirmationLoop）
-- 任务产物全写到 runs/<task-id>/
-- MCP 返回 ok=False 时本步记 warning 并终止后续 step
+⚠️ **Deprecated path**. V2 dispatches tools inside the BaseAgent loop
+(see `chemaster.agent.agent.BaseAgent._dispatch_tool`). This Executor
+remains for the Phase-1 H2O end-to-end test which builds an ApprovedPlan
+manually and runs it without an LLM.
+
+Constraints (kept for backwards compatibility):
+- Only accepts ApprovedPlan (must pass through ConfirmationLoop or
+  `ConfirmationLoop.auto_approve` in tests).
+- Writes every step's artefacts to ``runs/<task-id>/``.
+- Aborts the run on the first MCP returning ok=False (records warnings).
+
+For new code use `ChemAgent.run(TaskInstance(description=...))`.
 """
 
 from __future__ import annotations

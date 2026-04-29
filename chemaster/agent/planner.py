@@ -1,9 +1,12 @@
-"""Planner —— 把用户意图转成 Plan 对象。
+"""Planner — legacy hard-coded H2O Plan builder (V1 compatibility).
 
-实现见 docs/ARCHITECTURE.md §3.5、docs/CLAUDE.md §5.4。
+⚠️ **Deprecated path**. The V2 architecture replaces hard-coded Planning with a
+real LLM tool-use loop (see `chemaster.agent.agent.ChemAgent`). This module
+remains so the Phase-1 H2O end-to-end test continues to pass and so any
+existing scripts that build a Plan via `Planner().create_plan(intent)` keep
+working.
 
-Phase 1 占位实现：硬编码识别 H2O / 苯环 / 简单 SMILES 的 opt+freq 案例。
-Phase 2 接入 LLM + RAG。
+For new code use `ChemAgent` + `build_default_chem_agent()` instead.
 """
 
 from __future__ import annotations

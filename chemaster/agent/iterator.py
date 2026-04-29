@@ -1,6 +1,9 @@
-"""Iterator —— benchmark 闭环，给定测试集自动分级方法直到误差收敛。
+"""Iterator — benchmark closed-loop, deferred to Phase 4+.
 
-Phase 4 核心模块。论文重点。
+⚠️ Not part of the V2 MVP. The benchmark-driven method-laddering loop is a
+research-grade extension of the core agent. Listed in the project roadmap
+under "future work / extensions" — not required for the TADF pipeline or
+the architecture-V2 deliverables.
 """
 
 from __future__ import annotations

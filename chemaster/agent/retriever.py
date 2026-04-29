@@ -1,6 +1,9 @@
-"""KnowledgeRetriever —— 对 chemaster/kb/rules/ 做 RAG 检索。
+"""KnowledgeRetriever — superseded by chem.kb MCP (kb_search / use_skill).
 
-Phase 2 实现。给 Planner 提供"基组/泛函/收敛/工作流"等经验规则。
+⚠️ Stub kept for backwards-compatible imports. The V2 architecture exposes
+KB retrieval as agent tools (`kb_search`, `list_skills`, `use_skill`)
+implemented in `chemaster.mcp.kb.server`. New code should not use this
+class — call the MCP tools through the agent's tool registry instead.
 """
 
 from __future__ import annotations
