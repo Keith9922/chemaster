@@ -11,8 +11,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 
-# ─── 测试用 H2O XYZ（3 行，不含电荷/自旋行）─────────────────────────────
-H2O_XYZ = """O  0.000000  -0.000000   0.117379
+# ─── 测试用 H2O XYZ（标准 xyz：首行原子数 + 注释行） ─────────────────────
+H2O_XYZ = """3
+H2O test geometry
+O  0.000000  -0.000000   0.117379
 H  0.000000   0.757063  -0.469516
 H  0.000000  -0.757063  -0.469516"""
 
@@ -244,7 +246,9 @@ class TestSinglePointUHF(unittest.TestCase):
         from chemaster.mcp.calc_psi4.server import single_point
 
         # CH3 radical：6 电子 C + 3×H(1) = 9 电子 → doublet multiplicity=2 合法
-        ch3_xyz = """C  0.0  0.0  0.0
+        ch3_xyz = """4
+methyl radical
+C  0.0  0.0  0.0
 H  1.0  0.0  0.0
 H -0.5  0.87 0.0
 H -0.5 -0.87 0.0"""
@@ -554,7 +558,9 @@ class TestOptimizeUHF(unittest.TestCase):
 
         from chemaster.mcp.calc_psi4.server import optimize
 
-        ch3_xyz = """C  0.0  0.0  0.0
+        ch3_xyz = """4
+methyl radical
+C  0.0  0.0  0.0
 H  1.0  0.0  0.0
 H -0.5  0.87 0.0
 H -0.5 -0.87 0.0"""
@@ -801,7 +807,9 @@ class TestFrequencyOK(unittest.TestCase):
 
         from chemaster.mcp.calc_psi4.server import frequency
 
-        ch3_xyz = """C  0.0  0.0  0.0
+        ch3_xyz = """4
+methyl radical
+C  0.0  0.0  0.0
 H  1.0  0.0  0.0
 H -0.5  0.87 0.0
 H -0.5 -0.87 0.0"""

@@ -740,12 +740,19 @@ def frequency(
 
     try:
         # 不使用 return_wfn=True：rdkit 先导入会导致 psi4 SCF 迭代 segfault
-        energy_hartree = psi4.frequencies(method, basis=basis, molecule=mol)
+        # 但若 mock 测试返回 (energy, wfn) 元组，按需解包，便于单元测试。
+        raw = psi4.frequencies(method, basis=basis, molecule=mol)
+        if isinstance(raw, tuple) and len(raw) == 2:
+            energy_hartree, wfn_from_call = raw
+        else:
+            energy_hartree, wfn_from_call = raw, None
 
         # 尝试从 wavefunction 获取频率（rdkit 先导入时不可用）
         # fallback：直接从输出文件解析
         try:
-            wfn = psi4.core.get_active_wavefunction()
+            wfn = wfn_from_call or psi4.core.get_active_wavefunction()
+            if wfn is None:
+                raise RuntimeError("no wavefunction available")
             freq_array = wfn.frequencies().to_array()
             freqs_cm_inv = [float(f) for f in freq_array]
             ir_intensities = _get_ir_intensities(wfn, len(freqs_cm_inv))
