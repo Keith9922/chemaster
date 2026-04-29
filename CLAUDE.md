@@ -9,12 +9,13 @@
 
 ## 0. TL;DR（30 秒读完）
 
-- **项目**：ChemMaster，一个**面向 TADF 发光体设计**的本地化计算化学 Agent，类 Claude Code 形态的 TUI。
-- **核心定位**：自然语言下达计算任务 → Agent 规划 → 用户确认 → 调用 psi4/ORCA/BDF/xTB → 自动出报告 → 必要时迭代。
-- **架构**：Agent Core + **Skill 层（方法论）+ MCP 层（类型化原子操作）** + 计算引擎 + 知识库。
-- **技术栈**：Python 3.11、Claude Agent SDK（Python）、Textual（TUI）、ASE、cclib、RDKit、psi4、xTB、ORCA、BDF、MultiWFN。
-- **毕设标杆**：TADF 流水线（构象→opt→TDDFT→SOC→Marcus 算 kRISC）+ 真人对照实验。
-- **开发原则**：**不让 LLM 算数**；所有计算交给专业软件；公式走代码、经验走 RAG；Plan-Confirm-Execute 三段式。
+- **项目**：ChemMaster，**面向 TADF 发光体设计**的本地化计算化学 Agent，类 Claude Code 形态。
+- **核心定位**：用户自然语言下达计算任务 → 真 LLM 驱动的 Agent 自主推理 → 影响外部状态时按工具弹确认 → 调用 psi4/ORCA/BDF/xTB → 自动出报告。
+- **架构 V2（已落地）**：5 层 — TUI/CLI · Agent Loop（BaseAgent + ChemAgent，基于 Anthropic SDK + tool use）· Tools (MCP servers + 内建 finish/ask_user/think) · Engines · Knowledge Base（formulas/ Python + rules/ YAML + skills/ Markdown）。
+- **关键变化**：**Skill 不再是架构层**，移到 `kb/skills/` 下，被 `use_skill` 工具按需读取（参考 EvoMaster）；**Confirmation 是 per-tool**（每个工具自带 `is_destructive` / `is_long_running` 标志），不再是中央 token 校验。
+- **技术栈**：Python 3.11、Anthropic SDK + MCP、ASE、cclib、RDKit、psi4、xTB、ORCA、BDF、MultiWFN。
+- **毕设标杆**：TADF 流水线（构象→opt→TDDFT→SOC→Marcus 算 kRISC）。
+- **开发原则**：**不让 LLM 算数**（公式走 `chemaster.kb.formulas` Python 模块）；所有计算交给专业软件；MCP 错误带 `suggestion` 让 Agent 自主恢复；Trajectory 全持久化便于复现。
 
 ---
 
@@ -38,58 +39,66 @@
 
 ## 2. 架构总览
 
-完整版本见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。这里只放最关键的两个图。
+完整版本见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。这里放最关键的两个图。
 
-### 2.1 六层结构
+### 2.1 五层结构 (V2)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ L6  TUI (Textual)        →  二期：Web/Desktop 客户端       │
-├─────────────────────────────────────────────────────────┤
-│ L5  Agent Core           Planner / Confirmation /        │
-│                          Executor / Iterator / Retriever  │
-├─────────────────────────────────────────────────────────┤
-│ L4  Skills (Markdown)    方法论 / 工作流 / 领域知识         │
-│                          tadf-pipeline / opt-freq / ...   │
-├─────────────────────────────────────────────────────────┤
-│ L3  MCP Servers          类型化原子操作                    │
-│                          chem.calc.* / chem.parse.cclib /│
-│                          chem.viz / chem.hpc.slurm / ... │
-├─────────────────────────────────────────────────────────┤
-│ L2  Engines              psi4 / ORCA / BDF / xTB /        │
-│                          ASE / cclib / RDKit / MultiWFN   │
-├─────────────────────────────────────────────────────────┤
-│ L1  Knowledge Base       公式库（确定性 Python）+ 规则库   │
-│                          (YAML/Markdown，供 RAG)           │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ L5  TUI / CLI            chemaster run "<intent>"             │
+│                          rich Panel for confirmations,        │
+│                          summary, key_results table.          │
+├──────────────────────────────────────────────────────────────┤
+│ L4  Agent Loop           BaseAgent + ChemAgent                │
+│                          Anthropic SDK + tool use             │
+│                          Built-in: finish / ask_user / think  │
+│                          Trajectory persisted to runs/        │
+│                          Confirmation per-tool (callback)     │
+├──────────────────────────────────────────────────────────────┤
+│ L3  Tools (MCP servers)  calc_psi4 / calc_xtb / calc_orca /   │
+│                          calc_bdf / io_ase / parse_cclib /    │
+│                          viz / hpc_slurm / chem.kb / pdf      │
+│                          每个 tool 自带 is_read_only /         │
+│                          is_destructive / is_long_running     │
+├──────────────────────────────────────────────────────────────┤
+│ L2  Engines              psi4 / ORCA / BDF / xTB /            │
+│                          ASE / cclib / RDKit / MultiWFN       │
+├──────────────────────────────────────────────────────────────┤
+│ L1  Knowledge Base       formulas/  Python 确定性公式          │
+│                          rules/     YAML 规则                  │
+│                          skills/    Markdown playbook（被     │
+│                                      use_skill 工具读取）      │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Skill ↔ MCP 分工（**重点，不要搞错**）
+### 2.2 Skill 是工具，不是架构层（**V2 关键变化**）
 
-- **MCP** = "Agent 能 *做* 什么"。每个工具是**类型化原子操作**，参数清晰、行为单一。例：`chem.calc.psi4.optimize(geom, method, basis) → {opt_geom, energy, converged}`。
-- **Skill** = "Agent 该 *如何* 处理一类问题"。Markdown 文档教 Agent：用哪个工具、参数怎么定、看到什么信号要怎么应对、什么时候停。
-
-**反例（不要这样做）**：
-- ❌ 把"opt 失败就沿虚频模式位移重启"塞进 MCP（行为耦合，参数爆炸）。
-- ❌ 让 Skill 自己拼 psi4 输入文件字符串（失去类型安全）。
+- **MCP / Tools** = "Agent 能 *做* 什么"。每个工具是**类型化原子操作**：`calc_psi4_optimize(geometry_xyz, method, basis, ...) → {ok, result, warnings, meta}`。
+- **Skills (kb/skills/)** = 给 Agent 阅读的**领域参考文档**。Agent 通过 `use_skill(name, action="get_info")` 工具按需读取。**不再做触发匹配 / 不再是 Planner 的必经路径**。
 
 **正例**：
-- ✅ MCP `chem.calc.psi4.optimize` 只做一次优化、报告结果与告警。
-- ✅ Skill `opt-freq` 教 Agent："先 optimize → 再 frequency → 若有虚频，调用 `chem.io.ase.displace_along_mode` 然后重启 optimize"。
+- ✅ `calc_psi4_optimize` 做一次优化、返回结果与 `suggestion`（如 SCF 失败建议 GWH 重试）。
+- ✅ Agent 看到 `SCF_NOT_CONVERGED` + suggestion → 决定调 `kb_search("SCF convergence")` 或直接重试，无需固定 Skill 路由。
+- ✅ `kb/skills/tadf-pipeline/SKILL.md` 是 Markdown，Agent 用 `use_skill("tadf-pipeline")` 加载。
+
+**反例（V1 错位，已纠正）**：
+- ❌ 旧：Planner 必须先选 Skill → Skill 编排 MCP → Executor 死板执行。
+- ❌ 旧：Confirmation 是中央 token gate（`confirm_token` 拒执行）。V2 改为 per-tool 标志 + 用户回调。
 
 ---
 
-## 3. "真正好用"的七项硬指标（**毕设论文要逐项验证**）
+## 3. "真正好用"的硬指标（毕设论文要验证）
 
 | # | 指标 | 目标 | 验证方法 |
 |---|---|---|---|
-| 1 | 首次安装到第一个结果 | ≤ 30 分钟 | 招新手计时 |
-| 2 | 新手不读手册跑通 H2O | ✓ | 招新手观察 |
-| 3 | 三个月后同输入复现率 | 100% | 保留 runs/ 全部产物，3 个月后重跑 |
-| 4 | 离线核心功能 | ✓ | 拔网线测试（除 LLM API） |
-| 5 | 错误自愈率 | ≥ 70% | 注入故障测 SCF/虚频/几何卡死 |
-| 6 | 报告可直接进论文 SI | ≥ 90% | 化学专业同学盲评 |
-| 7 | 相对手工节省人力 | ≥ 50% | 真人对照实验（见 §6 Phase 4.3） |
+| 1 | 首次安装到第一个结果 | ≤ 30 分钟 | conda 装 chemaster env + `chemaster run` 跑 H2O |
+| 2 | 端到端时间（H2O opt+freq）| < 5 min | `pytest tests/integration/test_h2o_e2e.py` |
+| 3 | 错误自愈成功率 | ≥ 70% | 注入故障测 SCF/虚频；mock-LLM recovery 测试已覆盖 |
+| 4 | 报告可直接进论文 SI | ≥ 80% | 5 个 anchor 分子产出对比文献值 |
+
+V1 文档曾列七项硬指标（含 3 个月复现率、50% 人力对照实验）。V2 砍掉前者
+（要等 3 个月才能验）和后者（要做对照实验，工作量与本课题创新点无关），
+进入 ROADMAP 的"未来工作"。
 
 ---
 
@@ -243,26 +252,20 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ## 8. 立即可做的下一步（新会话从这里开始）
 
-按依赖顺序：
+V2 架构已落地。当前最关键的开放工作：
 
-1. **读** `docs/SETUP.md`，按里面的步骤搭好开发环境（conda + psi4 + xTB + Claude Agent SDK + Textual）。
-2. **读** `docs/PITFALLS.md` 一遍 —— 不读这个会反复踩坑。
-3. **读** `docs/MCP_GUIDE.md` —— 学怎么写第一个 MCP。
-4. **写** `chemaster/mcp/const/server.py` —— 最简单的 MCP，物理常数 + 单位换算。完成后用 `pytest tests/unit/test_const.py` 验证。
-5. **写** `chemaster/mcp/io_ase/server.py` —— SMILES → 3D 结构、xyz↔mol 互转。
-6. **写** `chemaster/mcp/calc_psi4/server.py` —— `single_point` / `optimize` / `frequency` 三个原子操作。
-7. **写** `chemaster/mcp/parse_cclib/server.py` —— 输出解析。
-8. **写** `chemaster/agent/` 三段式骨架（先硬编码 H2O 案例，跑通端到端）。
-9. **写** `chemaster/tui/app.py` —— Textual 最简对话流。
-10. 跑通"用户输入 → Plan → Confirm → Execute → 报告"的 H2O 闭环。
+1. **接入真 LLM**：用户在 [llm_client.py](chemaster/agent/llm_client.py) 的 `AnthropicLLM` 已实现；需要 export `ANTHROPIC_API_KEY`，跑 `chemaster run "compute energy of benzene"`。可选：补一个 `OpenAICompatLLM` 给国产模型（Qwen / DeepSeek）。
+2. **TADF 流水线落地**：在 5 个 anchor 分子（4CzIPN, DMAC-DPS, ...）上跑端到端 TADF 流水线，对比文献值。Skill 文档已经在 `kb/skills/tadf-pipeline/SKILL.md`。
+3. **Textual TUI**：CLI 已经够用，TUI 是体验提升项；做 `chemaster.tui.app` 提供对话流 + 实时工具调用渲染。
+4. **HPC 异步集成**：`chem.hpc.slurm` MCP 接入学校超算；Agent 提交后立即返回 `{job_id, eta}`，不阻塞。
+5. **更多 MCP**：ORCA / BDF / MultiWFN 真实接入（目前 server.py 是占位）。
 
 每一步都先写 test 再写实现。每完成一步用 git commit。
 
 **不要**：
-- 不要一上来重构现有 PDF 代码 —— 先把它当外挂工具，等 MVP 跑通再考虑迁移到 `tools/`。
-- 不要追求一开始就支持 ORCA/BDF —— Phase 1 只用 psi4 + xTB。
-- 不要写 Web UI —— 这是二期。
-- 不要让 Agent "自由发挥" 选基组/泛函 —— 必须经过 KB 检索 + 规则校验。
+- 不要重构现有 PDF 代码 —— 它在 `tools/pdf-structure-extract/`，是外挂工具，未来通过 `chem.pdf` MCP 集成。
+- 不要让 Agent "自由发挥" 选基组/泛函 —— 必须先调 `kb_search` 或 `use_skill` 拿建议。
+- 不要在 system prompt 里写公式 —— 公式只在 `chemaster.kb.formulas` Python 模块里。
 
 ---
 
@@ -300,14 +303,22 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ## 11. 当前状态快照
 
-- ✅ 仓库目录骨架已建好（截至本文件版本）
-- ✅ 设计文档完整（docs/ 下所有 *.md）
-- ✅ Python 包骨架（`chemaster/__init__.py` 等占位）
-- ⬜ 第一个 MCP server (`chem.const`) ← **下个会话从这里开始**
-- ⬜ 第一个 Skill (`opt-freq`)
-- ⬜ TUI 入口
-- ⬜ MVP 闭环（H2O）
+V2 架构已落地（参见 [CHANGELOG.md](CHANGELOG.md) v0.2.0 段）：
+
+- ✅ Phase 0 仓库脚手架 + 设计文档
+- ✅ Phase 1 工具链路打通：硬编码 H2O e2e（commit 9bbe51e）
+- ✅ **Phase 1.5 真 Claude tool-use Agent loop**（V2 核心里程碑，本批次提交）
+  - `chemaster.agent.{types,llm_client,context,tool_registry,builtins,agent}`
+  - `system_prompt.md` 化学专家 prompt
+  - `tool_loader.build_default_registry()` 注册 22 工具（含 finish/ask_user/think + 7 计算 + KB 三件套 + viz + parse + io）
+  - `chem.kb` MCP（`kb_search` / `list_skills` / `use_skill`）
+  - 旧 `chemaster/skills/` → `chemaster/kb/skills/`
+  - Per-tool confirmation + audit log（`runs/<task_id>/confirmations.jsonl`）
+  - CLI: `chemaster run / skills / kb / tools / mcps / --check-engines`
+  - 测试：166 单元 + 6 集成 = 172 全绿（agent + real psi4 端到端跑通 CH4 / NH3 / H2O）
+- ⬜ Phase 2 接入 ANTHROPIC_API_KEY 跑真 Claude（用户保留）
+- ⬜ Phase 3-5 TADF / HPC / ORCA / BDF / MultiWFN
 
 ---
 
-*文档版本：v1.0 (2026-04)。每次重大架构调整后更新本文档的 §2、§3、§5、§11。*
+*文档版本：v2.0 (2026-04-29)。每次重大架构调整后更新本文档的 §2、§3、§5、§11。*

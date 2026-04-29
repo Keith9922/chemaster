@@ -1,6 +1,11 @@
 # MCP_GUIDE — 怎么写 MCP server
 
 > 写每个 `chemaster/mcp/<name>/server.py` 之前读这个。
+>
+> ⭐ **V2 增量（2026-04-29）**：
+> - 错误返回的 `suggestion` 字段从可选变为**强烈推荐必填** —— Agent 用它做错误自愈决策（参见 [agent recovery tests](../tests/unit/test_agent_recovery.py)）。
+> - 工具会通过 `chemaster.agent.tool_loader.MCPToolAdapter` 自动包装成 `BaseTool`；适配器为每个工具加 `is_read_only / is_destructive / is_long_running` 标志。新增 MCP 时记得在 [tool_loader.py](../chemaster/agent/tool_loader.py) 的 `TOOL_MANIFEST` 里登记并打标。
+> - 长任务的进度回吐（PITFALLS §5.6）建议未来用 stream，目前同步阻塞为主。
 
 ---
 

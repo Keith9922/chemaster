@@ -2,6 +2,10 @@
 
 > 写每个 MCP / Skill 前**必读**。这些坑都是真实出现过的，不是假想。
 > 如果你在开发中踩到新的坑，**立即补充进本文档**。
+>
+> ⭐ **V2 修订（2026-04-29）**：§5.4 已从"架构层强制 confirm token"改为
+> "per-tool 标志 + 用户回调"——见 `chemaster.agent.agent.AgentConfig.confirm_callback`
+> 和 [test_confirmation_log.py](../tests/unit/test_confirmation_log.py)。
 
 ---
 
@@ -196,7 +200,13 @@
 
 ### 5.4 三段式被 LLM 跳过 Confirm
 - LLM 急着干活，跳过用户确认。
-- ✅ Confirm 不是 prompt 引导，是**架构层强制**：Executor 没拿到用户 confirm token 拒绝执行。
+- ✅ V2: Confirmation 是**per-tool 机制**。每个 `BaseTool` 自报
+  `is_destructive` / `is_long_running` 标志；`BaseAgent._dispatch_tool`
+  会先调 `AgentConfig.confirm_callback(name, args, reason)`，回调返回 False
+  则把 `[user_declined]` 当 ToolMessage 喂回 LLM，让它选别的动作。
+  审计日志写到 `runs/<task_id>/confirmations.jsonl`。
+- ✅ V1（已废弃）: 架构层强制 confirm_token。这种方式过严，且 V2 的
+  per-tool 标志与 LLM 推理能力配合更好。
 
 ### 5.5 MCP 调用 vs Skill 内嵌脚本的优先级
 - 遇到能用 MCP 又能写脚本的情况，LLM 偶尔选脚本。

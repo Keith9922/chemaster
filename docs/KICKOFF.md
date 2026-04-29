@@ -4,6 +4,8 @@
 > 包含可直接复制粘贴的 prompt 模板。
 >
 > **核心原则**：约束 LLM 的自由度。永远让它**先读文档、再做一件小事、用 pytest 验证**，不允许"我觉得我做完了"。
+>
+> ⭐ **V2 注意（2026-04-29）**：架构已重构。新会话开始时先 `cat CLAUDE.md` 看 §2.1（五层）和 §11（当前状态）；旧的 V1 三段式 Planner/Executor 仍然在 `agent/` 下作为兼容层，但**主路径走 ChemAgent + tool-use loop**。看 `tests/integration/test_agent_real_psi4.py` 是 V2 的端到端范例。
 
 ---
 
@@ -190,9 +192,9 @@
 在动代码前，请用 5-10 行回答以下 5 个问题：
 
 1. 本项目的标杆问题是什么？
-2. Skill 与 MCP 的分工是什么？给一个反例。
+2. Skill 与 MCP 的分工是什么？给一个反例。（V2: Skill 是 `kb/skills/` 下被 `use_skill` 工具读取的文档，不是架构层）
 3. "LLM 不算数" 在实践中怎么体现？
-4. Plan-Confirm-Execute 三段式中，谁能让 Executor 跑起来？
+4. Agent 在什么情况下需要先和用户确认？（V2: 当工具的 `is_destructive` 或 `is_long_running` 标志为真，会回调 `confirm_callback`）
 5. 当前任务的"完成"如何验证？
 
 回答完等我确认。如果你说不出来，回去再读 CLAUDE.md。

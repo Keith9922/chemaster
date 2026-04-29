@@ -1,6 +1,15 @@
 # SKILLS_GUIDE — 怎么写 Skill
 
-> 写每个 `chemaster/skills/<name>/SKILL.md` 之前读这个。
+> 写每个 `chemaster/kb/skills/<name>/SKILL.md` 之前读这个。
+>
+> ⭐ **V2 架构变更（2026-04-29）**：
+> - 路径：`chemaster/skills/` → `chemaster/kb/skills/`
+> - 定位：Skill **不再是架构层 / 不再做触发匹配**，是 Agent 通过 `use_skill` 工具按需读取的 markdown 文档（参考 EvoMaster 的 SkillTool 模式）
+> - frontmatter 简化：`when_to_use` / `when_not_to_use` 仍可保留作描述，但不再作为路由触发器
+> - 不需要再"在 workflows.yaml 注册触发规则"
+> - 不需要再做"5+ 正例 / 5+ 反例"触发率测试
+>
+> 见 [CLAUDE.md §2.2](../CLAUDE.md#22-skill-是工具不是架构层v2-关键变化)。
 
 ---
 

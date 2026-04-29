@@ -1,6 +1,10 @@
 # ARCHITECTURE — 系统架构详解
 
-> 写代码前读这个。理解六层结构与 Skill/MCP 分工是项目的核心。
+> 写代码前读这个。
+>
+> ⭐ **V2 已落地（2026-04-29）**：六层 → 五层；Skill 不再是架构层，移到 `kb/skills/` 由 `use_skill` 工具读取；旧 Planner/Executor 保留为兼容层，**主路径走 ChemAgent tool-use loop**。
+>
+> 最新简明视图见 [CLAUDE.md §2](../CLAUDE.md#2-架构总览)。本文档保留 V1 详细描述作为补充参考；其中 §3.4 (Skills 作为 L4) 与 §3.5 (Planner/Confirmation/Executor 三段式) 部分已用 V2 路径替代，新增模块见 `chemaster/agent/` 下的 `agent.py / types.py / llm_client.py / context.py / tool_registry.py / builtins.py / tool_loader.py`。
 
 ---
 

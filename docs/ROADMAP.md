@@ -3,6 +3,39 @@
 > 计算化学领域的本地 Agent 工具 —— 类 Claude Code 形态。
 > 用户用自然语言下达计算任务，Agent 规划方案、与用户确认、调用专业软件执行（本地或 HPC）、解析结果并出图、必要时迭代直到误差收敛。
 
+---
+
+## ⭐ V2 状态（2026-04-29）
+
+> 本文件最初按"六层 + Skill 架构层"思路撰写。**架构 V2 已落地**（CHANGELOG v0.2.0），见 [CLAUDE.md §2.1](../CLAUDE.md#21-五层结构-v2)。
+>
+> 核心变化：
+> 1. 六层 → **五层**（删除 Skill 作为架构层）
+> 2. Skill 改为 `kb/skills/` 下的 markdown 文档，被 `use_skill` 工具检索
+> 3. 旧 Planner/Executor → **真 Claude tool-use Agent loop**（`chemaster.agent.agent.ChemAgent`）
+> 4. Confirmation 由"中央 token 校验" → **per-tool 标志 + 用户回调**
+> 5. 七项硬指标砍到四项（见 CLAUDE.md §3）
+>
+> Phase 状态（修订后）：
+>
+> | Phase | 状态 | 内容 |
+> |---|---|---|
+> | 0 | ✅ | 仓库脚手架 + 设计文档 |
+> | 1 | ✅ | 工具链路打通（硬编码 H2O e2e）|
+> | **1.5** | ✅ | **真 Claude tool-use Agent loop**（V2 核心） |
+> | 2 | ⬜ | 接 Anthropic API + 真分子端到端验证（用户保留环节）|
+> | 3 | ⬜ | TADF 流水线 anchor 分子（4CzIPN 等 5 个）|
+> | 4 | ⬜ | ORCA / BDF / MultiWFN 真实接入 |
+> | 5 | ⬜ | HPC 异步集成（学校超算）|
+> | 6 | ⬜ | 文档 + 论文 |
+> | 7 | ⬜ | PyPI 发布（多渠道发布推到未来工作）|
+>
+> 砍掉（推到论文"未来工作"章节）：3 个月复现率验证、50% 人力对照实验、conda-forge / Homebrew / Docker / Plugin marketplace 多渠道发布、benchmark Iterator 闭环作为毕设核心。
+
+下文保留 V1 的详细 Phase 描述作为参考。新会话先看 [CLAUDE.md](../CLAUDE.md) §2 / §11。
+
+---
+
 本仓库（chemaster）目前已有 **PDF 化学结构抽取 + SMILES 识别**能力（见根目录 `README.md`），将作为 ChemMaster Agent 的一个子工具继续保留并被 Agent 调用。本文档描述把仓库升级成 ChemMaster Agent 的整体路线。
 
 ---
