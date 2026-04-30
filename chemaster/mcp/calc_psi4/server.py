@@ -814,7 +814,10 @@ def frequency(
 
     zpe_Eh = _thermo.zpe_from_frequencies_cm_inv(freqs_cm_inv)
 
-    # ── 6. 组装返回 ─────────────────────────────────────────────────────
+    # ── 6. Thermal corrections (parse from psi4 output log)──────────────
+    thermal = _parse_thermal_from_output(output_path)
+
+    # ── 7. 组装返回 ─────────────────────────────────────────────────────
     return {
         "ok": True,
         "result": {
@@ -822,11 +825,7 @@ def frequency(
             "ir_intensities_km_per_mol": ir_intensities,
             "n_imaginary": n_imaginary,
             "zpe": {"value": round(zpe_Eh, 8), "unit": "Hartree"},
-            "thermal_corrections": {
-                "h_corr": None,
-                "g_corr": None,
-                "ts": None,
-            },
+            "thermal_corrections": thermal,
             "temperature_K": temperature_K,
             "pressure_atm": pressure_atm,
         },
@@ -894,6 +893,335 @@ def _get_ir_intensities(wfn, n_freqs: int) -> list[float]:
         pass
     # fallback：返回零强度列表
     return [0.0] * n_freqs
+
+
+def _parse_thermal_from_output(log_path: str) -> dict[str, Any]:
+    """Parse psi4's thermochemistry summary block.
+
+    Extracts the corrections (H, G, internal-E thermal) and the absolute
+    enthalpy / Gibbs at temperature. Returns a dict with each value tagged
+    by unit; missing fields stay None.
+
+    psi4 prints, e.g.:
+        Correction H    15.928 [kcal/mol] ... 0.02538285 [Eh]
+        Total H, Enthalpy at  298.15 [K]  ... -76.33282512 [Eh]
+        Correction G     2.488 [kcal/mol] ... 0.00396527 [Eh]
+        Total G, Gibbs energy at  298.15 [K] ... -76.35424270 [Eh]
+        Correction E    15.335 [kcal/mol] ... 0.02443866 [Eh]
+        Total E, Thermal (internal) energy at  298.15 [K] ... -76.33376930 [Eh]
+    """
+    import re
+    out = {
+        "h_corr": None,            # H_corr (Hartree, includes ZPE + thermal H)
+        "g_corr": None,            # G_corr
+        "e_corr": None,            # internal energy correction
+        "ts": None,                # T·S = H_corr - G_corr (derived)
+        "total_h": None,           # absolute enthalpy at T (Hartree)
+        "total_g": None,           # absolute Gibbs at T (Hartree)
+        "total_e": None,           # absolute internal E at T (Hartree)
+    }
+    try:
+        text = Path(log_path).read_text(errors="replace")
+    except Exception:
+        return out
+
+    # Correction X    XX.XXX [kcal/mol]    XX.XXX [kJ/mol]    0.0XXXXXXX [Eh]
+    corr = re.compile(
+        r"Correction\s+([HGES])\b[^\n]*?([-+]?\d+\.\d+)\s*\[Eh\]",
+        re.MULTILINE,
+    )
+    for m in corr.finditer(text):
+        kind = m.group(1)
+        val = float(m.group(2))
+        if kind == "H":
+            out["h_corr"] = {"value": val, "unit": "Hartree"}
+        elif kind == "G":
+            out["g_corr"] = {"value": val, "unit": "Hartree"}
+        elif kind == "E":
+            out["e_corr"] = {"value": val, "unit": "Hartree"}
+
+    total = re.compile(
+        r"Total\s+(\w+)[^\n]*?at\s+\d+\.\d+\s*\[K\][^\n]*?"
+        r"([-+]?\d+\.\d+)\s*\[Eh\]",
+        re.MULTILINE,
+    )
+    for m in total.finditer(text):
+        kind = m.group(1)
+        val = float(m.group(2))
+        if kind == "H":
+            out["total_h"] = {"value": val, "unit": "Hartree"}
+        elif kind == "G":
+            out["total_g"] = {"value": val, "unit": "Hartree"}
+        elif kind == "E":
+            out["total_e"] = {"value": val, "unit": "Hartree"}
+
+    # T·S derived from H_corr - G_corr (since G = H - T·S → T·S = H - G).
+    if out["h_corr"] is not None and out["g_corr"] is not None:
+        ts_Eh = out["h_corr"]["value"] - out["g_corr"]["value"]
+        out["ts"] = {"value": round(ts_Eh, 8), "unit": "Hartree"}
+
+    return out
+
+
+@mcp.tool()
+def tddft(
+    geometry_xyz: str,
+    charge: int = 0,
+    multiplicity: int = 1,
+    method: str = "B3LYP-D3(BJ)",
+    basis: str = "def2-SVP",
+    n_states: int = 6,
+    triplets: bool = True,
+    tda: bool = True,
+    memory_gb: int = 4,
+    n_threads: int = 1,
+) -> dict[str, Any]:
+    """TDDFT excited-state calculation (psi4).
+
+    Returns the lowest n_states singlet and (optionally) triplet excitations
+    plus their oscillator strengths. Use this AFTER calc_psi4_optimize to
+    get S0/S1/T1 energies for excited-state photophysics, UV-Vis,
+    and TADF ΔE_ST analysis.
+
+    By default we use TDA (Tamm-Dancoff Approximation) which is much more
+    stable for triplets; PITFALLS §2.8 explains why standard TDDFT triplets
+    often produce imaginary roots ("triplet instability"). Pass tda=False to
+    use full TDDFT linear response if you specifically need it.
+
+    Args:
+        geometry_xyz: optimized ground-state geometry, standard xyz with header.
+        charge / multiplicity: ground-state charge / spin (excitations applied
+            on top of this reference).
+        method: DFT functional. For charge-transfer excited states (TADF
+            donor-acceptor), use a range-separated functional like ωB97X-D
+            instead of B3LYP — see PITFALLS §2.7.
+        basis: basis set; def2-SVP for screening, def2-TZVP for
+            publication-quality.
+        n_states: how many excited states to compute (per spin manifold).
+        triplets: if True, also compute the lowest n_states triplet states.
+        tda: use Tamm-Dancoff approximation (recommended, especially for
+            triplets).
+
+    Returns:
+        ok=True:
+          {
+            "ok": True,
+            "result": {
+              "ground_state_energy": {"value": float, "unit": "Hartree"},
+              "singlets": [
+                {"state": 1,
+                 "excitation_energy": {"value": float, "unit": "eV"},
+                 "wavelength_nm": float,
+                 "oscillator_strength": float},
+                ...
+              ],
+              "triplets": [...],          # only if triplets=True
+              "delta_E_ST_eV": float,     # E(T1) - E(S1) (TADF target);
+                                          # null if triplets disabled
+            },
+            "warnings": [...],
+            "meta": {...},
+          }
+        ok=False:
+          {"ok": False, "error_code": "...", "details": str, "suggestion": str}
+
+    Common error codes:
+        - SCF_NOT_CONVERGED: ground-state SCF didn't converge.
+        - INVALID_MULTIPLICITY
+        - TRIPLET_INSTABILITY: full TDDFT (tda=False) produced imaginary
+            triplet root. Suggestion: rerun with tda=True.
+        - PSI4_INTERNAL_ERROR
+
+    Examples:
+        >>> r = tddft(opt_xyz, method="ωB97X-D", basis="def2-TZVP",
+        ...           n_states=4, triplets=True, tda=True)
+        >>> r["result"]["delta_E_ST_eV"]
+        0.12
+    """
+    # 1. multiplicity sanity
+    n_el = _electron_count(geometry_xyz, charge)
+    valid, err_msg = _validate_multiplicity(multiplicity, n_el)
+    if not valid:
+        return {
+            "ok": False,
+            "error_code": "INVALID_MULTIPLICITY",
+            "details": err_msg,
+            "suggestion": "Closed-shell singlet needs multiplicity=1.",
+        }
+
+    import psi4
+    from psi4 import __version__ as psi4_version
+
+    psi4.set_memory(f"{int(memory_gb)} GB")
+    psi4.set_num_threads(n_threads)
+    output_path = "tddft_output.log"
+    psi4.core.set_output_file(output_path, False)
+
+    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
+    mol = psi4.geometry(geom_block)
+
+    reference = "uhf" if multiplicity != 1 else "rhf"
+    psi4.set_options({
+        "reference": reference,
+        "scf_type": "df",
+        "tdscf_states": int(n_states),
+        "tdscf_triplets": "ALSO" if triplets else "NONE",
+        "tdscf_tda": bool(tda),
+    })
+
+    wall_start = time.time()
+    warnings: list[str] = []
+
+    try:
+        # psi4 driver TDDFT: prefix the method with "td-" and call energy().
+        # tdscf_states / tdscf_triplets / tdscf_tda set above as global options.
+        td_method = method
+        if not (td_method.lower().startswith("td-")
+                or td_method.lower().startswith("td_")):
+            td_method = f"td-{method}"
+        gs_energy = psi4.energy(method, basis=basis)
+        psi4.energy(td_method, basis=basis)
+    except Exception as exc:
+        wall_time = time.time() - wall_start
+        msg = str(exc).lower()
+        if "scf" in msg and ("converge" in msg or "convergence" in msg):
+            return {
+                "ok": False,
+                "error_code": "SCF_NOT_CONVERGED",
+                "details": str(exc),
+                "suggestion": (
+                    "Ground-state SCF didn't converge. Try guess=GWH, smaller "
+                    "basis, or run calc_psi4_single_point with damping first."
+                ),
+                "meta": {"psi4_version": psi4_version,
+                         "wall_time_s": round(wall_time, 2),
+                         "output_path": output_path},
+            }
+        if "triplet" in msg and ("instab" in msg or "imag" in msg):
+            return {
+                "ok": False,
+                "error_code": "TRIPLET_INSTABILITY",
+                "details": str(exc),
+                "suggestion": "Re-run with tda=True (Tamm-Dancoff) — see PITFALLS §2.8.",
+                "meta": {"psi4_version": psi4_version,
+                         "wall_time_s": round(wall_time, 2),
+                         "output_path": output_path},
+            }
+        return {
+            "ok": False,
+            "error_code": "PSI4_INTERNAL_ERROR",
+            "details": f"{type(exc).__name__}: {exc}",
+            "suggestion": ("Check geometry / element coverage in the chosen "
+                           "basis. Inspect output_path for full traceback."),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+
+    # 2. Pull out the excitation list. Different psi4 versions expose the
+    # TDSCF results in different shapes; we parse the output log directly
+    # (most robust across versions).
+    singlets, triplets_list = _parse_tdscf_from_output(output_path,
+                                                      want_triplets=triplets)
+
+    # 3. ΔE_ST = E(T1) - E(S1)  (TADF target; positive means S1 above T1)
+    delta_e_st_eV: float | None = None
+    if singlets and triplets_list:
+        delta_e_st_eV = round(
+            triplets_list[0]["excitation_energy"]["value"]
+            - singlets[0]["excitation_energy"]["value"], 4
+        )
+
+    if not singlets:
+        warnings.append({
+            "code": "NO_SINGLETS_PARSED",
+            "message": "TDDFT ran but the parser found no singlet states; "
+                       f"check the raw psi4 output at {output_path}.",
+            "severity": "warn",
+        })
+
+    wall_time = time.time() - wall_start
+    return {
+        "ok": True,
+        "result": {
+            "ground_state_energy": {"value": float(gs_energy), "unit": "Hartree"},
+            "singlets": singlets,
+            "triplets": triplets_list,
+            "delta_E_ST_eV": delta_e_st_eV,
+            "method": method,
+            "basis": basis,
+            "tda": bool(tda),
+        },
+        "warnings": warnings,
+        "meta": {
+            "psi4_version": psi4_version,
+            "wall_time_s": round(wall_time, 2),
+            "output_path": output_path,
+        },
+    }
+
+
+def _parse_tdscf_from_output(
+    output_path: str,
+    want_triplets: bool,
+) -> tuple[list[dict], list[dict]]:
+    """Regex-parse psi4's TDDFT printout. Tolerant to formatting drift.
+
+    psi4 prints (≥1.9):
+        Excited State    1 (3 A):   0.25504 au   178.65 nm f = 0.0000
+                                ^^^      ^^^      ^^^         ^^^
+                              spin#  excitation  wavelength  oscillator
+    where spin# == 1 → singlet, 3 → triplet.
+    """
+    import re
+    try:
+        text = Path(output_path).read_text(errors="replace")
+    except Exception:
+        return [], []
+
+    eV_per_au = 27.211386245988
+
+    pattern = re.compile(
+        r"Excited\s+State\s+(\d+)\s*\(\s*(\d+)\s*[A-Za-z']*\s*\)\s*:\s*"
+        r"([-+]?\d+\.\d+)\s*au\s+([-+]?\d+\.\d+)\s*nm\s+f\s*=\s*([-+]?\d+\.\d+)",
+        re.MULTILINE,
+    )
+    singlets: list[dict] = []
+    triplets: list[dict] = []
+    seen_keys: set[tuple[int, int]] = set()   # (spin, state) — psi4 prints twice
+
+    for m in pattern.finditer(text):
+        idx = int(m.group(1))
+        spin = int(m.group(2))
+        e_au = float(m.group(3))
+        wl_nm = float(m.group(4))
+        f_osc = float(m.group(5))
+        e_eV = e_au * eV_per_au
+
+        key = (spin, idx)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+
+        entry = {
+            "state": idx,
+            "excitation_energy": {"value": round(e_eV, 4), "unit": "eV"},
+            "wavelength_nm": round(wl_nm, 2),
+            "oscillator_strength": round(f_osc, 6),
+        }
+        if spin == 1:
+            singlets.append(entry)
+        elif spin == 3 and want_triplets:
+            triplets.append(entry)
+
+    # Re-number per spin (psi4 numbers across all states; we want S1, S2, ...
+    # and T1, T2, ... independently).
+    for i, e in enumerate(singlets, 1):
+        e["state"] = i
+    for i, e in enumerate(triplets, 1):
+        e["state"] = i
+
+    return singlets, triplets
 
 
 def main() -> None:

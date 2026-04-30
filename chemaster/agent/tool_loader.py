@@ -141,6 +141,18 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         ),
         is_long_running=True,
     ),
+    _ToolDecl(
+        exposed_name="calc_psi4_tddft",
+        module="chemaster.mcp.calc_psi4.server",
+        function="tddft",
+        description=(
+            "TDDFT excited-state calculation with psi4. Use AFTER optimize to get "
+            "S1/T1 energies, oscillator strengths, and ΔE_ST for TADF analysis. "
+            "Default tda=True (Tamm-Dancoff) avoids triplet-instability issues "
+            "(PITFALLS §2.8). For charge-transfer states, prefer ωB97X-D over B3LYP."
+        ),
+        is_long_running=True,
+    ),
 
     # calc_xtb (fast, but mark long-running for safety on big molecules) ──
     _ToolDecl(

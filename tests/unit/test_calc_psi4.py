@@ -911,8 +911,8 @@ class TestFrequencyInternalError(unittest.TestCase):
         self.assertIn("Segmentation", result["details"])
 
 
-class TestFrequencyThermalCorrectionsPlaceholder(unittest.TestCase):
-    """thermal_corrections 当前返回 null（Phase 2 前置检查）。"""
+class TestFrequencyThermalCorrectionsParser(unittest.TestCase):
+    """thermal_corrections 通过解析 psi4 输出日志获取（V2: P0-2 实装后）。"""
 
     @patch("psi4.geometry", create=True)
     @patch("psi4.set_options", create=True)
@@ -920,11 +920,12 @@ class TestFrequencyThermalCorrectionsPlaceholder(unittest.TestCase):
     @patch("psi4.set_num_threads", create=True)
     @patch("psi4.core.set_output_file", create=True)
     @patch("psi4.frequencies", create=True)
-    def test_thermal_corrections_are_null(
+    def test_thermal_corrections_keys_present(
         self, mock_freqs, mock_set_output,
         mock_set_threads, mock_set_mem, mock_set_opts, mock_geom
     ):
-        """Phase 2 接入完整 RRHO 前，h_corr/g_corr/ts 均为 null。"""
+        """frequency 返回的 thermal_corrections 字典必须包含所有键（值可能为 null
+        如果 mock 输出文件没写）。"""
         import numpy as np
 
         freqs = np.array([1000.0, 2000.0, 3000.0])
@@ -938,9 +939,52 @@ class TestFrequencyThermalCorrectionsPlaceholder(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         tc = result["result"]["thermal_corrections"]
-        self.assertIsNone(tc["h_corr"])
-        self.assertIsNone(tc["g_corr"])
-        self.assertIsNone(tc["ts"])
+        for key in ("h_corr", "g_corr", "ts", "total_h", "total_g"):
+            self.assertIn(key, tc)
+
+
+class TestThermalParserWithRealLog(unittest.TestCase):
+    """单独测 _parse_thermal_from_output：给一段真实 psi4 freq 输出文本，
+    验证 H_corr / G_corr / T·S 都解析出来。"""
+
+    def test_parses_real_psi4_thermo_block(self):
+        from chemaster.mcp.calc_psi4.server import _parse_thermal_from_output
+
+        sample = """
+  Correction ZPVE to E_e   13.556 [kcal/mol]   56.719 [kJ/mol]   0.02160296 [Eh]   4741.301 [cm^-1]
+  Total E_0, Enthalpy at 0 [K]                                            -76.33660501 [Eh]
+
+  Correction E    15.335 [kcal/mol]   64.164 [kJ/mol]   0.02443866 [Eh]
+  Total E, Thermal (internal) energy at  298.15 [K]                       -76.33376930 [Eh]
+
+  Correction H    15.928 [kcal/mol]   66.643 [kJ/mol]   0.02538285 [Eh]
+  Total H, Enthalpy at  298.15 [K]                                        -76.33282512 [Eh]
+
+  Correction G     2.488 [kcal/mol]   10.411 [kJ/mol]   0.00396527 [Eh]
+  Total G, Gibbs energy at  298.15 [K]                                    -76.35424270 [Eh]
+"""
+        # write to a tmp file
+        from pathlib import Path
+        import tempfile
+        with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as f:
+            f.write(sample)
+            log_path = f.name
+
+        out = _parse_thermal_from_output(log_path)
+        self.assertAlmostEqual(out["h_corr"]["value"], 0.02538285, places=6)
+        self.assertAlmostEqual(out["g_corr"]["value"], 0.00396527, places=6)
+        self.assertAlmostEqual(out["e_corr"]["value"], 0.02443866, places=6)
+        self.assertAlmostEqual(out["total_h"]["value"], -76.33282512, places=6)
+        self.assertAlmostEqual(out["total_g"]["value"], -76.35424270, places=6)
+        self.assertAlmostEqual(out["total_e"]["value"], -76.33376930, places=6)
+        # T·S = H_corr - G_corr ≈ 0.02141758
+        self.assertAlmostEqual(out["ts"]["value"], 0.02141758, places=6)
+
+    def test_parser_tolerates_missing_log(self):
+        from chemaster.mcp.calc_psi4.server import _parse_thermal_from_output
+        out = _parse_thermal_from_output("/does/not/exist.log")
+        self.assertIsNone(out["h_corr"])
+        self.assertIsNone(out["g_corr"])
 
 
 class TestFrequencyZPECalculation(unittest.TestCase):
