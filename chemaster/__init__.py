@@ -5,10 +5,10 @@
 - MCP servers: ``chemaster.mcp.*.server``
 - Agent core: ``chemaster.agent``
 - 知识库公式: ``chemaster.kb.formulas``
-- Skill 库: ``chemaster.skills`` (Markdown 形式)
+- Skill 库: ``chemaster.kb.skills`` (Markdown 形式)
 
 详见仓库根目录的 CLAUDE.md。
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0a1"
 __all__ = ["__version__"]

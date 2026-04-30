@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+title: "ChemMaster: A local-first computational chemistry agent with LLM tool use"
+message: >-
+  If you use this software in your research, please cite it using the
+  metadata below.
+type: software
+authors:
+  - given-names: Sophie
+    family-names: Zhang
+    email: fhoueff41082@outlook.com
+    affiliation: "ChemMaster contributors"
+repository-code: "https://github.com/your-username/chemaster"
+url: "https://github.com/your-username/chemaster"
+abstract: >-
+  ChemMaster is a Claude-Code-style local agent for computational
+  chemistry. Users issue calculation tasks in natural language; a real
+  LLM (Anthropic Claude, MiniMax M2.7, Qwen, DeepSeek, or local
+  vLLM/llama.cpp via the OpenAI-compatible interface) drives a
+  registry of MCP tools (psi4, xTB, ORCA, BDF, MultiWFN, cclib,
+  RDKit/ASE, SLURM-over-SSH) to plan, execute, monitor, and report
+  back. Designed for transparent, reproducible workflows: every step
+  of the agent loop is persisted as a JSON trajectory, and a
+  paper-ready Markdown report is auto-generated.
+keywords:
+  - computational-chemistry
+  - large-language-models
+  - tool-use
+  - tadf
+  - dft
+  - tddft
+  - psi4
+  - orca
+  - bdf
+  - mcp
+  - claude-code
+license: MIT
+version: 0.2.0a1
+date-released: "2026-04-30"

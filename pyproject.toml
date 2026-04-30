@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "chemaster"
-version = "0.1.0"
+version = "0.2.0a1"
 description = "AI agent for computational chemistry: TADF, DFT workflows, HPC integration"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
@@ -37,6 +37,7 @@ classifiers = [
 dependencies = [
     # Agent / LLM
     "anthropic>=0.39",
+    "openai>=1.30",              # OpenAI-compat (Qwen / DeepSeek / vLLM)
     "claude-agent-sdk>=0.1",     # 占位；按实际包名调整
     "mcp>=1.0",
 

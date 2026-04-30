@@ -209,6 +209,40 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_long_running=True,
     ),
 
+    # hpc_slurm — async submit / status / fetch on a university cluster ──
+    _ToolDecl(
+        exposed_name="hpc_submit",
+        module="chemaster.mcp.hpc_slurm.server",
+        function="submit",
+        description=(
+            "Submit a SLURM job over SSH; returns the job_id immediately so "
+            "the agent can continue with other work and poll status. "
+            "Requires ~/.chemaster/hpc.yaml with host/user/ssh_key/etc."
+        ),
+        is_destructive=True,            # external side-effect on the cluster
+    ),
+    _ToolDecl(
+        exposed_name="hpc_status",
+        module="chemaster.mcp.hpc_slurm.server",
+        function="status",
+        description=(
+            "Query a SLURM job_id's current state (squeue / sacct fallback). "
+            "Use periodically while waiting for hpc_submit jobs to finish."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="hpc_fetch",
+        module="chemaster.mcp.hpc_slurm.server",
+        function="fetch",
+        description=(
+            "Pull a finished SLURM job's output directory back over rsync. "
+            "Call after hpc_status reports COMPLETED."
+        ),
+        is_destructive=True,
+        is_long_running=True,
+    ),
+
     # calc_xtb (fast, but mark long-running for safety on big molecules) ──
     _ToolDecl(
         exposed_name="calc_xtb_single_point",

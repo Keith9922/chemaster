@@ -44,10 +44,13 @@ from chemaster.agent.iterator import BenchmarkIterator
 from chemaster.agent.llm_client import (
     AnthropicLLM,
     BaseLLM,
+    DeepSeekLLM,
     LLMConfig,
     LLMError,
     MiniMaxLLM,
     MockLLM,
+    OpenAICompatLLM,
+    QwenLLM,
     create_llm,
 )
 from chemaster.agent.plan import (
@@ -102,10 +105,13 @@ __all__ = [
     # LLM
     "AnthropicLLM",
     "BaseLLM",
+    "DeepSeekLLM",
     "LLMConfig",
     "LLMError",
     "MiniMaxLLM",
     "MockLLM",
+    "OpenAICompatLLM",
+    "QwenLLM",
     "create_llm",
     # Context
     "ContextConfig",

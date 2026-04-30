@@ -529,6 +529,85 @@ def test_create_llm_factory_routes_minimax(monkeypatch):
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# 14. OpenAI-compat LLM clients (Qwen / DeepSeek / generic)
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_qwen_llm_uses_dashscope_endpoint_and_default_model(monkeypatch):
+    from chemaster.agent.llm_client import LLMConfig, QwenLLM
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "test-key")
+    llm = QwenLLM(LLMConfig(provider="qwen"))
+    assert "dashscope" in llm.config.base_url
+    assert llm.config.model == "qwen-max"
+
+
+def test_deepseek_llm_default_endpoint_and_model(monkeypatch):
+    from chemaster.agent.llm_client import DeepSeekLLM, LLMConfig
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    llm = DeepSeekLLM(LLMConfig(provider="deepseek"))
+    assert "deepseek.com" in llm.config.base_url
+    assert llm.config.model == "deepseek-chat"
+
+
+def test_qwen_llm_raises_without_api_key(monkeypatch):
+    from chemaster.agent.llm_client import LLMConfig, LLMError, QwenLLM
+    for var in ("DASHSCOPE_API_KEY", "QWEN_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    with pytest.raises(LLMError, match="DASHSCOPE_API_KEY"):
+        QwenLLM(LLMConfig(provider="qwen"))
+
+
+def test_openai_compat_requires_base_url(monkeypatch):
+    from chemaster.agent.llm_client import LLMConfig, LLMError, OpenAICompatLLM
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    with pytest.raises(LLMError, match="base_url"):
+        OpenAICompatLLM(LLMConfig(provider="openai_compat"))
+
+
+def test_openai_compat_translates_dialog(monkeypatch):
+    """Verify the prompt-translation logic without actually calling OpenAI."""
+    from chemaster.agent.llm_client import LLMConfig, OpenAICompatLLM
+    from chemaster.agent.types import (
+        AssistantMessage, Dialog, SystemMessage, ToolCall,
+        ToolMessage, ToolSpec, UserMessage,
+    )
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    llm = OpenAICompatLLM(LLMConfig(provider="openai_compat",
+                                    base_url="http://example/v1"))
+    d = Dialog(
+        messages=[
+            SystemMessage(content="You are helpful."),
+            UserMessage(content="Hi"),
+            AssistantMessage(
+                content="thinking",
+                tool_calls=[ToolCall(id="tc1", name="echo",
+                                     arguments={"x": 1})],
+            ),
+            ToolMessage(content="ok", tool_call_id="tc1", name="echo"),
+        ],
+        tools=[ToolSpec(name="echo", description="x",
+                        input_schema={"type": "object"})],
+    )
+    msgs = llm._translate_dialog(d)
+    assert msgs[0]["role"] == "system"
+    assert msgs[1]["role"] == "user"
+    assert msgs[2]["role"] == "assistant"
+    assert msgs[2]["tool_calls"][0]["function"]["name"] == "echo"
+    assert msgs[3]["role"] == "tool"
+    assert msgs[3]["tool_call_id"] == "tc1"
+
+
+def test_create_llm_routes_qwen_and_deepseek(monkeypatch):
+    from chemaster.agent.llm_client import (
+        DeepSeekLLM, LLMConfig, QwenLLM, create_llm,
+    )
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "k")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "k")
+    assert isinstance(create_llm(LLMConfig(provider="qwen")), QwenLLM)
+    assert isinstance(create_llm(LLMConfig(provider="deepseek")), DeepSeekLLM)
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # 13. MCPToolAdapter type coercion (LLMs send strings for ints/floats/bools)
 # ──────────────────────────────────────────────────────────────────────────
 

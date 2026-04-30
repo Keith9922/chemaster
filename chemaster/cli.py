@@ -74,10 +74,14 @@ def main(ctx: click.Context, version: bool, check_engines: bool, tui: bool) -> N
               help="Where to write per-task artefacts.")
 @click.option("--max-turns", type=int, default=30, show_default=True,
               help="Maximum agent loop iterations.")
-@click.option("--llm-provider", type=click.Choice(["mock", "anthropic", "minimax"]),
+@click.option("--llm-provider",
+              type=click.Choice(["mock", "anthropic", "minimax", "qwen",
+                                 "deepseek", "openai_compat"]),
               default=None,
               help="LLM provider. Defaults to 'anthropic' (if ANTHROPIC_API_KEY) "
-                   "→ 'minimax' (if MINIMAX_API_KEY) → 'mock' (no real LLM).")
+                   "→ 'minimax' (if MINIMAX_API_KEY) → 'qwen' (if "
+                   "DASHSCOPE_API_KEY) → 'deepseek' (if DEEPSEEK_API_KEY) "
+                   "→ 'mock' (no real LLM).")
 @click.option("--llm-model", default=None,
               help="Override LLM model id (e.g. claude-sonnet-4-6, MiniMax-M2.7).")
 @click.option("--no-confirm", is_flag=True,
@@ -114,6 +118,10 @@ def run(
             provider = "anthropic"
         elif os.environ.get("MINIMAX_API_KEY"):
             provider = "minimax"
+        elif os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY"):
+            provider = "qwen"
+        elif os.environ.get("DEEPSEEK_API_KEY"):
+            provider = "deepseek"
         else:
             provider = "mock"
 
@@ -132,6 +140,8 @@ def run(
     default_model = {
         "anthropic": "claude-sonnet-4-6",
         "minimax": "MiniMax-M2.7",
+        "qwen": "qwen-max",
+        "deepseek": "deepseek-chat",
         "mock": "mock",
     }.get(provider, "")
     cfg = LLMConfig(provider=provider, model=llm_model or default_model)

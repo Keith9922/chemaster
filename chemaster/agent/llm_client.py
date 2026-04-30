@@ -319,20 +319,207 @@ class MiniMaxLLM(AnthropicLLM):
 class OpenAICompatLLM(BaseLLM):
     """OpenAI-compatible chat-completions endpoint.
 
-    Stub for the BYO-LLM milestone (Qwen/DeepSeek/local vLLM). Not used in the
-    MVP path; raises if instantiated until enabled.
+    Targets any provider that speaks the OpenAI ``/v1/chat/completions``
+    protocol with function calling — Qwen (DashScope or compat),
+    DeepSeek, local vLLM, llama.cpp's openai-mode server, etc.
+
+    Env-var fallback order: ``config.api_key`` → ``OPENAI_API_KEY`` →
+    ``OPENAI_COMPAT_API_KEY``. Base URL must be supplied via
+    ``config.base_url`` (no sensible default).
+
+    Translates between our internal Dialog / ToolCall / AssistantMessage
+    and the OpenAI-style "tools" + "tool_calls" schema. Tool messages are
+    fed back as ``{role: "tool", tool_call_id: ..., content: ...}``.
     """
 
-    def __init__(self, config: LLMConfig) -> None:  # pragma: no cover
+    def __init__(self, config: LLMConfig) -> None:
         super().__init__(config)
-        raise NotImplementedError(
-            "OpenAICompatLLM not yet wired up. Use MockLLM for tests or "
-            "AnthropicLLM with ANTHROPIC_API_KEY for real runs, or "
-            "MiniMaxLLM with MINIMAX_API_KEY."
+        api_key = (
+            config.api_key
+            or os.environ.get("OPENAI_API_KEY")
+            or os.environ.get("OPENAI_COMPAT_API_KEY")
+        )
+        if not api_key:
+            raise LLMError(
+                "OPENAI_API_KEY (or OPENAI_COMPAT_API_KEY) not set. "
+                "Pass config.api_key or export the env var."
+            )
+        if not config.base_url:
+            raise LLMError(
+                "OpenAICompatLLM requires config.base_url "
+                "(e.g. https://dashscope.aliyuncs.com/compatible-mode/v1)."
+            )
+        try:
+            from openai import OpenAI            # noqa: F401
+        except ImportError as exc:  # pragma: no cover
+            raise LLMError(
+                "openai SDK not installed. Run: pip install openai>=1.0"
+            ) from exc
+        from openai import OpenAI
+        self._client = OpenAI(api_key=api_key, base_url=config.base_url)
+
+    def query(self, dialog: Dialog) -> AssistantMessage:
+        messages = self._translate_dialog(dialog)
+        tools = [self._tool_to_openai(t) for t in dialog.tools] if dialog.tools else None
+
+        try:
+            req: dict[str, Any] = {
+                "model": self.config.model,
+                "messages": messages,
+                "max_tokens": self.config.max_tokens,
+                "temperature": self.config.temperature,
+            }
+            if tools:
+                req["tools"] = tools
+            response = self._client.chat.completions.create(**req)
+        except Exception as exc:
+            msg = str(exc).lower()
+            if ("context" in msg and ("length" in msg or "window" in msg)) \
+                    or "maximum context" in msg:
+                raise ContextOverflowError(str(exc)) from exc
+            raise LLMError(str(exc)) from exc
+
+        return self._translate_response(response)
+
+    @staticmethod
+    def _tool_to_openai(spec) -> dict:
+        """Wrap our ToolSpec into the OpenAI tools schema."""
+        return {
+            "type": "function",
+            "function": {
+                "name": spec.name,
+                "description": spec.description,
+                "parameters": spec.input_schema,
+            },
+        }
+
+    def _translate_dialog(self, dialog: Dialog) -> list[dict]:
+        messages: list[dict] = []
+        for msg in dialog.messages:
+            if msg.role == Role.SYSTEM:
+                messages.append({"role": "system", "content": msg.content})
+            elif msg.role == Role.USER:
+                messages.append({"role": "user", "content": msg.content})
+            elif msg.role == Role.ASSISTANT:
+                entry: dict = {"role": "assistant"}
+                if msg.content:
+                    entry["content"] = msg.content
+                else:
+                    entry["content"] = None
+                if msg.tool_calls:
+                    entry["tool_calls"] = [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.name,
+                                "arguments": json.dumps(tc.arguments,
+                                                       ensure_ascii=False),
+                            },
+                        }
+                        for tc in msg.tool_calls
+                    ]
+                messages.append(entry)
+            elif msg.role == Role.TOOL:
+                tool_msg: ToolMessage = msg  # type: ignore[assignment]
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_msg.tool_call_id,
+                    "content": tool_msg.content,
+                })
+        return messages
+
+    def _translate_response(self, response: Any) -> AssistantMessage:
+        choice = response.choices[0]
+        message = choice.message
+        content = message.content or ""
+        tool_calls: list[ToolCall] = []
+        for tc in (getattr(message, "tool_calls", None) or []):
+            try:
+                args = json.loads(tc.function.arguments)
+                if not isinstance(args, dict):
+                    args = {}
+            except (json.JSONDecodeError, TypeError):
+                args = {}
+            tool_calls.append(ToolCall(
+                id=tc.id, name=tc.function.name, arguments=args,
+            ))
+        meta: dict[str, Any] = {
+            "stop_reason": getattr(choice, "finish_reason", None),
+            "model": getattr(response, "model", self.config.model),
+        }
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            meta["usage"] = {
+                "input_tokens": getattr(usage, "prompt_tokens", 0),
+                "output_tokens": getattr(usage, "completion_tokens", 0),
+            }
+        return AssistantMessage(
+            content=content, tool_calls=tool_calls, meta=meta,
         )
 
-    def query(self, dialog: Dialog) -> AssistantMessage:  # pragma: no cover
-        raise NotImplementedError
+
+# Convenience subclasses for common OpenAI-compatible providers.
+
+class QwenLLM(OpenAICompatLLM):
+    """Alibaba Qwen via DashScope's OpenAI-compatible endpoint."""
+
+    DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    DEFAULT_MODEL = "qwen-max"
+
+    def __init__(self, config: LLMConfig) -> None:
+        api_key = (config.api_key
+                   or os.environ.get("DASHSCOPE_API_KEY")
+                   or os.environ.get("QWEN_API_KEY")
+                   or os.environ.get("OPENAI_API_KEY"))
+        if not api_key:
+            raise LLMError(
+                "DASHSCOPE_API_KEY (or QWEN_API_KEY) not set."
+            )
+        # LLMConfig.model defaults to an Anthropic id; swap unless the user
+        # supplied a Qwen-prefixed id.
+        model = config.model
+        if not model or not model.startswith(("qwen", "Qwen")):
+            model = self.DEFAULT_MODEL
+        cfg = LLMConfig(
+            provider="qwen",
+            model=model,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            api_key=api_key,
+            base_url=config.base_url or self.DEFAULT_BASE_URL,
+            timeout_s=config.timeout_s,
+            extra=config.extra,
+        )
+        super().__init__(cfg)
+
+
+class DeepSeekLLM(OpenAICompatLLM):
+    """DeepSeek via its OpenAI-compatible endpoint."""
+
+    DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
+    DEFAULT_MODEL = "deepseek-chat"
+
+    def __init__(self, config: LLMConfig) -> None:
+        api_key = (config.api_key
+                   or os.environ.get("DEEPSEEK_API_KEY")
+                   or os.environ.get("OPENAI_API_KEY"))
+        if not api_key:
+            raise LLMError("DEEPSEEK_API_KEY not set.")
+        model = config.model
+        if not model or not model.startswith("deepseek"):
+            model = self.DEFAULT_MODEL
+        cfg = LLMConfig(
+            provider="deepseek",
+            model=model,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            api_key=api_key,
+            base_url=config.base_url or self.DEFAULT_BASE_URL,
+            timeout_s=config.timeout_s,
+            extra=config.extra,
+        )
+        super().__init__(cfg)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -349,6 +536,10 @@ def create_llm(config: LLMConfig | None = None) -> BaseLLM:
         return AnthropicLLM(cfg)
     if cfg.provider == "minimax":
         return MiniMaxLLM(cfg)
+    if cfg.provider == "qwen":
+        return QwenLLM(cfg)
+    if cfg.provider == "deepseek":
+        return DeepSeekLLM(cfg)
     if cfg.provider == "openai_compat":
         return OpenAICompatLLM(cfg)
     raise LLMError(f"Unknown LLM provider: {cfg.provider}")
