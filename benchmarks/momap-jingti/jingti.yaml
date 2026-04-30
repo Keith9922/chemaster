@@ -1,0 +1,35 @@
+name: jingti
+full_name: "C24H8F8I4N2 — heavy-atom diiodofluorinated bipyridyl chromophore"
+smiles: ""
+charge: 0
+multiplicity: 1
+n_atoms: 46
+class: TADF / phosphorescence emitter (heavy-atom effect via 4 I)
+
+source: |
+  师姐 (jingti) MOMAP benchmark dataset. Geometry extracted from
+  benchmarks/momap-jingti/raw/jingti-00TDopt2(1).com (S2 TDDFT-optimized
+  by Gaussian + B3LYP/def2-SVP + GD3BJ).
+
+literature_values:
+  s0_energy_hartree: -3017.476160
+  s1_energy_hartree: -3017.350811
+  s2_energy_hartree: -3017.337405
+  t1_energy_hartree: -3017.384969
+  s1_to_s0_kr_per_s: 8.16e8
+  s2_s1_kic_per_s: 6.12e11
+  s1_t1_kisc_per_s: 1.17e9
+  s1_t1_soc_cm_inv: 5.56
+  s2_t1_soc_cm_inv: 13.93
+  source: |
+    Internal reference values, hand-curated by 师姐 from MOMAP outputs.
+    Calibrated by Gaussian B3LYP/def2-SVP + GD3BJ + MOMAP TVCF.
+
+notes: |
+  - This is a TADF / heavy-atom emitter; the 4 I atoms enhance SOC
+    (kisc on the 10⁹ /s scale).
+  - Reproducing the full kr/kic/kisc requires:
+      * S0 / S1 / S2 / T1 geometry optimizations (need TDDFT-opt MCP, on V2 roadmap)
+      * NACME calculations (not in any current ChemMaster MCP)
+      * MOMAP EVC + TVCF post-processing (chem.momap MCP skeleton being added)
+  - ChemMaster (V2.0a1) currently can do steps 1-2 (S0 opt + vertical TDDFT).

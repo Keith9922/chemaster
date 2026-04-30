@@ -1,0 +1,75 @@
+name: momap-jingti
+description: "师姐提供的 MOMAP 发光速率验证数据，数值来自截图人工整理。"
+formula: C24H8F8I4N2
+source_files:
+  raw_dir: benchmarks/momap-jingti/raw
+  gaussian_inputs:
+    - jingti-00TDopt2(1).com
+    - Tjingti-00TDopt1(1).com
+    - Tjingti-00TDopt2(1).com
+    - jingti-00optnacmes1(1).com
+    - jingti-00optnacmes2(1).com
+  manual_pdf: momap用户手册-中文版鸿之微(2)(1).pdf
+  screenshot_table: 6790f84e09ad915db6b8b1a5620ced01.png
+  screenshot_dipole: 87f585b1f0ea1d39983b487e5a41d319.jpg
+
+level:
+  quantum_software: Gaussian
+  postprocess_software: MOMAP
+  method: B3LYP
+  basis: def2SVP
+  dispersion: GD3BJ
+
+states:
+  s0:
+    energy_hartree: -3017.476160
+  s1:
+    energy_hartree: -3017.350811
+  s2:
+    energy_hartree: -3017.337405
+  t1:
+    energy_hartree: -3017.384969
+
+reference_values:
+  radiative_rate:
+    s1_to_s0:
+      aee_hartree: 0.125349
+      transition_dipole_abs_au: 0.103441
+      transition_dipole_emi_au: 0.119164
+      au_to_debye_factor: 2.5417
+      transition_dipole_abs_debye_as_table: 0.262915
+      transition_dipole_emi_debye_as_table: 0.302879
+      kr_s_inv: 8.15944431e8
+    t1_to_s0:
+      aee_hartree: 0.091191
+      transition_dipole_abs_debye_as_table: 1.000000
+      transition_dipole_emi_debye_as_table: 0.002502
+      kr_s_inv: 1.20346264e5
+
+  internal_conversion:
+    s2_to_s1:
+      aee_hartree: 0.013406
+      nacme_log: S1-nacme.log
+      kic_s_inv: 0.61196150e12
+    s1_to_s2:
+      aee_hartree: -0.013406
+      nacme_log: S2-nacme.log
+      kic_s_inv: 0.65377196e12
+
+  intersystem_crossing:
+    s1_to_t1:
+      aee_hartree: 0.034158
+      soc_cm_inv: 5.560000
+      kisc_s_inv: 1.16628356e9
+      alternate_kisc_s_inv: 1.13886766e9
+    s2_to_t1:
+      aee_hartree: 0.047564
+      soc_cm_inv: 13.930000
+      kisc_s_inv: 7.17682906e9
+      alternate_kisc_s_inv: 6.51503871e9
+
+notes:
+  - "截图中 2.5417 是 atomic unit 到 Debye 的转换因子。"
+  - "MOMAP 手册示例对 Dip. S. 列使用 sqrt(Dip.S.) * 2.5417；截图表格看起来是 raw_value * 2.5417，需要后续结合 Gaussian log 确认 raw_value 是否已经是偶极矩模长而不是平方。"
+  - "当前只有 Gaussian 输入和截图参考值，没有 Gaussian 输出 log/fchk，也没有 MOMAP evc/log 输出，因此现在只能做输入解析和工作流规划验证，不能完整数值复现 kr/kic/kisc。"
+

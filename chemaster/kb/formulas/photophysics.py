@@ -71,6 +71,87 @@ def kf_strickler_berg(
     return 0.677 * refractive_index ** 2 * (energy_cm_inv ** 2) * oscillator_strength
 
 
+def kr_einstein_from_dipole(
+    energy_eV: float,
+    transition_dipole_debye: float,
+    refractive_index: float = 1.0,
+) -> float:
+    """Einstein-A 形式的辐射速率，直接吃跃迁偶极矩 µ (Debye).
+
+    k_F = (8π² · n · µ²·E³) / (3 · ε₀ · h · c³ · ℏ²)
+
+    简化数值版（µ in Debye, E in eV）：
+        k_F [s⁻¹] ≈ 2.143e10 · n · µ² · E³
+
+    本函数与 MOMAP 用法一致：MOMAP TVCF 输出的 EDMA (Electric Dipole
+    transition Moment Absorption / Emission) 单位是 Debye, 平方后乘前因子。
+
+    Args:
+        energy_eV: 跃迁能，eV
+        transition_dipole_debye: |µ| 长度模长，Debye
+        refractive_index: 介质折射率，默认 1（气相）
+
+    Returns:
+        辐射速率 k_F，s⁻¹
+    """
+    return 2.142935e10 * refractive_index * (transition_dipole_debye ** 2) * (energy_eV ** 3)
+
+
+def kisc_marcus(
+    delta_E_ST_eV: float,
+    soc_cm_inv: float,
+    reorganization_energy_eV: float,
+    temperature_K: float = 298.15,
+) -> float:
+    """Marcus 经典模型估算 ISC (S1 → T1) 速率。
+
+    与 krisc_marcus 的公式一致；区别是 ΔE 的符号约定：
+    - S1 → T1（正向 ISC）：ΔE = E(T1) − E(S1) < 0（T1 通常低于 S1）
+    - 但 Marcus 模型对 ΔE 平方依赖，所以两个方向用同一公式都可以。
+    本函数把传入的 ΔE_ST 当作 |ΔE|（默认 S1−T1 的差），保证对称。
+
+    Args:
+        delta_E_ST_eV: |ΔE_ST| = |E(S1) − E(T1)|，eV
+        soc_cm_inv: <S1|H_SO|T1> 矩阵元，cm⁻¹
+        reorganization_energy_eV: 重组能 λ，eV
+        temperature_K: 温度
+
+    Returns:
+        k_ISC，s⁻¹
+    """
+    # Just call krisc_marcus with the absolute energy gap — Marcus is
+    # symmetric in ΔE.
+    return krisc_marcus(abs(delta_E_ST_eV), soc_cm_inv,
+                       reorganization_energy_eV, temperature_K)
+
+
+def kic_marcus(
+    delta_E_eV: float,
+    nacme_cm_inv: float,
+    reorganization_energy_eV: float,
+    temperature_K: float = 298.15,
+) -> float:
+    """Marcus 经典近似的内转换速率 (S2 → S1 / S1 → S2 等同自旋态间).
+
+    数学上和 krisc/kisc 同一公式，把 SOC 矩阵元换成 NACME（非绝热耦合矩阵元）：
+
+        k_IC = (2π / ℏ) · |H_NACME|² · √(1/(4π λ kBT)) · exp(−(ΔE+λ)²/(4λkBT))
+
+    NACME 的单位与 SOC 一样可以 cm⁻¹（MOMAP / Gaussian 输出常用）。
+
+    Args:
+        delta_E_eV: ΔE = E(initial) − E(final)，eV（同自旋）
+        nacme_cm_inv: |H_NACME| 矩阵元，cm⁻¹
+        reorganization_energy_eV: 重组能 λ，eV
+        temperature_K: 温度
+
+    Returns:
+        k_IC，s⁻¹
+    """
+    return krisc_marcus(abs(delta_E_eV), nacme_cm_inv,
+                       reorganization_energy_eV, temperature_K)
+
+
 def plqy(kf: float, knr: float, kisc: float = 0.0) -> float:
     """光致发光量子产率。
 

@@ -103,12 +103,17 @@ _BUILTIN_MOLECULES: dict[str, dict[str, Any]] = {
 
 
 def _load_tadf_anchors() -> dict[str, dict[str, Any]]:
-    """Lazy-load TADF anchor molecules from benchmarks/tadf-literature/*.xyz.
+    """Lazy-load benchmark molecules from benchmarks/*/*.xyz.
 
-    These are the "gold standard" 5-10 published TADF emitters used as
-    smoke-test inputs for the agent. Pre-computed MMFF-optimized geometries
-    so the LLM doesn't have to wait through (and fail on) RDKit ETKDG
-    embedding for 80+ atom molecules.
+    Scans every sub-directory under ``benchmarks/`` for ``*.xyz`` files
+    and registers them by their stem (case-insensitive). A matching
+    ``<name>.yaml`` next to the xyz is parsed for charge / multiplicity /
+    smiles / formula. Pre-computed geometries skip slow RDKit ETKDG
+    embeddings for 80+ atom molecules.
+
+    Currently picks up:
+      - benchmarks/tadf-literature/{4CzIPN,DMAC-BP,DMAC-DPS}.xyz
+      - benchmarks/momap-jingti/jingti.xyz (师姐 reference, 46 atoms)
     """
     from pathlib import Path
     import yaml
@@ -120,18 +125,20 @@ def _load_tadf_anchors() -> dict[str, dict[str, Any]]:
     )
     if repo_root is None:
         return anchors
-    bench_dir = repo_root / "benchmarks" / "tadf-literature"
-    if not bench_dir.is_dir():
+    bench_root = repo_root / "benchmarks"
+    if not bench_root.is_dir():
         return anchors
 
-    for xyz_file in sorted(bench_dir.glob("*.xyz")):
+    for xyz_file in sorted(bench_root.rglob("*.xyz")):
+        # Skip "raw" / scratch directories.
+        if "raw" in xyz_file.parts:
+            continue
         name = xyz_file.stem
         try:
             xyz = xyz_file.read_text()
         except Exception:
             continue
-        # Try to find a matching YAML metadata file for SMILES / charge etc.
-        meta_file = bench_dir / f"{name}.yaml"
+        meta_file = xyz_file.with_suffix(".yaml")
         smiles = ""
         formula = ""
         charge = 0
@@ -142,7 +149,6 @@ def _load_tadf_anchors() -> dict[str, dict[str, Any]]:
                 smiles = meta.get("smiles", "") or ""
                 charge = int(meta.get("charge", 0) or 0)
                 multiplicity = int(meta.get("multiplicity", 1) or 1)
-                # formula: prefer YAML, else infer from name
                 formula = meta.get("name", "") or meta.get("formula", "") or ""
             except Exception:
                 pass

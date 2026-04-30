@@ -154,6 +154,32 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_long_running=True,
     ),
 
+    # calc_gaussian — read user-supplied Gaussian inputs (.com / .gjf) ───
+    _ToolDecl(
+        exposed_name="gaussian_parse_input",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="parse_input",
+        description=(
+            "Parse a Gaussian .com / .gjf input file. Use when the user "
+            "hands you a Gaussian input (e.g. legacy benchmark data) and "
+            "you need to understand what task it represents (sp / opt / "
+            "td_opt / nacme / etc.) plus the molecule. Returns a "
+            "structured dict + a suggested ChemMaster workflow mapping."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="gaussian_run",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="run",
+        description=(
+            "Drive the g16 / g09 binary on a Gaussian input file. Only "
+            "use when Gaussian is licensed and on PATH; otherwise prefer "
+            "calc_psi4_* / calc_orca_*."
+        ),
+        is_long_running=True,
+    ),
+
     # calc_orca (academic-free; faster than psi4 for large systems) ──────
     _ToolDecl(
         exposed_name="calc_orca_single_point",
