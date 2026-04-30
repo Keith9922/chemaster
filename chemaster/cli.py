@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -39,8 +40,10 @@ console = Console()
 @click.group(invoke_without_command=True)
 @click.option("--version", is_flag=True, help="Print version and exit.")
 @click.option("--check-engines", is_flag=True, help="Check installed compute engines.")
+@click.option("--tui", is_flag=True,
+              help="Launch the experimental Textual TUI (beta).")
 @click.pass_context
-def main(ctx: click.Context, version: bool, check_engines: bool) -> None:
+def main(ctx: click.Context, version: bool, check_engines: bool, tui: bool) -> None:
     """ChemMaster — AI agent for computational chemistry."""
     if version:
         click.echo(f"chemaster {__version__}")
@@ -48,13 +51,16 @@ def main(ctx: click.Context, version: bool, check_engines: bool) -> None:
     if check_engines:
         _check_engines()
         return
-    if ctx.invoked_subcommand is None:
-        # Default: TUI (when implemented). Until then, show help.
+    if tui:
         try:
             from chemaster.tui.app import run_tui
             run_tui()
-        except (ImportError, NotImplementedError):
-            click.echo(ctx.get_help())
+        except Exception as exc:
+            click.secho(f"TUI failed to launch: {exc}", fg="red", err=True)
+            sys.exit(1)
+        return
+    if ctx.invoked_subcommand is None:
+        _interactive_repl()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -153,13 +159,33 @@ def run(
         border_style="cyan",
     ))
 
+    def _on_step(step, n, total):
+        ass = step.assistant_message
+        if not ass or not ass.tool_calls:
+            return
+        for tc in ass.tool_calls:
+            obs_first = ""
+            for tr in step.tool_responses:
+                if tr.tool_call_id == tc.id:
+                    obs_first = (tr.content or "").splitlines()[0][:90]
+                    break
+            mark = "·" if not obs_first else ("✗" if any(
+                tr.is_error for tr in step.tool_responses
+                if tr.tool_call_id == tc.id) else "✓")
+            console.print(
+                f"  [dim]step {n:>2}/{total}[/dim]  "
+                f"[cyan]{tc.name}[/cyan]  {mark}  "
+                f"[dim]{obs_first}[/dim]"
+            )
+
     try:
-        traj = agent.run(TaskInstance(description=intent))
+        traj = agent.run(TaskInstance(description=intent), on_step=_on_step)
     except Exception as exc:
-        click.secho(f"Agent crashed: {type(exc).__name__}: {exc}", fg="red", err=True)
+        _render_agent_error(exc, agent_cfg.runs_dir, getattr(agent, "trajectory", None))
         sys.exit(3)
 
     _print_summary(traj, agent_cfg.runs_dir)
+    _write_markdown_report(traj, agent_cfg.runs_dir)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -296,15 +322,166 @@ def tools_list() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# init / eval (legacy placeholders)
+# show / replay / init / eval
 # ══════════════════════════════════════════════════════════════════════════════
 
 
 @main.command()
+@click.argument("task_id")
+@click.option("--runs-dir", default="./runs", show_default=True)
+def show(task_id: str, runs_dir: str) -> None:
+    """Pretty-print a previous task's trajectory (without re-running)."""
+    task_dir = Path(runs_dir) / task_id
+    traj_path = task_dir / "trajectory.json"
+    if not traj_path.exists():
+        click.secho(f"No trajectory at {traj_path}", fg="red", err=True)
+        click.echo("Available task ids:")
+        for d in sorted(Path(runs_dir).glob("*/")):
+            click.echo(f"  {d.name}")
+        sys.exit(1)
+    traj = json.loads(traj_path.read_text())
+
+    style = {"completed": "green", "failed": "red",
+             "waiting_for_input": "yellow"}.get(traj["status"], "white")
+    console.print(Panel(
+        f"[bold]Status:[/bold] [{style}]{traj['status']}[/{style}]\n"
+        f"[bold]Started:[/bold] {traj.get('started_at')}\n"
+        f"[bold]Finished:[/bold] {traj.get('finished_at')}\n"
+        f"[bold]Steps:[/bold] {len(traj.get('steps', []))}\n"
+        f"[bold]Path:[/bold] {traj_path}",
+        title=f"Task {task_id}",
+        border_style=style,
+    ))
+
+    table = Table(title="Steps", show_lines=False)
+    table.add_column("#", justify="right", style="dim", width=3)
+    table.add_column("tool", style="cyan", width=28)
+    table.add_column("ok", width=4)
+    table.add_column("snippet")
+    for i, step in enumerate(traj.get("steps", []), 1):
+        ass = step.get("assistant_message") or {}
+        tcs = ass.get("tool_calls") or []
+        for tc in tcs:
+            name = tc.get("name", "?")
+        if not tcs:
+            table.add_row(str(i), "(no tool call)", "—", "—")
+            continue
+        for tc in tcs:
+            for tr in step.get("tool_responses", []):
+                ok = "✓" if not tr.get("is_error") else "✗"
+                snippet = (tr.get("content") or "")[:80].replace("\n", " ")
+                table.add_row(str(i), tc["name"], ok, snippet)
+                break
+            else:
+                table.add_row(str(i), tc["name"], "·", "(no response yet)")
+    console.print(table)
+
+    payload = traj.get("finish_payload") or {}
+    if payload.get("summary"):
+        console.print(Panel(payload["summary"], title="Summary",
+                            border_style="cyan"))
+    if payload.get("key_results"):
+        kr = Table(title="Key results")
+        kr.add_column("name"); kr.add_column("value")
+        for k, v in payload["key_results"].items():
+            kr.add_row(str(k), str(v))
+        console.print(kr)
+
+
+@main.command()
+@click.argument("task_id")
+@click.option("--runs-dir", default="./runs", show_default=True)
+def replay(task_id: str, runs_dir: str) -> None:
+    """Re-run a previous task using its persisted user intent.
+
+    Useful for: regression testing after a tool/MCP change, sharing a run
+    with a collaborator (point them at the same task_id), or recomputing
+    after a system upgrade.
+    """
+    task_dir = Path(runs_dir) / task_id
+    traj_path = task_dir / "trajectory.json"
+    if not traj_path.exists():
+        click.secho(f"No trajectory at {traj_path}", fg="red", err=True)
+        sys.exit(1)
+    traj = json.loads(traj_path.read_text())
+    # Reconstruct the original user prompt: it's in the first user message.
+    intent = None
+    # The trajectory schema doesn't include the dialog directly; for V2 we
+    # store it in step assistant messages, so the easiest source of truth
+    # is the task description. Fall back to the meta key.
+    intent = (traj.get("meta") or {}).get("user_intent")
+    if not intent:
+        click.secho(
+            f"Task {task_id} has no recoverable user_intent on the "
+            f"trajectory. Re-run manually with `chemaster run \"…\"`.",
+            fg="yellow", err=True,
+        )
+        sys.exit(2)
+    click.echo(f"Replaying task {task_id}: {intent}")
+    ctx = click.get_current_context()
+    ctx.invoke(run, intent=intent, runs_dir=runs_dir, max_turns=30,
+               llm_provider=None, llm_model=None,
+               no_confirm=True, enabled_tool=())
+
+
+@main.command()
 def init() -> None:
-    """First-time configuration scaffold (placeholder)."""
-    click.echo("chemaster init: scaffold not yet implemented in V2.")
-    click.echo("For now, just `export ANTHROPIC_API_KEY=…` and run `chemaster run …`.")
+    """Interactive first-time configuration wizard.
+
+    Walks you through setting up:
+      - LLM API key (Anthropic / MiniMax)
+      - Default runs directory
+      - Default LLM provider
+
+    Writes to ~/.chemaster/config.toml (created if missing). The agent will
+    pick up the values via env-var fallback OR by sourcing ~/.chemaster/env.
+    """
+    config_dir = Path.home() / ".chemaster"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    env_path = config_dir / "env"
+
+    console.print(Panel(
+        "[bold]ChemMaster setup wizard[/bold]\n"
+        "We'll configure your LLM provider and default settings. Skip any "
+        "prompt by pressing Enter.",
+        title="Welcome",
+        border_style="cyan",
+    ))
+
+    provider = click.prompt(
+        "LLM provider [anthropic / minimax / mock]",
+        default="minimax", type=click.Choice(["anthropic", "minimax", "mock"]),
+    )
+    api_key = ""
+    if provider == "anthropic":
+        api_key = click.prompt("ANTHROPIC_API_KEY", hide_input=True, default="")
+    elif provider == "minimax":
+        api_key = click.prompt("MINIMAX_API_KEY", hide_input=True, default="")
+
+    runs_dir = click.prompt("Default runs directory",
+                           default=str(Path.cwd() / "runs"))
+
+    lines = [
+        f"# Generated by `chemaster init` on {time.strftime('%Y-%m-%d %H:%M')}",
+        f"export CHEMASTER_LLM_PROVIDER={provider}",
+        f"export CHEMASTER_RUNS_DIR={runs_dir}",
+    ]
+    if provider == "anthropic" and api_key:
+        lines.append(f"export ANTHROPIC_API_KEY={api_key}")
+    if provider == "minimax" and api_key:
+        lines.append(f"export MINIMAX_API_KEY={api_key}")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    env_path.chmod(0o600)
+
+    console.print(Panel(
+        f"Wrote [bold]{env_path}[/bold] (mode 0600).\n\n"
+        "Add this to your shell rc:\n\n"
+        f"    [cyan]source {env_path}[/cyan]\n\n"
+        "Then run [bold]chemaster --check-engines[/bold] to verify the "
+        "calculation backends, and [bold]chemaster run \"<intent>\"[/bold] "
+        "to fire your first agent task.",
+        title="Done", border_style="green",
+    ))
 
 
 @main.command(name="eval")
@@ -317,6 +494,126 @@ def eval_cmd(yaml_path: str) -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 # Helpers
 # ══════════════════════════════════════════════════════════════════════════════
+
+
+def _render_agent_error(exc: Exception, runs_dir: Path, traj=None) -> None:
+    """Pretty-print an agent crash with hints + trajectory pointer.
+
+    Tells the user what likely went wrong and where to look. Tries to map
+    common exception types to actionable suggestions.
+    """
+    name = type(exc).__name__
+    msg = str(exc)
+
+    hints: list[str] = []
+    msg_lower = msg.lower()
+    if "anthropic" in msg_lower or "api_key" in msg_lower or "401" in msg:
+        hints.append("Check ANTHROPIC_API_KEY / MINIMAX_API_KEY is set "
+                     "and not expired.")
+    if "context" in msg_lower and "length" in msg_lower:
+        hints.append("Context overflow — try fewer enabled tools, "
+                     "or break the task into smaller steps.")
+    if "timeout" in msg_lower or "timed out" in msg_lower:
+        hints.append("LLM API timeout — try a smaller model, fewer tokens, "
+                     "or check your network.")
+    if "connection" in msg_lower or "ssl" in msg_lower:
+        hints.append("Network/TLS error — verify connectivity and that "
+                     "no proxy is interfering.")
+    if not hints:
+        hints.append("Unexpected error. Re-run with --max-turns lower "
+                     "to isolate the failing step.")
+
+    body_lines = [f"[bold red]{name}[/bold red]: {msg}", ""]
+    body_lines.append("[bold]Hints[/bold]:")
+    for h in hints:
+        body_lines.append(f"  • {h}")
+    if traj is not None and traj.task_id:
+        body_lines.append("")
+        body_lines.append(
+            f"[bold]Inspect:[/bold] {runs_dir / traj.task_id / 'trajectory.json'}"
+        )
+    console.print(Panel("\n".join(body_lines),
+                        title="Agent error", border_style="red"))
+
+
+def _interactive_repl() -> None:
+    """No-args ``chemaster`` drops into a text-mode REPL.
+
+    Lightweight conversational interface backed by ChemAgent. Picks the
+    LLM provider from env vars; if no key set, prints a banner with quick
+    setup hints instead of an error.
+    """
+    import os
+
+    has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    has_minimax = bool(os.environ.get("MINIMAX_API_KEY"))
+
+    console.print(Panel(
+        "[bold cyan]ChemMaster[/bold cyan] — natural-language computational "
+        "chemistry agent\n\n"
+        f"version  [dim]{__version__}[/dim]\n"
+        f"provider [dim]{'anthropic' if has_anthropic else ('minimax' if has_minimax else 'NONE — set ANTHROPIC_API_KEY or MINIMAX_API_KEY')}[/dim]\n\n"
+        "Type a chemistry task in plain language. Examples:\n"
+        "  [cyan]Compute the energy of methane[/cyan]\n"
+        "  [cyan]Optimize benzene at B3LYP/def2-SVP and run TDDFT[/cyan]\n"
+        "  [cyan]ΔE_ST of DMAC-BP at TDA-B3LYP[/cyan]\n\n"
+        "Type [yellow]/help[/yellow] for commands, [yellow]/exit[/yellow] "
+        "to leave.",
+        title="ChemMaster REPL",
+        border_style="cyan",
+    ))
+
+    if not (has_anthropic or has_minimax):
+        console.print("[red]No LLM API key found.[/red] Run "
+                      "[cyan]chemaster init[/cyan] to set one up, then re-run.")
+        return
+
+    from chemaster.agent.agent import AgentConfig, ChemAgent
+    from chemaster.agent.llm_client import LLMConfig, create_llm
+    from chemaster.agent.tool_loader import build_default_registry
+    from chemaster.agent.types import TaskInstance
+
+    provider = "anthropic" if has_anthropic else "minimax"
+    default_model = {"anthropic": "claude-sonnet-4-6",
+                    "minimax": "MiniMax-M2.7"}[provider]
+    llm = create_llm(LLMConfig(provider=provider, model=default_model))
+    registry = build_default_registry()
+    cfg = AgentConfig(
+        max_turns=30,
+        runs_dir=Path(os.environ.get("CHEMASTER_RUNS_DIR", "./runs")),
+        confirm_callback=_interactive_confirm,
+    )
+    agent = ChemAgent(llm=llm, tools=registry, config=cfg)
+
+    while True:
+        try:
+            line = console.input("[bold cyan]chemaster>[/bold cyan] ").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            break
+        if not line:
+            continue
+        if line in ("/exit", "/quit", "/q"):
+            break
+        if line == "/help":
+            console.print(
+                "[cyan]/help[/cyan]    show this message\n"
+                "[cyan]/tools[/cyan]   list available tools\n"
+                "[cyan]/exit[/cyan]    leave the REPL\n"
+                "Anything else is sent to the agent as a task."
+            )
+            continue
+        if line == "/tools":
+            for name in sorted(registry.names()):
+                console.print(f"  [dim]{name}[/dim]")
+            continue
+
+        try:
+            traj = agent.run(TaskInstance(description=line))
+            _print_summary(traj, cfg.runs_dir)
+            _write_markdown_report(traj, cfg.runs_dir)
+        except Exception as exc:
+            console.print(f"[red]Agent crashed:[/red] {type(exc).__name__}: {exc}")
 
 
 def _check_engines() -> None:
@@ -356,6 +653,88 @@ def _interactive_confirm(tool_name: str, args: dict, reason: str) -> bool:
         show_default=False,
     ).strip().lower()
     return not answer.startswith("d")
+
+
+def _write_markdown_report(traj, runs_dir: Path) -> None:
+    """Write runs/<task_id>/report.md — a paper-ready summary of the run.
+
+    The report has three sections: header (status / steps / wall time),
+    agent summary (the finish payload narrative), and per-step trace
+    (tool name + first 200 chars of the observation).
+    """
+    if traj is None or not traj.task_id:
+        return
+    task_dir = runs_dir / traj.task_id
+    if not task_dir.exists():
+        return
+    report_path = task_dir / "report.md"
+
+    lines: list[str] = []
+    lines.append(f"# ChemMaster run report — `{traj.task_id}`")
+    lines.append("")
+    lines.append(f"- **Status**: {traj.status}")
+    lines.append(f"- **Started**: {traj.started_at}")
+    if traj.finished_at:
+        lines.append(f"- **Finished**: {traj.finished_at}")
+    lines.append(f"- **Steps**: {len(traj.steps)}")
+    lines.append("")
+
+    # Pull finish summary if present.
+    summary = ""
+    key_results: dict | None = None
+    if traj.steps:
+        last = traj.steps[-1]
+        if last.assistant_message and last.assistant_message.tool_calls:
+            tc = last.assistant_message.tool_calls[0]
+            if tc.name == "finish":
+                summary = tc.arguments.get("summary", "")
+                key_results = tc.arguments.get("key_results")
+    if summary:
+        lines.append("## Summary")
+        lines.append("")
+        lines.append(summary)
+        lines.append("")
+    if key_results:
+        lines.append("## Key results")
+        lines.append("")
+        lines.append("| name | value |")
+        lines.append("|---|---|")
+        for k, v in key_results.items():
+            lines.append(f"| {k} | {v} |")
+        lines.append("")
+
+    # Per-step trace
+    lines.append("## Step trace")
+    lines.append("")
+    for i, step in enumerate(traj.steps, 1):
+        ass = step.assistant_message
+        if not ass or not ass.tool_calls:
+            lines.append(f"### Step {i}: (no tool call)")
+            continue
+        for tc in ass.tool_calls:
+            lines.append(f"### Step {i}: `{tc.name}`")
+            lines.append("")
+            args_str = json.dumps(tc.arguments, ensure_ascii=False, default=str)
+            if len(args_str) > 400:
+                args_str = args_str[:400] + " …(truncated)"
+            lines.append(f"**Args**: `{args_str}`")
+            lines.append("")
+            for tr in step.tool_responses:
+                obs = (tr.content or "")[:600]
+                ok_mark = "✗" if tr.is_error else "✓"
+                lines.append(f"**Result** ({ok_mark}):")
+                lines.append("")
+                lines.append("```")
+                lines.append(obs)
+                lines.append("```")
+                lines.append("")
+            break  # one tool call per step in this report style
+
+    lines.append("---")
+    lines.append("")
+    lines.append(f"*Generated by ChemMaster {__version__} at "
+                 f"{time.strftime('%Y-%m-%d %H:%M:%S')}*")
+    report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _print_summary(traj, runs_dir: Path) -> None:

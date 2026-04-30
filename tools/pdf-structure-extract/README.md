@@ -1,27 +1,56 @@
 # Tools: PDF Structure Extraction
 
-> 这是 ChemMaster 升级前的独立工具，目前作为 `chem.pdf` MCP 的后端被复用。
->
-> **TODO Phase 5**: 把根目录的 `scripts/annotate_pdf_smiles.py` 等脚本迁移到此处，
-> 并在 `chemaster/mcp/pdf/server.py` 中包装为 MCP 工具。
+> Pre-existing tools for converting scientific-paper PDFs into chemical
+> structure images and SMILES strings. Used by the `chem.pdf` MCP as the
+> back-end for the "PDF → recompute" pipeline.
 
-## 历史背景
+## Files
 
-- 原始 README 见仓库历史 commits（升级前的 `README.md`）。
-- 现有产物保留在 `output/chem_pdf/` 与 `output/chemical_structure_candidates/`。
-- 主要脚本在 `scripts/annotate_pdf_smiles.py` 与 `scripts/extract_chemical_structure_candidates.py`。
+| File | Purpose |
+|---|---|
+| [`extract_chemical_structure_candidates.py`](extract_chemical_structure_candidates.py) | Crop candidate structure images out of a PDF (PyMuPDF + heuristics) |
+| [`annotate_pdf_smiles.py`](annotate_pdf_smiles.py) | Run DECIMER on candidates, validate via RDKit, write SMILES annotations back to the PDF |
 
-## 当前可用命令（Phase 5 前不变）
+## Standalone usage
 
 ```bash
-/opt/miniconda3/envs/chem-ocr/bin/python scripts/annotate_pdf_smiles.py /path/to/article.pdf
+# Extract candidate images
+python tools/pdf-structure-extract/extract_chemical_structure_candidates.py \
+    paper.pdf --output-dir ./candidates
+
+# Annotate the PDF with SMILES
+python tools/pdf-structure-extract/annotate_pdf_smiles.py \
+    paper.pdf --candidates-dir ./candidates --output paper-annotated.pdf
 ```
 
-详细用法见根目录原 `scripts/` 的 docstring。
+## Dependencies
 
-## 迁移计划（Phase 5）
+```bash
+pip install -e ".[pdf]"
+```
 
-1. 把 `scripts/` 移到 `tools/pdf-structure-extract/`
-2. 把环境定义（chem-ocr conda env）写成 `environment.yml`
-3. 在 `chemaster/mcp/pdf/server.py` 中提供 `extract_structures(pdf_path)` MCP 工具
-4. tadf-pipeline skill 接入此 MCP，实现"读论文 → 自动复算 → 对比"端到端 demo
+This pulls `pymupdf`, `opencv-python`, `pillow`, `decimer`,
+`decimer-segmentation`. These are *not* installed by the default chemaster
+environment; they're behind the `pdf` extra in `pyproject.toml`.
+
+A separate conda env (`chem-ocr`) with system-level OCR deps may also be
+needed for production use:
+
+```bash
+conda create -n chem-ocr python=3.10 -y
+conda activate chem-ocr
+conda install -c conda-forge pymupdf opencv pillow -y
+pip install decimer decimer-segmentation
+```
+
+## Integration into the agent
+
+`chemaster/mcp/pdf/server.py` is the MCP wrapper. Currently a placeholder;
+fleshed out under Phase 5 of the V2 roadmap.
+
+## History
+
+These scripts predate the V2 architecture refactor (the original
+ChemMaster repository was a PDF structure-extraction tool that was then
+expanded into the agent platform). Migration from `scripts/` to here
+happened in P2-9 (V2 housekeeping batch).
