@@ -1,23 +1,216 @@
-"""chem.calc_bdf MCP server.
+"""chem.calc_bdf — BDF wrapper (subprocess).
 
-TODO: implement per docs/MCP_GUIDE.md. See chem.const for reference.
+BDF (Beijing Density Functional, https://bdf-manual.readthedocs.io) is the
+TADF pipeline's go-to tool for spin-orbit coupling (X2C-TDA / RPA). It's
+academic-free, developed by Wenjian Liu's group at Peking University.
+
+This module wires the SOC matrix-element calculation. Ground-state SCF and
+TDDFT can also be done in BDF, but for ChemMaster we prefer psi4 / ORCA for
+those steps and use BDF specifically for SOC, where it has unique strengths
+(full Breit-Pauli + state-interaction).
+
+Requires:
+    - BDF binary on PATH (`bdf` or `bdfdrv.py`)
+    - BDFHOME environment variable
+    - Valid license file at $BDFHOME/license.dat (academic-free)
 """
 
 from __future__ import annotations
 
+import logging
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+from typing import Any
+
 from mcp.server.fastmcp import FastMCP
 
+logger = logging.getLogger(__name__)
 mcp = FastMCP("chem.calc_bdf")
 
 
-# TODO Phase 1+: add @mcp.tool() functions.
-# Each tool must:
-#   - Have full docstring (when_to_use / when_not_to_use)
-#   - Strict typed params (no **kwargs)
-#   - Return {"ok": bool, "result": ..., "warnings": [...], "meta": {...}}
-#   - On error return {"ok": False, "error_code": "...", "suggestion": "..."}
-#   - Physical quantities carry "unit" field
-#   - Check known PITFALLS before processing
+def _check_engine() -> tuple[str | None, str | None, str | None]:
+    """Return (binary_path, version, BDFHOME) or (None, None, None)."""
+    for cand in ("bdfdrv.py", "bdf"):
+        path = shutil.which(cand)
+        if path:
+            break
+    else:
+        return None, None, None
+
+    bdfhome = os.environ.get("BDFHOME")
+    version = "unknown"
+    try:
+        proc = subprocess.run(
+            [path, "--version"], capture_output=True, text=True, timeout=10,
+        )
+        out = (proc.stdout or "") + (proc.stderr or "")
+        m = re.search(r"BDF\s+(?:Version\s+)?(\S+)", out)
+        if m:
+            version = m.group(1)
+    except Exception:
+        pass
+    return path, version, bdfhome
+
+
+def _xyz_to_bdf_geom(xyz: str, charge: int, multiplicity: int) -> str:
+    """Convert standard xyz block into BDF '$compass / Geometry' input."""
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
+    try:
+        n_atoms = int(lines[0].strip())
+        atom_lines = lines[2 : 2 + n_atoms]
+    except ValueError:
+        atom_lines = lines
+    coords = "\n".join(atom_lines)
+    return (
+        "$compass\n"
+        "Geometry\n"
+        f"{coords}\n"
+        "End geometry\n"
+        f"Charge\n{charge}\n"
+        f"Spin\n{multiplicity - 1}\n"          # BDF uses 2S, not 2S+1
+        "Basis\n  def2-svp\n"
+        "skeleton\n"
+        "$end\n"
+    )
+
+
+def _parse_soc(out_text: str) -> dict[str, Any]:
+    """Parse BDF SOC output for matrix elements between S1 and T1.
+
+    BDF prints a SOC matrix block; this is a coarse parser meant to keep
+    the MCP working surface alive until a full-fidelity wrapper is added.
+    """
+    matches = re.findall(
+        r"SOC.*?(\d+)\s*-\s*(\d+).*?([-+]?\d+\.\d+)\s*cm-1",
+        out_text,
+    )
+    soc_elements = []
+    for s, t, val in matches:
+        soc_elements.append({
+            "state_i": int(s),
+            "state_j": int(t),
+            "matrix_element": {"value": float(val), "unit": "cm^-1"},
+        })
+    return {"soc_elements": soc_elements}
+
+
+@mcp.tool()
+def soc(
+    geometry_xyz: str,
+    charge: int = 0,
+    multiplicity: int = 1,
+    method: str = "B3LYP",
+    n_singlets: int = 4,
+    n_triplets: int = 4,
+    timeout_s: int = 7200,
+) -> dict[str, Any]:
+    """Spin-orbit coupling matrix elements (BDF X2C-TDA).
+
+    THE step in the TADF pipeline that's hard to get right elsewhere. BDF's
+    X2C-TDA produces full Breit-Pauli SOC integrals; psi4 doesn't have this
+    natively, and ORCA's RI-SOMF is faster but less accurate.
+
+    Args:
+        geometry_xyz: ground-state optimized geometry.
+        charge / multiplicity: ground-state.
+        method: DFT functional for the underlying TDDFT (default B3LYP).
+        n_singlets, n_triplets: how many states to include in the SOC
+            matrix.
+        timeout_s: kill after this many seconds.
+
+    Returns:
+        ok=True:
+          {ok, result: {soc_elements: [{state_i, state_j, matrix_element}]},
+           warnings, meta}
+        ok=False:
+          {ok=False, error_code: ENGINE_NOT_FOUND | NO_BDFHOME |
+                                 BDF_RUNTIME_ERROR | TIMEOUT,
+           details, suggestion}
+    """
+    bdf_path, version, bdfhome = _check_engine()
+    if bdf_path is None:
+        return {
+            "ok": False,
+            "error_code": "ENGINE_NOT_FOUND",
+            "details": "Neither 'bdf' nor 'bdfdrv.py' found on PATH.",
+            "suggestion": (
+                "Download BDF from https://bdf-manual.readthedocs.io "
+                "(academic-free). Set BDFHOME and add $BDFHOME/sbin to PATH. "
+                "BDF is the recommended SOC engine for the ChemMaster TADF "
+                "pipeline."
+            ),
+        }
+    if not bdfhome:
+        return {
+            "ok": False,
+            "error_code": "NO_BDFHOME",
+            "details": "BDFHOME environment variable is not set.",
+            "suggestion": "Export BDFHOME=/path/to/bdf and re-run.",
+        }
+
+    geom = _xyz_to_bdf_geom(geometry_xyz, charge, multiplicity)
+    inp = (
+        geom
+        + "\n$xuanyuan\nheff\n  3\nrelaxation\n  1\nsoint\n$end\n"
+        + f"\n$scf\n{method}\n$end\n"
+        + (f"\n$tdsp\n  itda 1\n  itest 1\n  isf 0\n  iroot {n_singlets}\n$end\n"
+           if n_singlets > 0 else "")
+        + (f"\n$tdsp\n  itda 1\n  itest 1\n  isf 1\n  iroot {n_triplets}\n$end\n"
+           if n_triplets > 0 else "")
+    )
+
+    wall_start = time.time()
+    with tempfile.TemporaryDirectory(prefix="bdf_soc_") as tmp:
+        workdir = Path(tmp)
+        inp_path = workdir / "calc.inp"
+        inp_path.write_text(inp, encoding="ascii")
+        try:
+            proc = subprocess.run(
+                [bdf_path, str(inp_path)],
+                cwd=workdir,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, timeout=timeout_s,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "ok": False,
+                "error_code": "TIMEOUT",
+                "details": f"BDF exceeded {timeout_s}s.",
+                "suggestion": "Increase timeout_s; reduce n_singlets/n_triplets.",
+                "meta": {"bdf_version": version,
+                         "wall_time_s": round(time.time() - wall_start, 1)},
+            }
+        if proc.returncode != 0:
+            return {
+                "ok": False,
+                "error_code": "BDF_RUNTIME_ERROR",
+                "details": (proc.stderr or proc.stdout)[-1500:],
+                "suggestion": (
+                    "Inspect the calc.out file in the workdir; BDF prints a "
+                    "verbose error trail. Common: license file missing or "
+                    "expired, basis-set name typo, geometry too close to "
+                    "linearity."
+                ),
+                "meta": {"bdf_version": version, "returncode": proc.returncode},
+            }
+        soc_data = _parse_soc(proc.stdout or "")
+
+    return {
+        "ok": True,
+        "result": soc_data,
+        "warnings": [
+            "BDF SOC parser is coarse; verify against the raw output."
+        ] if not soc_data["soc_elements"] else [],
+        "meta": {
+            "bdf_version": version, "bdfhome": bdfhome,
+            "wall_time_s": round(time.time() - wall_start, 1),
+        },
+    }
 
 
 def main() -> None:

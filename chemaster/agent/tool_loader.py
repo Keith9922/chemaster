@@ -154,6 +154,61 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_long_running=True,
     ),
 
+    # calc_orca (academic-free; faster than psi4 for large systems) ──────
+    _ToolDecl(
+        exposed_name="calc_orca_single_point",
+        module="chemaster.mcp.calc_orca.server",
+        function="single_point",
+        description=(
+            "Single-point energy with ORCA. Use for: DLPNO-CCSD(T) "
+            "energetics, range-separated DFT (ωB97X-D3BJ) on >50-atom "
+            "systems, RIJCOSX-accelerated hybrid DFT. Returns "
+            "ENGINE_NOT_FOUND if ORCA isn't on PATH."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_orca_optimize",
+        module="chemaster.mcp.calc_orca.server",
+        function="optimize",
+        description=(
+            "Geometry optimization with ORCA. More robust than psi4's "
+            "optking on awkward geometries (large rings, TM complexes). "
+            "Always follow with calc_psi4_frequency to verify the minimum."
+        ),
+        is_long_running=True,
+    ),
+
+    # calc_bdf — TADF SOC engine (国产化亮点) ────────────────────────────
+    _ToolDecl(
+        exposed_name="calc_bdf_soc",
+        module="chemaster.mcp.calc_bdf.server",
+        function="soc",
+        description=(
+            "Spin-orbit coupling matrix elements via BDF X2C-TDA. THE step "
+            "in the TADF pipeline that's hard to get right elsewhere — psi4 "
+            "doesn't do SOC natively, ORCA's RI-SOMF is faster but less "
+            "accurate. BDF is academic-free (Wenjian Liu group, Peking U). "
+            "Returns ENGINE_NOT_FOUND with install hint when BDF isn't set up."
+        ),
+        is_long_running=True,
+    ),
+
+    # analysis_multiwfn — wavefunction analysis (NTO etc.) ──────────────
+    _ToolDecl(
+        exposed_name="analysis_nto",
+        module="chemaster.mcp.analysis_multiwfn.server",
+        function="nto_analysis",
+        description=(
+            "Natural Transition Orbital analysis via Multiwfn. Use after "
+            "TDDFT to characterize each excited state's hole/particle "
+            "distribution — critical for distinguishing CT from LE excited "
+            "states in TADF design (PITFALLS §2.7). Needs a .molden / "
+            ".gbw / .fch wavefunction file from the prior QM step."
+        ),
+        is_long_running=True,
+    ),
+
     # calc_xtb (fast, but mark long-running for safety on big molecules) ──
     _ToolDecl(
         exposed_name="calc_xtb_single_point",

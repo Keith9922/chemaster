@@ -102,6 +102,67 @@ _BUILTIN_MOLECULES: dict[str, dict[str, Any]] = {
 }
 
 
+def _load_tadf_anchors() -> dict[str, dict[str, Any]]:
+    """Lazy-load TADF anchor molecules from benchmarks/tadf-literature/*.xyz.
+
+    These are the "gold standard" 5-10 published TADF emitters used as
+    smoke-test inputs for the agent. Pre-computed MMFF-optimized geometries
+    so the LLM doesn't have to wait through (and fail on) RDKit ETKDG
+    embedding for 80+ atom molecules.
+    """
+    from pathlib import Path
+    import yaml
+
+    anchors: dict[str, dict[str, Any]] = {}
+    here = Path(__file__).resolve()
+    repo_root = next(
+        (p for p in here.parents if (p / "benchmarks").is_dir()), None
+    )
+    if repo_root is None:
+        return anchors
+    bench_dir = repo_root / "benchmarks" / "tadf-literature"
+    if not bench_dir.is_dir():
+        return anchors
+
+    for xyz_file in sorted(bench_dir.glob("*.xyz")):
+        name = xyz_file.stem
+        try:
+            xyz = xyz_file.read_text()
+        except Exception:
+            continue
+        # Try to find a matching YAML metadata file for SMILES / charge etc.
+        meta_file = bench_dir / f"{name}.yaml"
+        smiles = ""
+        formula = ""
+        charge = 0
+        multiplicity = 1
+        if meta_file.is_file():
+            try:
+                meta = yaml.safe_load(meta_file.read_text()) or {}
+                smiles = meta.get("smiles", "") or ""
+                charge = int(meta.get("charge", 0) or 0)
+                multiplicity = int(meta.get("multiplicity", 1) or 1)
+                # formula: prefer YAML, else infer from name
+                formula = meta.get("name", "") or meta.get("formula", "") or ""
+            except Exception:
+                pass
+        if not formula:
+            formula = name
+        anchors[name.lower()] = {
+            "smiles": smiles,
+            "xyz": xyz,
+            "formula": formula,
+            "charge": charge,
+            "multiplicity": multiplicity,
+        }
+    return anchors
+
+
+# Merge TADF anchor library into the builtin lookup. Done at import time
+# so the dict is hot when MCP starts.
+_BUILTIN_MOLECULES.update(_load_tadf_anchors())
+
+
 def _mol_to_xyz(mol: Chem.Mol, title: str = "") -> str:
     """把 RDKit Mol 对象转成 XYZ 格式字符串（psi4 兼容，无 comment 行）。
 

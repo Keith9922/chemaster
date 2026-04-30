@@ -1,0 +1,20 @@
+name: DMAC-BP
+full_name: 4,4'-bis(9,9-dimethylacridin-10(9H)-yl)benzophenone
+smiles: "CC1(C)c2ccccc2N(c2ccc(C(=O)c3ccc(N4c5ccccc5C(C)(C)c5ccccc54)cc3)cc2)c2ccccc21"
+charge: 0
+multiplicity: 1
+n_atoms: 82
+class: TADF emitter (D-A-D)
+
+literature_values:
+  delta_E_ST_eV: 0.10
+  oscillator_f_S1: 0.001
+  source: |
+    Hosokai et al., Sci. Adv. 2017, 3, e1603282.
+    Lower computational cost than 4CzIPN — recommended starting anchor for
+    the TADF pipeline smoke test.
+
+notes: |
+  - Cheaper TADF anchor (~half the size of 4CzIPN)
+  - DMAC donor + benzophenone acceptor; classic D-π-A.
+  - Good for verifying TDDFT + SOC chain before scaling up to 4CzIPN.

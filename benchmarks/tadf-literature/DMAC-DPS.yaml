@@ -1,0 +1,20 @@
+name: DMAC-DPS
+full_name: bis[4-(9,9-dimethyl-9,10-dihydroacridin)phenyl]sulfone
+smiles: "CC1(C)c2ccccc2N(c2ccc(S(=O)(=O)c3ccc(N4c5ccccc5C(C)(C)c5ccccc54)cc3)cc2)c2ccccc21"
+charge: 0
+multiplicity: 1
+n_atoms: 83
+class: TADF emitter (D-A-D)
+
+literature_values:
+  delta_E_ST_eV: 0.09
+  oscillator_f_S1: 0.0008
+  source: |
+    Zhang et al., Adv. Mater. 2014, 26, 5198. Original DMAC-DPS paper.
+    Used as an anchor in Phase-3 of the V2 plan: full TADF pipeline
+    validation against literature.
+
+notes: |
+  - One of the canonical "blue TADF" emitters.
+  - DMAC donor + DPS (diphenyl sulfone) acceptor.
+  - Sulfone group makes it slightly heavier than DMAC-BP.
