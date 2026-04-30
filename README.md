@@ -10,13 +10,21 @@
 
 ## 特性
 
-- **真 LLM tool-use loop** — 基于 Anthropic SDK 的 ChemAgent，22 个工具自动加载（MCP 适配 + 内建 finish/ask_user/think），错误自愈、Trajectory 全持久化便于复现。
+- **真 LLM tool-use loop** — 基于 Anthropic SDK 的 ChemAgent，**30 个工具**自动加载（MCP 适配 + 内建 finish/ask_user/think），错误自愈、Trajectory 全持久化便于复现。
 - **本地优先** — 分子结构不上传；除 LLM API 全部离线运行。
-- **多模型支持（BYO LLM）** — Anthropic 直连，**MiniMax M2.7（已实测跑通）**，OpenAI-compatible（Qwen / DeepSeek / vLLM）接口预留。
-- **多软件统一接口** — psi4 / xTB（已实装）、ORCA / BDF / MultiWFN（接口占位）通过同一套自然语言命令调用。
-- **Per-tool 安全确认** — 每个工具自带 `is_destructive` / `is_long_running` 标志；UI 弹确认对话框；审计日志写到 `runs/<task_id>/confirmations.jsonl`。
-- **可检索的领域知识库** — `kb/rules/*.yaml` 基组/泛函规则、`kb/skills/*/SKILL.md` 工作流文档，由 Agent 通过 `kb_search` / `use_skill` 工具按需读取。
-- **可重复** — 每个任务的完整对话、工具结果、版本快照写到 `runs/<task_id>/`，3 个月后可 replay。
+- **多模型支持（BYO LLM）** — Anthropic 直连、**MiniMax M2.7（实测跑通）**、**Qwen / DeepSeek**（DashScope / OpenAI-compat）、本地 vLLM / llama.cpp（同样的 OpenAI-compat 接口）。
+- **真实计算多软件覆盖**：
+  - psi4：single_point / **optimize / frequency（含 thermal_corrections H/G/T·S）/ TDDFT**（实装可用）
+  - xTB：single_point / optimize（实装）
+  - ORCA：single_point / optimize（subprocess 包装，academic-free，需用户装）
+  - BDF：SOC（X2C-TDA，TADF 流水线关键，国产化亮点）
+  - MultiWFN：NTO 分析（论文图首选）
+  - HPC SLURM：submit / status / fetch（异步提交学校超算）
+- **Per-tool 安全确认** — 每个工具自带 `is_read_only` / `is_destructive` / `is_long_running` 标志；UI 弹确认对话框；审计日志写到 `runs/<task_id>/confirmations.jsonl`。
+- **可检索的领域知识库** — `kb/rules/*.yaml` 基组/泛函规则、`kb/skills/*/SKILL.md` 完整工作流文档（opt-freq / tadf-pipeline / tddft / soc / dlpno-ccsdt / pes-scan / pka / solvation / conformer / ts-search 共 10 份），由 Agent 通过 `kb_search` / `use_skill` 工具按需读取。
+- **TADF anchor 库** — `benchmarks/tadf-literature/{4CzIPN,DMAC-BP,DMAC-DPS}.xyz` 预先 MMFF 优化的 76-94 原子分子，`io_lookup_by_name("4CzIPN")` 直接拿到。
+- **完整 CLI** — `chemaster run` 一次性任务、`chemaster show` 看历史、`chemaster replay` 复现、`chemaster init` 配置向导、`chemaster --check-engines` 看引擎；运行时 live tool-call 流式输出。
+- **可重复** — 每个任务的完整对话、工具结果、版本快照写到 `runs/<task_id>/trajectory.json`；自动生成 `report.md` 论文级总结；`confirmations.jsonl` 审计每次危险操作。
 
 ---
 

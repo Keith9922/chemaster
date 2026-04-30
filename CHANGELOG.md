@@ -3,6 +3,80 @@
 所有面向用户可见的变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0a1] — Architecture V2 + production polish (2026-04-30)
+
+### Added — P0: TADF pipeline blockers cleared
+- `chemaster.mcp.calc_psi4.tddft` — full TDDFT excited-state tool with TDA
+  default, singlets + triplets, ΔE_ST, oscillator strengths, parser robust to
+  psi4's "Excited State N (M A): X.YYY au   AA.BB nm f = Z.ZZ" format.
+- `chemaster.mcp.calc_psi4.frequency` thermal_corrections — h_corr / g_corr /
+  T·S / total_h / total_g / e_corr now parsed from psi4's thermo block (was
+  hard-coded null, breaking the entire free-energy chain).
+- `benchmarks/tadf-literature/{4CzIPN,DMAC-BP,DMAC-DPS}.{xyz,yaml}` — MMFF-
+  optimized geometries + literature ΔE_ST / oscillator strength.
+- `chemaster.mcp.io_ase` lazy-loads the TADF anchor xyzs into the lookup
+  table at import time, so `io_lookup_by_name("4CzIPN")` just works.
+- `tests/integration/test_tadf_pipeline.py` — drives the full
+  io_lookup → opt → freq → tddft → finish chain on benzene (routine) and
+  DMAC-BP (CHEMASTER_E2E_FULL=1 opt-in).
+
+### Added — P1: real multi-software wrappers
+- `chem.calc_orca` — single_point / optimize via subprocess. Full DLPNO-
+  CCSD(T) / RIJCOSX / hybrid-DFT keyword passthrough; ENGINE_NOT_FOUND
+  with concrete download hint.
+- `chem.calc_bdf` — SOC (X2C-TDA) skeleton; ENGINE_NOT_FOUND + NO_BDFHOME
+  errors. Spin field correctly converts multiplicity → 2S.
+- `chem.analysis_multiwfn` — NTO analysis via menu-driven CLI piped to
+  Multiwfn; FILE_NOT_FOUND for missing wavefunction inputs.
+
+### Added — P2: hygiene
+- PDF helper scripts moved scripts/ → tools/pdf-structure-extract/.
+- 4 TODO skill stubs (dlpno-ccsdt / pes-scan / pka / solvation) replaced
+  with real, runnable workflow documents.
+- `chemaster` (no args) drops into a text REPL backed by ChemAgent
+  instead of trying to launch a half-built TUI; --tui flag opt-in.
+
+### Added — P3: UX polish
+- `chemaster show <task_id>` — pretty-prints a previous trajectory.
+- `chemaster replay <task_id>` — re-runs a task from its recorded intent.
+- `chemaster init` — interactive config wizard, writes ~/.chemaster/env
+  (mode 0600).
+- Live progress streaming during `chemaster run` — each tool call is
+  printed with ✓/✗ and observation snippet as it happens.
+- Auto-generated `runs/<task_id>/report.md` after every task: header,
+  summary, key_results table, per-step trace.
+- `_render_agent_error` — typed hint mapping (auth / context / timeout /
+  network) with trajectory-pointer panel on agent crash.
+
+### Added — P4: BYO-LLM expansion + HPC + release prep
+- `chemaster.agent.llm_client` gets `OpenAICompatLLM` (generic OpenAI
+  /v1/chat/completions with function calling), `QwenLLM` (DashScope),
+  `DeepSeekLLM`. CLI auto-detects DASHSCOPE_API_KEY / QWEN_API_KEY /
+  DEEPSEEK_API_KEY.
+- `chem.hpc_slurm` — submit / status / fetch over paramiko SSH; reads
+  ~/.chemaster/hpc.yaml for host / user / partition / time_limit /
+  modules. Async-style: submit returns job_id immediately so the agent
+  doesn't block on the cluster.
+- `pyproject.toml` version 0.1.0 → **0.2.0a1**; openai>=1.30 added.
+- `python -m build` produces a clean wheel + sdist; `twine check`
+  passes both.
+- `CITATION.cff` for "Cite this repository" / Zenodo / JOSS.
+
+### Tests
+- 217 unit tests (was 86 before V2). New batches:
+  * test_calc_orca.py — 13 tests
+  * test_calc_bdf_multiwfn.py — 9 tests
+  * test_hpc_slurm.py — 6 tests
+  * test_agent_loop.py extensions — Qwen/DeepSeek/OpenAI-compat (5 new)
+- Integration: H2O e2e + agent_real_psi4 (CH4/NH3/trajectory/finish) +
+  tadf_pipeline (benzene smoke; DMAC-BP opt-in) + e2e_sweep (5 small
+  molecules).
+
+### Tool registry
+22 → **30** tools.
+
+---
+
 ## [Unreleased] — Architecture V2 (2026-04-29)
 
 ### Added — V2 Agent core (Claude-Code-style tool-use loop)
