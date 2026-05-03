@@ -2,30 +2,126 @@
 #
 # 复制到 ~/.chemaster/config.yaml 后按需修改。
 # 不要把真正含 API key 的配置文件 commit 进 git！
+# API key 推荐通过环境变量传入：export ANTHROPIC_API_KEY=sk-ant-...
 
 # ---------------------------------------------------------------
 # LLM 后端
 # ---------------------------------------------------------------
 llm:
-  # 可选: anthropic | openai | qwen | deepseek | local
-  provider: anthropic
+  # 默认使用的 provider 名称（对应 providers 里的 key）
+  default: anthropic
 
-  # 推荐用环境变量传 key（更安全）：
-  #   export ANTHROPIC_API_KEY=sk-ant-...
-  # 这里如果留空，会读环境变量
-  api_key: null
+  providers:
+    # --- Anthropic Claude（默认）---
+    anthropic:
+      provider: anthropic
+      model: claude-sonnet-4-6       # claude-opus-4-5 / claude-haiku-4-5 等
+      api_key: null                   # null = 读 ANTHROPIC_API_KEY 环境变量
+      max_tokens: 8192
+      temperature: 0.3
 
-  # 模型名（按 provider 不同）
-  model: claude-sonnet-4-6
+    # --- DeepSeek（OpenAI 兼容格式）---
+    deepseek:
+      provider: openai_compat
+      model: deepseek-chat
+      api_key: null                   # null = 读 DEEPSEEK_API_KEY
+      base_url: https://api.deepseek.com/v1
+      max_tokens: 8192
+      temperature: 0.3
 
-  # 本地模型示例（vLLM / ollama）
-  # provider: local
-  # base_url: http://localhost:8000/v1
-  # model: qwen2.5-72b-instruct
+    # --- 阿里云百炼 Qwen ---
+    qwen:
+      provider: openai_compat
+      model: qwen-plus
+      api_key: null                   # null = 读 DASHSCOPE_API_KEY
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      max_tokens: 8192
+      temperature: 0.3
 
-  # 限流与超时
-  max_tokens: 8192
+    # --- 本地 vLLM（无需 key）---
+    local_vllm:
+      provider: openai_compat
+      model: Qwen2.5-7B-Instruct
+      api_key: EMPTY
+      base_url: http://localhost:8000/v1
+      max_tokens: 4096
+      temperature: 0.3
+
+  # 限流与超时（各 provider 共用）
   timeout_s: 120
+
+# ---------------------------------------------------------------
+# Agent 核心配置
+# ---------------------------------------------------------------
+agent:
+  # 单次任务最多 LLM 对话轮次（防死循环）
+  max_turns: 50
+
+  # true = LLM 输出纯文本（不带工具调用）时立即结束
+  # false = 继续等待 LLM 调用 finish 工具
+  finish_on_text_response: false
+
+  # 是否在终端实时打印 LLM 步骤（调试用）
+  show_in_console: true
+
+  # 运行产物根目录（每次任务创建 runs/<task-id>/）
+  runs_dir: ./runs
+
+  # Context 管理器（防止 token 超限）
+  context:
+    max_tokens: 100000
+    # 截断策略：latest_half（保留最新一半）| remove_middle_tools（删除中间工具调用）
+    truncation_strategy: latest_half
+    preserve_recent_turns: 5        # 截断时保留最近 N 轮对话
+    max_tool_output_chars: 30000    # 单条工具输出的字符截断阈值
+
+# ---------------------------------------------------------------
+# Session 配置（"在哪里执行命令"）
+# ---------------------------------------------------------------
+session:
+  type: local     # local（Phase 1/2）| slurm（Phase 3）
+
+  # --- 本地执行 ---
+  local:
+    workspace_path: ./workspace   # 计算任务的工作目录
+    timeout: 300                  # 单条命令超时（秒）
+    encoding: utf-8
+    max_output_chars: 50000       # 截断过长的命令输出防止 context 爆炸
+    env_vars:
+      OMP_NUM_THREADS: "4"        # psi4 / ORCA 并行线程数
+      PSI_SCRATCH: /tmp/psi4      # psi4 临时文件目录
+      # ORCA_PATH: /opt/orca      # ORCA 可执行文件目录（加入 PATH）
+
+  # --- SLURM 超算（Phase 3，暂未实现）---
+  slurm:
+    host: hpc.your-school.edu.cn
+    user: your-username
+    ssh_key: ~/.ssh/id_rsa
+    # proxy_jump: jump.your-school.edu.cn   # 跳板机（可选）
+    partition: cpu
+    nodes: 1
+    ntasks_per_node: 16
+    memory_gb: 64
+    walltime: "24:00:00"
+    poll_interval_s: 30           # 等待作业完成的轮询间隔（秒）
+    remote_work_dir: /scratch/your-username/chemaster-runs
+    pre_run_hook: |
+      module load orca/6.0
+      module load openmpi/4.1
+
+# ---------------------------------------------------------------
+# Skills 配置
+# ---------------------------------------------------------------
+skills:
+  # Skill 库根目录（留空则自动使用包内的 chemaster/skills/）
+  skills_root: ""
+
+  # 只加载指定 skill（空列表 = 全部加载）
+  enabled_skills: []
+  # enabled_skills:
+  #   - opt-freq
+  #   - tddft
+  #   - tadf-pipeline
 
 # ---------------------------------------------------------------
 # 计算引擎

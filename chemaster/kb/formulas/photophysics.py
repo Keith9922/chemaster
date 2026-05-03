@@ -55,20 +55,25 @@ def kf_strickler_berg(
     oscillator_strength: float,
     refractive_index: float = 1.0,
 ) -> float:
-    """Strickler-Berg 公式从振子强度估算辐射速率。
+    """Strickler-Berg 公式从振子强度估算辐射速率（窄带极限）。
 
-    k_F ≈ 2.88e-9 · n^2 · (E/cm^-1)^2 · f   [s^-1]
+    实际使用的简化公式（Einstein A 系数推导，ν̄ 用 cm⁻¹）::
+
+        k_F ≈ 0.667 · n² · ν̄² · f          [s⁻¹]
+
+    这是 Strickler-Berg ``2.88e-9 · n² · ⟨ν̄³⟩ · f`` 在窄带（单 ν̄）
+    近似下的等价形式。两种写法在文献里都常见，本函数采用前者。
 
     Args:
-        energy_eV: 跃迁能，eV
+        energy_eV: 跃迁能 (eV)
         oscillator_strength: 振子强度 f
         refractive_index: 介质折射率，默认 1（气相）
 
     Returns:
-        辐射速率 k_F，s^-1
+        辐射速率 k_F (s⁻¹)
     """
     energy_cm_inv = U.eV_to_J(energy_eV) / (C.get("planck").value * C.get("c").value * 100)
-    return 0.677 * refractive_index ** 2 * (energy_cm_inv ** 2) * oscillator_strength
+    return 0.667 * refractive_index ** 2 * (energy_cm_inv ** 2) * oscillator_strength
 
 
 def plqy(kf: float, knr: float, kisc: float = 0.0) -> float:

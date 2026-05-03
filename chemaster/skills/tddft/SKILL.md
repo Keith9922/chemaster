@@ -14,6 +14,10 @@ required_mcps:
   - chem.parse.cclib
   - chem.viz
 estimated_time: 5 min - 2 hours
+level1_summary: |
+  TDDFT 激发态计算（UV-Vis 谱、S1/T1 能级、振子强度）。
+  用户问"激发态""UV吸收""S1""振子强度"或 tadf-pipeline 内部调用。
+  需要 chem.calc.orca（或 psi4/bdf）+ chem.parse.cclib。
 ---
 
 # TDDFT Excited States

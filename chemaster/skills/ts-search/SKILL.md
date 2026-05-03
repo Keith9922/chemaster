@@ -12,6 +12,10 @@ required_mcps:
   - chem.calc.orca   # ORCA 的 NEB-TS 较成熟
   - chem.io.ase
 estimated_time: 30 min - 6 hours
+level1_summary: |
+  过渡态搜索 + IRC 验证（NEB / CI-NEB / Growing String Method）。
+  用户问"过渡态""反应能垒""活化能"时调用。
+  需要 chem.calc.orca（NEB-TS 最成熟）+ chem.io.ase。
 ---
 
 # Transition State Search + IRC

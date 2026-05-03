@@ -62,6 +62,16 @@ logs/
 *.chk
 *.scr/
 psi.*.clean
+psi.*.scratch/
+
+# psi4 / Gaussian / ORCA 在 cwd 留下的杂物
+timer.dat
+*output*.log
+optimize_output.log
+frequency_output.log
+single_point_output.log
+test_opt.log
+fort.*
 
 # Secrets / config (用户机器特定)
 .env

@@ -19,6 +19,10 @@ estimated_time: 1-30 minutes (单分子 < 50 atoms)
 references:
   - "Cramer, Essentials of Computational Chemistry, Ch. 7-8"
   - "Jensen, Introduction to Computational Chemistry, Ch. 13"
+level1_summary: |
+  几何优化 + 频率确认的标准量化工作流。用户说"算能量""优化结构""找极小点"
+  或需要 ZPE/热修正/自由能时调用。需要 chem.calc.psi4 + chem.io.ase。
+  先 optimize → 再 frequency → 若有虚频则沿模式位移并重启。
 ---
 
 # Geometry Optimization + Frequency Confirmation

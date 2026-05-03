@@ -28,6 +28,10 @@ references:
   - "Endo et al., Adv. Mater. 2009, 21, 4802 (TADF mechanism)"
   - "Uoyama et al., Nature 2012, 492, 234 (4CzIPN)"
   - "BDF SOC 计算手册"
+level1_summary: |
+  完整 TADF 发光体设计流水线：构象搜索 → DFT优化 → TDDFT → SOC → Marcus kRISC。
+  用户要"算 TADF 性质""ΔE_ST""kRISC"或评估 OLED 适用性时使用。
+  依赖 conformer / opt-freq / tddft / soc 等子 skill。毕设标杆流程。
 ---
 
 # TADF Emitter Screening Pipeline

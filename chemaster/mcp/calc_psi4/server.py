@@ -6,8 +6,11 @@ single_point tool 的参考实现。
 
 from __future__ import annotations
 
+import contextlib
 import logging
+import os
 import re
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -17,6 +20,27 @@ from mcp.server.fastmcp import FastMCP
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP("chem.calc_psi4")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 输出目录上下文（P0-7：让 psi4 的 stdout / timer.dat / scratch 全部进 caller 指定目录）
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _resolve_output_dir(output_dir: str | None, tool_name: str) -> Path:
+    """生成或校验 psi4 输出目录。
+
+    - ``output_dir=None`` → ``tempfile.mkdtemp`` 隔离目录（不会被 cleanup）。
+    - 否则 ``mkdir parents=True``，使用调用方给的目录。
+
+    返回该目录的 ``Path``。psi4 的 stdout 日志写到 ``<dir>/<tool>_output.log``；
+    timer.dat / psi.<pid>.clean 由 ``.gitignore`` 兜底（这些都进 cwd，不在
+    本目录里——chdir 全局副作用太大，故意不做）。
+    """
+    if output_dir is None:
+        return Path(tempfile.mkdtemp(prefix=f"psi4_{tool_name}_"))
+    d = Path(output_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 常数（lazy load，避免全局导入 psi4 前的开销）
@@ -48,22 +72,47 @@ def _au_to_debye() -> float:
 # 工具函数
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ASE 提供完整周期表的 atomic_numbers 字典（>= 第 6 周期均在内）。
+# 不在这里手抄是为了：1) 避免重复 key 这种笔误；2) 自动支持新元素。
+try:
+    from ase.data import atomic_numbers as _ASE_ATOMIC_NUMBERS  # type: ignore
+except ImportError:  # pragma: no cover
+    _ASE_ATOMIC_NUMBERS = {
+        "H": 1, "He": 2, "Li": 3, "Be": 4, "B": 5, "C": 6, "N": 7,
+        "O": 8, "F": 9, "Ne": 10, "Na": 11, "Mg": 12, "Al": 13,
+        "Si": 14, "P": 15, "S": 16, "Cl": 17, "Ar": 18, "K": 19,
+        "Ca": 20, "Fe": 26, "Cu": 29, "Zn": 30, "Br": 35, "I": 53,
+    }
+
+
+def _normalize_element(symbol: str) -> str:
+    """规范化元素符号（例 'cl' / 'CL' → 'Cl'，'h' → 'H'）。"""
+    s = symbol.strip()
+    if not s:
+        return s
+    return s[0].upper() + s[1:].lower()
+
+
 def _electron_count(xyz: str, charge: int) -> int:
-    """从 XYZ 几何字串推算总价电子数（用于多重度校验）。"""
-    lines = [l.strip() for l in xyz.strip().split("\n") if l.strip()]
+    """从 XYZ 几何字串推算总电子数（用于多重度校验）。
+
+    Args:
+        xyz: 标准 XYZ 字符串；首行可以是原子数也可以是 'charge mult' 头
+             （xyz+ 格式）。本函数容忍任何首行，只对能解析为
+             '元素符号 x y z' 的行计数。
+        charge: 总电荷，从总电子数中扣除。
+
+    Returns:
+        n_electrons = sum_i Z_i - charge
+    """
     total = 0
-    for line in lines:
+    for line in xyz.strip().splitlines():
         parts = line.split()
-        if not parts:
-            continue
-        element = parts[0]
-        Z = {
-            "H": 1, "He": 2, "Li": 3, "Be": 4, "B": 5, "C": 6, "N": 7,
-            "O": 8, "F": 9, "Ne": 10, "Na": 11, "Mg": 12, "Al": 13,
-            "Si": 14, "P": 15, "S": 16, "Cl": 17, "Ar": 18, "K": 19,
-            "Ca": 20, "Fe": 26, "Zn": 30, "Cu": 29, "Mg": 12,
-        }.get(element.capitalize(), 0)
-        total += Z
+        if len(parts) < 4:
+            continue   # 跳过原子数行 / charge-mult 头 / comment 行
+        symbol = _normalize_element(parts[0])
+        z = _ASE_ATOMIC_NUMBERS.get(symbol, 0)
+        total += z
     return total - charge
 
 
@@ -155,6 +204,7 @@ def single_point(
     memory_gb: float = 4.0,
     n_threads: int = 1,
     scf_guess: str = "SAD",
+    output_dir: str | None = None,
 ) -> dict[str, Any]:
     """单点能计算（Hartree-Fock / DFT）。
 
@@ -174,7 +224,8 @@ def single_point(
         basis: 基组，默认 def2-TZVP。
             常用：def2-TZVP / cc-pVTZ / aug-cc-pVTZ / 6-311++G(d,p)
         memory_gb: 分配内存（GB），默认 4 GB。
-        n_threads: OMP 线程数，默认 4。
+        n_threads: OMP 线程数，默认 1（rdkit + psi4 OpenMP 兼容性问题，
+            PITFALLS §8）。生产环境可显式调高，但需先确认不会 segfault。
         scf_guess: SCF 初猜方法，默认 SAD。
             SAD=Superposition of Atomic Densities（最常用）；
             GWH=Gaussian Weighted Hamiltonian（适合高自旋）；
@@ -240,7 +291,9 @@ def single_point(
     psi4.set_memory(f"{int(memory_gb)} GB")
     psi4.set_num_threads(n_threads)
 
-    output_path = "single_point_output.log"
+    # 解析输出目录（P0-7：不再用 cwd 固定文件名）
+    work_dir = _resolve_output_dir(output_dir, "single_point")
+    output_path = str(work_dir / "single_point_output.log")
     psi4.core.set_output_file(output_path, False)
 
     # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
@@ -364,6 +417,7 @@ def optimize(
     max_iter: int = 100,
     memory_gb: float = 4.0,
     n_threads: int = 1,
+    output_dir: str | None = None,
 ) -> dict[str, Any]:
     """几何优化（能量极小点搜索）。
 
@@ -393,7 +447,8 @@ def optimize(
             cartesian：笛卡尔坐标（适合小分子或特殊体系）
         max_iter: 最大优化步数，默认 100。
         memory_gb: 分配内存（GB），默认 4 GB。
-        n_threads: OMP 线程数，默认 4。
+        n_threads: OMP 线程数，默认 1（rdkit + psi4 OpenMP 兼容性问题，
+            PITFALLS §8）。生产环境可显式调高，但需先确认不会 segfault。
 
     Returns:
         ok=True 时:
@@ -479,7 +534,8 @@ def optimize(
     psi4.set_memory(f"{int(memory_gb)} GB")
     psi4.set_num_threads(n_threads)
 
-    output_path = "optimize_output.log"
+    work_dir = _resolve_output_dir(output_dir, "optimize")
+    output_path = str(work_dir / "optimize_output.log")
     psi4.core.set_output_file(output_path, False)
 
     # ── 5. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
@@ -612,6 +668,7 @@ def frequency(
     pressure_atm: float = 1.0,
     memory_gb: float = 4.0,
     n_threads: int = 1,
+    output_dir: str | None = None,
 ) -> dict[str, Any]:
     """振动频率计算（红外光谱 + 热力学修正）。
 
@@ -639,7 +696,8 @@ def frequency(
         temperature_K: 热力学温度，默认 298.15 K。
         pressure_atm: 压力，默认 1.0 atm。
         memory_gb: 分配内存（GB），默认 4 GB。
-        n_threads: OMP 线程数，默认 4。
+        n_threads: OMP 线程数，默认 1（rdkit + psi4 OpenMP 兼容性问题，
+            PITFALLS §8）。生产环境可显式调高，但需先确认不会 segfault。
 
     Returns:
         ok=True 时:
@@ -718,7 +776,8 @@ def frequency(
     psi4.set_memory(f"{int(memory_gb)} GB")
     psi4.set_num_threads(n_threads)
 
-    output_path = "frequency_output.log"
+    work_dir = _resolve_output_dir(output_dir, "frequency")
+    output_path = str(work_dir / "frequency_output.log")
     psi4.core.set_output_file(output_path, False)
 
     # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
@@ -802,10 +861,47 @@ def frequency(
 
     wall_time = time.time() - wall_start
 
-    # ── 5. ZPE 计算（复用公式库，LLM 不算数）────────────────────────────
+    # ── 5. ZPE + 完整 RRHO 修正（复用公式库 + ASE，LLM 不算数）──────────
     from chemaster.kb.formulas import thermo as _thermo
 
     zpe_Eh = _thermo.zpe_from_frequencies_cm_inv(freqs_cm_inv)
+
+    # 如果能拿到 atoms，就走完整 RRHO；否则降级到 ZPE-only
+    h_corr = None
+    g_corr = None
+    ts_corr = None
+    rrho_method = "ZPE-only"
+    try:
+        atoms = _xyz_to_ase_atoms(geometry_xyz)
+        n_atoms = len(atoms)
+        # 简化几何判定：3 原子尝试线性，> 3 默认 nonlinear；单原子无振动
+        if n_atoms == 1:
+            rrho_geometry = "monatomic"
+        else:
+            rrho_geometry = "linear" if _is_linear(atoms) else "nonlinear"
+
+        # 自旋 S = (multiplicity - 1) / 2
+        spin = max(0.0, (multiplicity - 1) / 2.0)
+
+        # 压强：atm → Pa
+        pressure_Pa = pressure_atm * 101_325.0
+
+        rrho = _thermo.thermal_corrections(
+            freqs_cm_inv=[f for f in freqs_cm_inv if f > 0],
+            temperature_K=temperature_K,
+            pressure_Pa=pressure_Pa,
+            geometry=rrho_geometry,
+            symmetry_number=1,           # 不知道时偏保守；TODO Phase 2 接 RDKit 自动判
+            spin=spin,
+            atoms=atoms,
+        )
+        h_corr = rrho.get("h_corr_Eh")
+        g_corr = rrho.get("g_corr_Eh")
+        ts_corr = rrho.get("ts_Eh")
+        rrho_method = rrho.get("method", "ASE-IdealGasThermo")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("RRHO 修正计算失败，降级到 ZPE-only：%s", exc)
+        warnings.append(f"RRHO_FALLBACK: {type(exc).__name__}: {exc}")
 
     # ── 6. 组装返回 ─────────────────────────────────────────────────────
     return {
@@ -816,9 +912,13 @@ def frequency(
             "n_imaginary": n_imaginary,
             "zpe": {"value": round(zpe_Eh, 8), "unit": "Hartree"},
             "thermal_corrections": {
-                "h_corr": None,
-                "g_corr": None,
-                "ts": None,
+                "h_corr": ({"value": round(h_corr, 8), "unit": "Hartree"}
+                           if h_corr is not None else None),
+                "g_corr": ({"value": round(g_corr, 8), "unit": "Hartree"}
+                           if g_corr is not None else None),
+                "ts": ({"value": round(ts_corr, 8), "unit": "Hartree"}
+                       if ts_corr is not None else None),
+                "method": rrho_method,
             },
             "temperature_K": temperature_K,
             "pressure_atm": pressure_atm,
@@ -830,6 +930,53 @@ def frequency(
             "output_path": output_path,
         },
     }
+
+
+# ──────────────────────────────────────────────────────────────────────
+# RRHO 辅助：XYZ → ASE atoms + 线性判定
+# ──────────────────────────────────────────────────────────────────────
+
+def _xyz_to_ase_atoms(xyz: str):  # noqa: ANN201
+    """把 XYZ 字符串转 ase.Atoms。容忍 xyz+ / 标准 xyz / 无 comment xyz 三种形态。"""
+    from ase import Atoms  # type: ignore
+
+    symbols: list[str] = []
+    positions: list[tuple[float, float, float]] = []
+    for line in xyz.strip().splitlines():
+        parts = line.split()
+        if len(parts) < 4:
+            continue   # 跳过原子数行 / charge-mult 头 / comment
+        try:
+            x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+        except ValueError:
+            continue
+        symbols.append(parts[0])
+        positions.append((x, y, z))
+    return Atoms(symbols=symbols, positions=positions)
+
+
+def _is_linear(atoms, tol: float = 1e-3) -> bool:  # noqa: ANN001
+    """判定线性分子（≤ 2 原子直接 True；多原子检查所有点共线）。"""
+    import numpy as np
+
+    if len(atoms) <= 2:
+        return True
+    pos = atoms.get_positions()
+    v0 = pos[1] - pos[0]
+    n0 = np.linalg.norm(v0)
+    if n0 < tol:
+        return False
+    v0 /= n0
+    for i in range(2, len(pos)):
+        vi = pos[i] - pos[0]
+        ni = np.linalg.norm(vi)
+        if ni < tol:
+            continue
+        vi = vi / ni
+        cross = np.linalg.norm(np.cross(v0, vi))
+        if cross > tol:
+            return False
+    return True
 
 
 def _parse_frequencies_from_output(log_path: str) -> list[float]:

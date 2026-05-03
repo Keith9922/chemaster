@@ -6,6 +6,7 @@ when_to_use: TODO
 when_not_to_use: TODO
 required_mcps: TODO
 estimated_time: TODO
+level1_summary: "DLPNO-CCSD(T) 高精度单点能，用于 benchmark 或热化学计算。TODO Phase 3-4 撰写。"
 ---
 
 # dlpno-ccsdt

@@ -14,6 +14,10 @@ required_mcps:
   - chem.io.ase
   - chem.calc.psi4   # 或 orca，做 DFT 精筛
 estimated_time: 5 min - 2 hours (取决于体系大小与可旋转键数)
+level1_summary: |
+  多构象搜索漏斗：xTB/CREST 粗筛 + DFT 精筛。
+  可旋转键 ≥ 2 的柔性分子必先调用；tadf-pipeline 内部依赖。
+  需要 chem.calc.xtb + chem.io.ase + chem.calc.psi4（或 orca）。
 ---
 
 # Conformer Search

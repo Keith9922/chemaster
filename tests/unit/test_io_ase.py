@@ -130,10 +130,20 @@ def test_lookup_ch4():
 
 
 def test_lookup_benzene():
-    """苯查找。"""
+    """苯查找：12 原子，首行声明与 body 行数一致。"""
     result = S.lookup_by_name("benzene")
     assert result["ok"] is True
     assert result["result"]["formula"] == "C6H6"
+
+    xyz = result["result"]["xyz"]
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
+    n_declared = int(lines[0].strip())
+    body = lines[1:]
+    assert n_declared == 12, f"benzene XYZ first line should declare 12, got {n_declared}"
+    assert len(body) == 12, f"benzene XYZ body should have 12 atoms, got {len(body)}"
+    n_C = sum(1 for ln in body if ln.split()[0] == "C")
+    n_H = sum(1 for ln in body if ln.split()[0] == "H")
+    assert n_C == 6 and n_H == 6, f"benzene should be 6C+6H, got {n_C}C+{n_H}H"
 
 
 def test_lookup_name_not_found():

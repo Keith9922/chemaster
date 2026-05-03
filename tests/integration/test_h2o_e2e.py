@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from chemaster.agent.confirmation import ApprovedPlan
+from chemaster.agent.confirmation import ConfirmationLoop
 from chemaster.agent.executor import Executor
 from chemaster.agent.planner import Planner
 
@@ -30,8 +30,8 @@ def test_h2o_end_to_end(tmp_runs_dir: Path) -> None:
     assert plan.target_system.formula == "H2O"
     assert len(plan.steps) == 2
 
-    # 2. Confirmation 简化（本测试跳过用户交互，直接造 ApprovedPlan）
-    approved = ApprovedPlan(plan=plan, confirm_token="test-token", user_edits=[])
+    # 2. Confirmation：调真实 approve() 走 token 路径（不能再用 fake token）
+    approved = ConfirmationLoop().approve(plan, user_edits=["accepted defaults"])
 
     # 3. Executor
     executor = Executor(runs_dir=tmp_runs_dir)
@@ -73,7 +73,7 @@ def test_h2o_smoke_under_5min(tmp_runs_dir: Path) -> None:
     t0 = time.time()
 
     plan = Planner().create_plan("算 H2O 的能量")
-    approved = ApprovedPlan(plan=plan, confirm_token="smoke-token", user_edits=[])
+    approved = ConfirmationLoop().approve(plan)
     executor = Executor(runs_dir=tmp_runs_dir)
     result = executor.run(approved)
 

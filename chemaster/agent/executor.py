@@ -42,10 +42,24 @@ _MCP_SERVER_NAMES = list(_SERVER_TO_MODULE.values())
 class Executor:
     """执行 Plan，写产物到 runs/<task-id>/。"""
 
-    def __init__(self, runs_dir: str | Path = "./runs") -> None:
+    def __init__(
+        self,
+        runs_dir: str | Path = "./runs",
+        *,
+        strict_token: bool = True,
+    ) -> None:
+        """初始化 Executor。
+
+        Args:
+            runs_dir: 任务产物根目录。
+            strict_token: 是否强校验 ``ApprovedPlan.confirm_token`` 必须来自
+                ``ConfirmationLoop.approve()``。**生产路径不允许设 False**；
+                仅 unit test 用 mock fn 时关掉以兼容旧 fixture。
+        """
         self.runs_dir = Path(runs_dir)
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         self._mcp_funcs: dict[str, dict[str, Any]] = {}
+        self._strict_token = strict_token
         self._wire_mcps()
 
     # ------------------------------------------------------------------
@@ -124,6 +138,25 @@ class Executor:
                     break
         return args
 
+    def _maybe_inject_output_dir(self, args: dict, fn, step_dir: Path) -> dict:
+        """如果 MCP 工具签名声明了 ``output_dir`` 参数，且 caller 没传，
+        自动把 ``step_dir`` 注入。这样 psi4 等的输出日志直接落到
+        ``runs/<task-id>/step_NN_xxx/`` 里，便于 3 个月后 replay。
+
+        没有 ``output_dir`` 形参的工具（如 const、io_ase）保持不变。
+        """
+        import inspect
+
+        if "output_dir" in args:
+            return args
+        try:
+            sig = inspect.signature(fn)
+        except (TypeError, ValueError):
+            return args
+        if "output_dir" in sig.parameters:
+            return {**args, "output_dir": str(step_dir)}
+        return args
+
     def _collect_meta(self) -> dict:
         """收集版本快照，写入 meta.json。"""
         meta: dict[str, Any] = {
@@ -156,12 +189,19 @@ class Executor:
         return meta
 
     def _write_json_sync(self, path: Path, data: dict) -> None:
-        """写 JSON 并 fsync 确保持久化。"""
+        """写 JSON 并 fsync 确保持久化。
+
+        note: 不能用 ``os.fsync(path.open())``，那样文件描述符会泄漏；
+        要用 with 块拿到 fd，调 ``fileno()`` 之后由 with 关闭。
+        """
+        import json
+
         path.write_text(
-            __import__("json").dumps(data, indent=2, ensure_ascii=False),
+            json.dumps(data, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
-        os.fsync(path.open())
+        with path.open("rb") as fh:
+            os.fsync(fh.fileno())
 
     # ------------------------------------------------------------------
     # 公共 API
@@ -178,10 +218,32 @@ class Executor:
               "n_steps_completed": int,
               "warnings": list[str],
             }
+
+        Raises:
+            ValueError: confirm_token 为空。
+            PermissionError: token 不在白名单（伪造、重放、未经 ConfirmationLoop）。
+                测试可通过 ``Executor(strict_token=False)`` 关掉强校验，但**生产
+                路径不允许**——CLI / TUI 必须从 ``ConfirmationLoop.approve()`` 拿
+                ApprovedPlan。
         """
+        from chemaster.agent import _token_registry as _tr
+
         # 0. 校验 confirm_token
         if not approved.confirm_token:
             raise ValueError("confirm_token 为空，拒绝执行。必须经过 ConfirmationLoop 确认。")
+
+        if self._strict_token:
+            try:
+                _tr.verify(
+                    approved.plan.task_id,
+                    approved.confirm_token,
+                    signature=approved.signature or None,
+                )
+            except _tr.TokenError as exc:
+                raise PermissionError(
+                    f"ApprovedPlan token 校验失败：{exc}。"
+                    "必须从 ConfirmationLoop.approve(plan) 拿 ApprovedPlan。"
+                ) from exc
 
         plan = approved.plan
         task_dir = self.runs_dir / plan.task_id
@@ -235,8 +297,9 @@ class Executor:
 
                 fn = self._mcp_funcs[module_name][tool_name]
 
-                # 注入 geometry_xyz（state passing）
+                # 注入 geometry_xyz（state passing）+ output_dir（若工具支持）
                 args = self._resolve_geometry(dict(mcp_call.args), state)
+                args = self._maybe_inject_output_dir(args, fn, step_dir)
 
                 try:
                     result = fn(**args)
@@ -288,10 +351,21 @@ class Executor:
             "Executor 完成。n_steps_completed=%d/%d，task_dir=%s",
             n_steps_completed, len(plan.steps), task_dir,
         )
+
+        # 即便部分失败，也生成报告（失败的 step 会显示错误码与 suggestion）
+        report_path: Path | None = None
+        try:
+            from chemaster.agent.reporter import generate_report
+
+            report_path = generate_report(task_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("生成 report.md 失败：%s", exc)
+
         return {
             "ok": n_steps_completed == len(plan.steps),
             "task_dir": task_dir,
             "last_result": last_result,
             "n_steps_completed": n_steps_completed,
             "warnings": all_warnings,
+            "report_path": str(report_path) if report_path else None,
         }

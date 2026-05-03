@@ -12,6 +12,10 @@ required_mcps:
   - chem.calc.bdf
   - chem.calc.orca   # 备用（精度略差但更易装）
 estimated_time: 10 min - 2 hours
+level1_summary: |
+  自旋轨道耦合矩阵元计算，BDF（X2C）优先。
+  TADF/ISC/RISC 速率计算必须先算 <S1|H_SO|T1>。
+  需要 chem.calc.bdf（或 chem.calc.orca 备用）。
 ---
 
 # Spin-Orbit Coupling

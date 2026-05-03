@@ -93,7 +93,7 @@ class TestCreatesTaskDir:
         approved = ApprovedPlan(plan=plan, confirm_token="tok", user_edits=[])
 
         with patch.object(Executor, "_wire_mcps", lambda self: None):
-            executor = Executor(runs_dir=tmp_runs)
+            executor = Executor(runs_dir=tmp_runs, strict_token=False)
             executor._mcp_funcs = {
                 "calc_psi4": {"optimize": mock_opt},
             }
@@ -137,7 +137,7 @@ class TestWritesMetaAndPlan:
         approved = ApprovedPlan(plan=plan, confirm_token="tok", user_edits=[])
 
         with patch.object(Executor, "_wire_mcps", lambda self: None):
-            executor = Executor(runs_dir=tmp_runs)
+            executor = Executor(runs_dir=tmp_runs, strict_token=False)
             executor._mcp_funcs = {
                 "const": {"get_constant": mock_get},
             }
@@ -203,7 +203,7 @@ class TestStepDirsCreated:
         approved = ApprovedPlan(plan=plan, confirm_token="tok", user_edits=[])
 
         with patch.object(Executor, "_wire_mcps", lambda self: None):
-            executor = Executor(runs_dir=tmp_runs)
+            executor = Executor(runs_dir=tmp_runs, strict_token=False)
             executor._mcp_funcs = {
                 "calc_psi4": {
                     "optimize": mock_opt,
@@ -258,7 +258,7 @@ class TestGeometryPassing:
         approved = ApprovedPlan(plan=plan, confirm_token="tok", user_edits=[])
 
         with patch.object(Executor, "_wire_mcps", lambda self: None):
-            executor = Executor(runs_dir=tmp_runs)
+            executor = Executor(runs_dir=tmp_runs, strict_token=False)
             executor._mcp_funcs = {
                 "calc_psi4": {
                     "optimize": mock_psi4_optimize,
@@ -309,7 +309,7 @@ class TestStopsOnError:
         approved = ApprovedPlan(plan=plan, confirm_token="tok", user_edits=[])
 
         with patch.object(Executor, "_wire_mcps", lambda self: None):
-            executor = Executor(runs_dir=tmp_runs)
+            executor = Executor(runs_dir=tmp_runs, strict_token=False)
             executor._mcp_funcs = {
                 "calc_psi4": {
                     "optimize": mock_psi4_optimize,
@@ -336,6 +336,6 @@ class TestRejectsNoToken:
         approved = ApprovedPlan(plan=plan, confirm_token="", user_edits=[])
 
         with patch.object(Executor, "_wire_mcps", lambda self: None):
-            executor = Executor(runs_dir=tmp_runs)
+            executor = Executor(runs_dir=tmp_runs, strict_token=False)
             with pytest.raises(ValueError, match="confirm_token"):
                 executor.run(approved)

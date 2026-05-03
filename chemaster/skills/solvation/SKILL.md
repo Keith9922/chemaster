@@ -6,6 +6,7 @@ when_to_use: TODO
 when_not_to_use: TODO
 required_mcps: TODO
 estimated_time: TODO
+level1_summary: "溶剂化效应计算（CPCM/SMD 隐式溶剂），算 ΔG_solv 或溶液相性质。TODO Phase 3-4 撰写。"
 ---
 
 # solvation
