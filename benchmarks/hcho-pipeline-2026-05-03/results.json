@@ -1,0 +1,176 @@
+{
+  "molecule": "HCHO",
+  "method": "B3LYP/def2-SVP",
+  "started_utc": "2026-05-03T07:12:22Z",
+  "gs_opt": {
+    "elapsed_s": 2.7553231716156006,
+    "ok": true,
+    "result": {
+      "final_energy": {
+        "value": -114.41550257,
+        "unit": "Hartree"
+      },
+      "optimized_geometry_xyz": "0 1\n C    0.000000000029   -0.000000000057   -0.598879257388\n O   -0.000000000021    0.000000000038    0.600844543059\n H    0.944744774573    0.000000000038   -1.202543100099\n H   -0.944744774576    0.000000000038   -1.202543100074\n",
+      "n_iterations": 0,
+      "converged": true
+    }
+  },
+  "gs_freq": {
+    "elapsed_s": 9.784558057785034,
+    "ok": true,
+    "result": {
+      "frequencies_cm_inv": [
+        1193.087,
+        1265.2926,
+        1530.2787,
+        1863.6112,
+        2866.1404,
+        2925.5997
+      ],
+      "ir_intensities_km_per_mol": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "n_imaginary": 0,
+      "zpe": {
+        "value": 0.02652701,
+        "unit": "Hartree"
+      },
+      "thermal_corrections": {
+        "h_corr": {
+          "value": 0.03033926,
+          "unit": "Hartree"
+        },
+        "g_corr": {
+          "value": 0.00551588,
+          "unit": "Hartree"
+        },
+        "e_corr": {
+          "value": 0.02939508,
+          "unit": "Hartree"
+        },
+        "ts": {
+          "value": 0.02482338,
+          "unit": "Hartree"
+        },
+        "total_h": {
+          "value": -114.3851633,
+          "unit": "Hartree"
+        },
+        "total_g": {
+          "value": -114.40998668,
+          "unit": "Hartree"
+        },
+        "total_e": {
+          "value": -114.38610749,
+          "unit": "Hartree"
+        }
+      },
+      "temperature_K": 298.15,
+      "pressure_atm": 1.0
+    }
+  },
+  "vertical_tddft": {
+    "elapsed_s": 1.389984130859375,
+    "ok": true,
+    "result": {
+      "ground_state_energy": {
+        "value": -114.41550256674482,
+        "unit": "Hartree"
+      },
+      "singlets": [
+        {
+          "state": 1,
+          "excitation_energy": {
+            "value": 4.0774,
+            "unit": "eV"
+          },
+          "wavelength_nm": 304.08,
+          "oscillator_strength": 0.0
+        },
+        {
+          "state": 2,
+          "excitation_energy": {
+            "value": 8.2129,
+            "unit": "eV"
+          },
+          "wavelength_nm": 150.96,
+          "oscillator_strength": 0.17
+        }
+      ],
+      "triplets": [
+        {
+          "state": 1,
+          "excitation_energy": {
+            "value": 3.3571,
+            "unit": "eV"
+          },
+          "wavelength_nm": 369.33,
+          "oscillator_strength": 0.0
+        }
+      ],
+      "delta_E_ST_eV": -0.7203,
+      "method": "B3LYP",
+      "basis": "def2-SVP",
+      "tda": true
+    }
+  },
+  "s1_opt": {
+    "elapsed_s": 63.18454718589783,
+    "ok": true,
+    "result": {
+      "target_state": 1,
+      "target_spin": "singlet",
+      "final_total_energy": {
+        "value": -114.41550257,
+        "unit": "Hartree"
+      },
+      "excitation_energy_at_opt": {
+        "value": 3.6602,
+        "unit": "eV"
+      },
+      "optimized_geometry_xyz": "0 1\n C   -0.107993319801    0.585697264147    0.000000017516\n O    0.058944422739   -0.602290803759   -0.000000020805\n H   -0.191893211257    1.183534095801    0.944692309725\n H   -0.191893208654    1.183534067444   -0.944692306436\n",
+      "n_iterations": 5,
+      "converged": true,
+      "method": "B3LYP",
+      "basis": "def2-SVP",
+      "tda": true
+    }
+  },
+  "t1_opt": {
+    "elapsed_s": 71.27131271362305,
+    "ok": true,
+    "result": {
+      "target_state": 1,
+      "target_spin": "triplet",
+      "final_total_energy": {
+        "value": -114.41550257,
+        "unit": "Hartree"
+      },
+      "excitation_energy_at_opt": {
+        "value": 2.8852,
+        "unit": "eV"
+      },
+      "optimized_geometry_xyz": "0 1\n C   -0.107993392094    0.585697260729   -0.000000022684\n O    0.058944443304   -0.602290784199    0.000000039354\n H   -0.191893180377    1.183534043474    0.944692304506\n H   -0.191893187806    1.183534103628   -0.944692321176\n",
+      "n_iterations": 5,
+      "converged": true,
+      "method": "B3LYP",
+      "basis": "def2-SVP",
+      "tda": true
+    }
+  },
+  "derived": {
+    "delta_E_ST_vertical_eV": -0.7203,
+    "S1_vertical_eV": 4.0774,
+    "S1_oscillator_f": 0.0,
+    "T1_vertical_eV": 3.3571,
+    "S1_adiabatic_eV": 3.6602,
+    "T1_adiabatic_eV": 2.8852,
+    "delta_E_ST_adiabatic_eV": -0.7749999999999999
+  },
+  "finished_utc": "2026-05-03T07:14:50Z"
+}
