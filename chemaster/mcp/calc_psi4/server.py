@@ -1167,6 +1167,334 @@ def tddft(
     }
 
 
+@mcp.tool()
+def optimize_excited_state(
+    geometry_xyz: str,
+    target_state: int = 1,
+    target_spin: str = "singlet",
+    charge: int = 0,
+    multiplicity: int = 1,
+    method: str = "B3LYP-D3(BJ)",
+    basis: str = "def2-SVP",
+    n_states: int = 3,
+    convergence: str = "normal",
+    coordinate_system: str = "internal",
+    max_iter: int = 100,
+    memory_gb: float = 4.0,
+    n_threads: int = 1,
+) -> dict[str, Any]:
+    """Excited-state geometry optimization (TDA only, psi4).
+
+    Optimizes a TDA excited-state root via psi4's `td-{method}` driver +
+    finite-difference gradients (psi4 1.10 has no analytic TDDFT gradient,
+    so this falls back to FD — slow but works for small/medium molecules).
+
+    Use this AFTER `optimize` (ground state) to get **adiabatic** S1/T1
+    geometries. Adiabatic ΔE_ST = E(T1@T1_geom) - E(S1@S1_geom) is the
+    physically correct singlet-triplet gap for TADF, vs the *vertical*
+    ΔE_ST you get from one-shot `tddft` on the S0 geometry.
+
+    Args:
+        geometry_xyz: starting geometry (usually the optimized S0 geometry).
+        target_state: which excited root to optimize (1 = S1 / T1, 2 = S2 / T2,
+            ...). Must satisfy 1 ≤ target_state ≤ n_states.
+        target_spin: "singlet" or "triplet". For triplet opt, the underlying
+            TDA reference stays restricted (RHF) but `tdscf_triplets="ONLY"`
+            is used; the final wavefunction represents the triplet excited
+            state on top of the closed-shell GS.
+        charge / multiplicity: GROUND state charge / multiplicity. The
+            excited state is built on top of this reference. Triplet excited
+            states require multiplicity=1 (closed-shell GS).
+        method: DFT functional. `td-{method}` is sent to the driver. For
+            charge-transfer states (TADF donor-acceptor), prefer ωB97X-D
+            over B3LYP — see PITFALLS §2.7.
+        basis: basis set; def2-SVP for screening, def2-TZVP for publication.
+        n_states: how many excited roots TDDFT should solve at each opt
+            step. Must be ≥ target_state. More states cost more memory but
+            stabilize root following.
+        convergence: opt convergence preset (loose / normal / tight /
+            very_tight). normal is recommended for excited states because
+            tight + finite-difference gradients = very slow.
+        coordinate_system: internal / redundant_internal / cartesian.
+        max_iter: max optimization steps.
+        memory_gb / n_threads: as for `optimize`.
+
+    Returns:
+        ok=True:
+          {
+            "ok": True,
+            "result": {
+              "target_state": int,
+              "target_spin": str,
+              "final_total_energy": {"value": float, "unit": "Hartree"},
+                  # absolute energy of the optimized excited state
+              "excitation_energy_at_opt": {"value": float, "unit": "eV"} | null,
+                  # final E_excitation = E(target) - E(GS) at the OPTIMIZED
+                  # excited-state geometry; null if not parseable
+              "optimized_geometry_xyz": str,
+              "n_iterations": int,
+              "converged": bool,
+            },
+            "warnings": [...],
+            "meta": {...},
+          }
+        ok=False:
+          {"ok": False, "error_code": "...", "details": str, "suggestion": str}
+
+    Error codes:
+        - INVALID_TARGET_STATE: target_state out of range or n_states < target_state.
+        - SCF_NOT_CONVERGED, GEOMETRY_NOT_CONVERGED, INVALID_MULTIPLICITY,
+          PSI4_INTERNAL_ERROR (same semantics as `optimize`).
+        - TDDFT_GRADIENT_UNAVAILABLE: tda=False was requested or analytic
+          gradient missing for this combination. Currently we always use TDA
+          (psi4 1.10 supports TDA gradients only; full TDDFT gradients are
+          NYI). Suggestion: stick with TDA.
+
+    Notes:
+        - Cost: psi4 1.10 uses finite-difference gradients (3-point), so each
+          opt step costs ~3·N_atom TDDFT energies. For 3-atom H2O at sto-3g
+          this finishes in ~10 s; for a 50-atom TADF at def2-SVP this is
+          1-2 hours. Plan accordingly.
+        - The `tda` flag is forced True. Full TDDFT (RPA) opt is not
+          supported by psi4 1.10.
+        - To get S1 → S0 emission energy: subtract this `final_total_energy`
+          from the S0 single-point energy at the same geometry, then convert
+          to eV.
+
+    Examples:
+        >>> r = optimize_excited_state(
+        ...     opt_xyz, target_state=1, target_spin="singlet",
+        ...     method="ωB97X-D", basis="def2-SVP", n_states=3)
+        >>> r["result"]["converged"]
+        True
+        >>> r["result"]["target_state"]
+        1
+    """
+    # ── 1. arg sanity ──────────────────────────────────────────────────
+    if target_spin not in ("singlet", "triplet"):
+        return {
+            "ok": False,
+            "error_code": "INVALID_TARGET_STATE",
+            "details": f"target_spin must be 'singlet' or 'triplet', got {target_spin!r}",
+            "suggestion": "Use target_spin='singlet' for S1/S2/..., 'triplet' for T1/T2/...",
+        }
+    if target_state < 1 or target_state > n_states:
+        return {
+            "ok": False,
+            "error_code": "INVALID_TARGET_STATE",
+            "details": (
+                f"target_state={target_state} is out of range "
+                f"[1, n_states={n_states}]."
+            ),
+            "suggestion": (
+                f"Set n_states ≥ target_state. For TADF S1 opt use "
+                f"target_state=1, n_states=3 (extra states stabilize root following)."
+            ),
+        }
+
+    n_el = _electron_count(geometry_xyz, charge)
+    valid, err_msg = _validate_multiplicity(multiplicity, n_el)
+    if not valid:
+        return {
+            "ok": False,
+            "error_code": "INVALID_MULTIPLICITY",
+            "details": err_msg,
+            "suggestion": "Excited-state opt requires a closed-shell GS reference (multiplicity=1).",
+        }
+    if multiplicity != 1:
+        return {
+            "ok": False,
+            "error_code": "INVALID_MULTIPLICITY",
+            "details": (
+                f"Excited-state TDA opt requires closed-shell singlet GS "
+                f"(multiplicity=1); got multiplicity={multiplicity}."
+            ),
+            "suggestion": (
+                "For open-shell GS (radicals, high-spin) use a different workflow; "
+                "TDA on top of UHF is not supported by this MCP."
+            ),
+        }
+
+    # ── 2. convergence + coords mapping (same as `optimize`) ──────────
+    g_convergence_map = {
+        "loose": "gau_loose", "normal": "gau",
+        "tight": "gau_tight", "very_tight": "gau_verytight",
+    }
+    g_convergence = g_convergence_map.get(convergence.lower(), "gau")
+    opt_coords_map = {
+        "internal": "INTERNAL",
+        "redundant_internal": "REDUNDANT_INTERNAL",
+        "cartesian": "CARTESIAN",
+    }
+    opt_coordinates = opt_coords_map.get(coordinate_system.lower(), "INTERNAL")
+
+    import psi4
+    from psi4 import __version__ as psi4_version
+
+    psi4.set_memory(f"{int(memory_gb)} GB")
+    psi4.set_num_threads(n_threads)
+    output_path = "optimize_es_output.log"
+    psi4.core.set_output_file(output_path, False)
+
+    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
+    mol = psi4.geometry(geom_block)
+
+    psi4.set_options({
+        "reference": "rhf",
+        "scf_type": "df",
+        "tdscf_states": int(n_states),
+        "tdscf_tda": True,
+        "tdscf_triplets": "ONLY" if target_spin == "triplet" else "NONE",
+        "follow_root": int(target_state),
+        "g_convergence": g_convergence,
+        "geom_maxiter": int(max_iter),
+        "opt_coordinates": opt_coordinates,
+    })
+
+    wall_start = time.time()
+    warnings: list[str] = []
+    final_total_energy: float | None = None
+    optimized_xyz: str | None = None
+    converged = False
+
+    try:
+        td_method = method if method.lower().startswith("td-") else f"td-{method}"
+        e_total = psi4.optimize(td_method, basis=basis, molecule=mol)
+        final_total_energy = float(e_total)
+        optimized_xyz = mol.save_string_xyz()
+        converged = True
+    except psi4.OptimizationConvergenceError as e:
+        wall_time = time.time() - wall_start
+        try:
+            optimized_xyz = mol.save_string_xyz()
+        except Exception:
+            pass
+        return {
+            "ok": False,
+            "error_code": "GEOMETRY_NOT_CONVERGED",
+            "details": f"Excited-state optimization did not converge: {e}",
+            "suggestion": (
+                "Excited-state PES is often shallower / has more saddles. Try: "
+                "(1) loosen convergence to 'normal'; "
+                "(2) start from a slightly distorted geometry "
+                "(displace along the dominant TDDFT NTO); "
+                "(3) reduce trust radius."
+            ),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+    except psi4.SCFConvergenceError as e:
+        wall_time = time.time() - wall_start
+        return {
+            "ok": False,
+            "error_code": "SCF_NOT_CONVERGED",
+            "details": f"GS SCF did not converge during excited-state opt: {e}",
+            "suggestion": (
+                "Try guess=GWH, switch to def2-SVP first, or pre-converge with "
+                "calc_psi4_single_point + damping."
+            ),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+    except Exception as exc:
+        wall_time = time.time() - wall_start
+        msg = str(exc).lower()
+        if "index" in msg and "out of bounds" in msg:
+            return {
+                "ok": False,
+                "error_code": "INVALID_TARGET_STATE",
+                "details": (
+                    f"psi4's TDA Davidson solver returned fewer roots than "
+                    f"requested (n_states={n_states}). This usually means the "
+                    f"system has fewer accessible excitations than n_states "
+                    f"(common for very small systems or minimal basis)."
+                ),
+                "suggestion": (
+                    "Reduce n_states, or use a larger basis (def2-SVP instead "
+                    "of sto-3g)."
+                ),
+                "meta": {"psi4_version": psi4_version,
+                         "wall_time_s": round(wall_time, 2),
+                         "output_path": output_path},
+            }
+        logger.exception("psi4 optimize_excited_state internal error")
+        return {
+            "ok": False,
+            "error_code": "PSI4_INTERNAL_ERROR",
+            "details": f"{type(exc).__name__}: {exc}",
+            "suggestion": (
+                "Inspect the psi4 output log; common causes are missing TDA "
+                "gradient for the chosen functional, basis without ECP for "
+                "heavy atoms, or symmetry mishandling."
+            ),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+
+    wall_time = time.time() - wall_start
+
+    # ── 3. parse the LAST TDDFT block from the log to get E_excitation
+    # at the converged geometry.
+    singlets, triplets = _parse_tdscf_from_output(
+        output_path, want_triplets=(target_spin == "triplet")
+    )
+    pool = triplets if target_spin == "triplet" else singlets
+    e_excitation_eV: float | None = None
+    if pool and len(pool) >= target_state:
+        e_excitation_eV = pool[target_state - 1]["excitation_energy"]["value"]
+
+    # ── 4. opt iteration count from log ──────────────────────────────
+    n_iter = _parse_opt_iterations_from_output(output_path)
+
+    return {
+        "ok": True,
+        "result": {
+            "target_state": target_state,
+            "target_spin": target_spin,
+            "final_total_energy": {
+                "value": round(final_total_energy, 8), "unit": "Hartree"
+            },
+            "excitation_energy_at_opt": (
+                {"value": round(e_excitation_eV, 4), "unit": "eV"}
+                if e_excitation_eV is not None else None
+            ),
+            "optimized_geometry_xyz": optimized_xyz or "",
+            "n_iterations": n_iter,
+            "converged": converged,
+            "method": method,
+            "basis": basis,
+            "tda": True,
+        },
+        "warnings": warnings,
+        "meta": {
+            "psi4_version": psi4_version,
+            "wall_time_s": round(wall_time, 2),
+            "output_path": output_path,
+        },
+    }
+
+
+def _parse_opt_iterations_from_output(log_path: str) -> int:
+    """Count optimizer macro steps from psi4's geometry-optimization printout.
+
+    psi4 1.10's optking prints the banner
+        "OPTKING 3.0: for geometry optimizations"
+    once per macro step (i.e. once per outer geometry update). We count those.
+    Falls back to "Optimization Iteration N" for older psi4 formats.
+    """
+    try:
+        text = Path(log_path).read_text(errors="replace")
+    except Exception:
+        return 0
+    n = len(re.findall(r"OPTKING\s+\d+\.\d+:\s*for\s+geometry\s+optimizations", text))
+    if n:
+        return n
+    return len(re.findall(r"Optimization\s+Iteration\s+\d+", text))
+
+
 def _parse_tdscf_from_output(
     output_path: str,
     want_triplets: bool,
