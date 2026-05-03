@@ -1227,10 +1227,17 @@ def optimize_excited_state(
               "target_state": int,
               "target_spin": str,
               "final_total_energy": {"value": float, "unit": "Hartree"},
-                  # absolute energy of the optimized excited state
+                  # GROUND-STATE energy at the optimized excited-state geometry
+                  # (psi4's td-{method} driver returns E_GS, not E_S1!).
+                  # To get the absolute S1/T1 energy:
+                  #   E_excited_abs = final_total_energy
+                  #                 + excitation_energy_at_opt / hartree_to_eV
               "excitation_energy_at_opt": {"value": float, "unit": "eV"} | null,
-                  # final E_excitation = E(target) - E(GS) at the OPTIMIZED
-                  # excited-state geometry; null if not parseable
+                  # E(target) - E(GS) at the OPTIMIZED excited-state geometry;
+                  # subtract from the vertical excitation to get the geometry-
+                  # relaxation contribution (ΔE_relax = ΔE_vert − ΔE_adiab)
+                  # which is what feeds into the Stokes shift.
+                  # null if not parseable
               "optimized_geometry_xyz": str,
               "n_iterations": int,
               "converged": bool,
@@ -1257,9 +1264,19 @@ def optimize_excited_state(
           1-2 hours. Plan accordingly.
         - The `tda` flag is forced True. Full TDDFT (RPA) opt is not
           supported by psi4 1.10.
-        - To get S1 → S0 emission energy: subtract this `final_total_energy`
-          from the S0 single-point energy at the same geometry, then convert
-          to eV.
+        - **Starting-geometry sensitivity**: if the GS-optimized geometry is
+          a stationary point on the excited-state PES (common when the GS and
+          S1/T1 minima share a high-symmetry geometry), OPTKING may converge
+          in 1 step without actually relaxing on the excited state. For
+          molecules known to break symmetry on excitation (e.g. HCHO S1
+          pyramidalizes), pre-perturb the input geometry slightly along the
+          expected distortion mode (~0.2 Å on relevant atoms) to nudge the
+          optimizer onto the excited-state PES. The ``n_iterations`` field
+          can be used to detect this: ``< 3`` macro steps from a GS-optimized
+          start usually means the optimizer never left the GS minimum.
+        - To recover the S1 → S0 emission (Stokes-shifted) energy in eV:
+          ``E_emission_eV = excitation_energy_at_opt["value"]``
+          (this is the vertical S1→S0 gap *at the S1 geometry*).
 
     Examples:
         >>> r = optimize_excited_state(
@@ -1339,10 +1356,14 @@ def optimize_excited_state(
     geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
     mol = psi4.geometry(geom_block)
 
+    # Pass tdscf_states as a length-1 list matching c1 symmetry's single irrep.
+    # Plain int triggers psi4's internal expansion which can mis-fire
+    # during the FD-gradient driver loop and yield ValidationError
+    # "States requested ([3, 3]) do not match number of irreps (1)".
     psi4.set_options({
         "reference": "rhf",
         "scf_type": "df",
-        "tdscf_states": int(n_states),
+        "tdscf_states": [int(n_states)],
         "tdscf_tda": True,
         "tdscf_triplets": "ONLY" if target_spin == "triplet" else "NONE",
         "follow_root": int(target_state),
