@@ -124,54 +124,52 @@ chemaster/
 │   └── TADF_PIPELINE.md         # 标杆问题详解
 │
 ├── chemaster/                   # Python 包根
-│   ├── agent/                   # Planner / Confirmation / Executor / Iterator
+│   ├── agent/                   # V2 真 tool-use Agent loop
+│   │   ├── agent.py             # ChemAgent (BaseAgent + Anthropic SDK loop)
+│   │   ├── llm_client.py        # AnthropicLLM / OpenAICompatLLM / Qwen / DeepSeek / MiniMax / Mock
+│   │   ├── tool_registry.py     # ToolSpec, build_default_registry()
+│   │   ├── builtins.py          # finish / ask_user / think
+│   │   ├── context.py           # session state, runs/<task_id>/ persistence
+│   │   ├── confirmation.py      # per-tool confirm callback (NOT central token)
+│   │   ├── trajectory.py        # full audit log (msgs + tool calls + confirms)
+│   │   ├── reporter.py          # auto runs/<task_id>/report.md
+│   │   ├── system_prompt.md     # chemistry-expert system prompt
+│   │   └── (legacy: planner.py / executor.py kept as compat shims)
 │   ├── mcp/                     # 自研 MCP servers
-│   │   ├── const/               # 物理常数与单位换算（先做，最简单）
-│   │   ├── io_ase/              # 结构 IO
-│   │   ├── calc_psi4/           # psi4 包装
-│   │   ├── calc_orca/
-│   │   ├── calc_bdf/
-│   │   ├── calc_xtb/
+│   │   ├── const/               # 物理常数与单位换算
+│   │   ├── io_ase/              # 结构 IO + lookup_by_name
+│   │   ├── calc_psi4/           # single_point / optimize / frequency / tddft
+│   │   │                        # / optimize_excited_state (TD-opt, NEW)
+│   │   ├── calc_orca/           # subprocess wrapper, full keyword passthrough
+│   │   ├── calc_bdf/            # SOC (X2C-TDA) skeleton; needs $BDFHOME
+│   │   ├── calc_xtb/            # xtb subprocess
+│   │   ├── calc_gaussian/       # parse .com/.gjf, run g16/g09
 │   │   ├── parse_cclib/         # 输出解析
-│   │   ├── analysis_multiwfn/   # 波函数分析
+│   │   ├── analysis_multiwfn/   # NTO 分析（菜单式 CLI piped）
 │   │   ├── viz/                 # 出图
-│   │   ├── hpc_slurm/           # SLURM 提交与监控
-│   │   ├── kb/                  # RAG 检索
-│   │   └── pdf/                 # 复用现有 PDF 抽取
-│   ├── skills/                  # ★ Skill 库（Markdown 为主）
-│   │   ├── opt-freq/SKILL.md
-│   │   ├── tddft/SKILL.md
-│   │   ├── soc/SKILL.md
-│   │   ├── ts-search/SKILL.md
-│   │   ├── conformer/SKILL.md
-│   │   ├── pes-scan/SKILL.md
-│   │   ├── tadf-pipeline/SKILL.md     # ★ 毕设标杆
-│   │   ├── pka/SKILL.md
-│   │   ├── dlpno-ccsdt/SKILL.md
-│   │   └── solvation/SKILL.md
+│   │   ├── hpc_slurm/           # paramiko SSH submit/status/fetch
+│   │   ├── kb/                  # use_skill / list_skills / kb_search
+│   │   └── pdf/                 # wrap tools/pdf-structure-extract/
 │   ├── kb/
-│   │   ├── formulas/                  # 确定性 Python 模块
-│   │   │   ├── constants.py
-│   │   │   ├── units.py
-│   │   │   ├── thermo.py
-│   │   │   ├── kinetics.py
-│   │   │   └── photophysics.py        # Marcus、kRISC、kF
-│   │   └── rules/                     # YAML/Markdown，供 RAG
-│   │       ├── basis_sets.yaml
-│   │       ├── functionals.yaml
-│   │       ├── convergence.yaml
-│   │       └── workflows.yaml
-│   ├── tui/                     # Textual TUI
-│   │   ├── app.py               # 入口
-│   │   └── widgets/
-│   └── cli.py                   # CLI 入口（python -m chemaster ...）
+│   │   ├── formulas/            # 确定性 Python 模块（LLM 不算数）
+│   │   │   ├── constants.py / units.py / thermo.py / kinetics.py
+│   │   │   └── photophysics.py  # Marcus / MLJ / Strickler-Berg / Einstein-A
+│   │   ├── rules/               # YAML（basis_sets, functionals, convergence, workflows）
+│   │   └── skills/              # ★ Markdown playbook（被 use_skill 工具读取）
+│   │       ├── opt-freq/ tddft/ soc/ ts-search/ conformer/ pes-scan/
+│   │       ├── tadf-pipeline/   # ★ 毕设标杆
+│   │       └── pka/ dlpno-ccsdt/ solvation/
+│   ├── tui/                     # Textual TUI（opt-in via --tui flag）
+│   └── cli.py                   # chemaster init / run / show / replay / skills / mcps
 │
 ├── tools/                       # 内嵌工具（非 Python 包）
-│   └── pdf-structure-extract/   # 现有 PDF 工作（保留并被 chem.pdf MCP 调用）
+│   └── pdf-structure-extract/
 │
-├── benchmarks/                  # 测试集
-│   ├── tadf-literature/         # 标杆 TADF 分子集
-│   └── gmtkn55-subset/          # 通用精度 benchmark
+├── benchmarks/                  # ★ 论文证据基地（不在 .gitignore）
+│   ├── REPORT_v0.2.0a2.md       # 当前批次综合报告
+│   ├── tadf-literature/         # 4CzIPN / DMAC-BP / DMAC-DPS anchors
+│   ├── momap-jingti/            # 师姐 jingti C24H8F8I4N2 + STATUS.md
+│   └── hcho-pipeline-2026-05-03/  # HCHO 端到端结果存档
 │
 ├── tests/
 │   ├── unit/
@@ -194,13 +192,13 @@ chemaster/
 
 所有量化/分子模拟交给专业软件。MCP wrapper 只做参数构造、输入文件生成、结果解析、错误识别。**绝不重新发明计算引擎**。
 
-### 5.3 Skill + MCP 双层不许混
+### 5.3 Skill + MCP 边界不许混
 
-见 §2.2。Skill 不写 psi4 输入文件字符串；MCP 不嵌工作流逻辑。
+见 §2.2。Skill 是 Markdown 文档（`kb/skills/*.md`），被 `use_skill` 工具按需读取，不写 psi4 输入文件字符串；MCP 是类型化原子操作，不嵌工作流逻辑。
 
-### 5.4 Plan-Confirm-Execute 三段式
+### 5.4 Per-tool confirmation（V2）
 
-任何会改变文件系统、提交 HPC、或耗时 > 30s 的操作，**必须先出 Plan 让用户确认**。这条对 Agent 自己也适用 —— 在动用户已有代码前先问。
+每个 MCP tool 有 `is_destructive` / `is_long_running` 标志位（在 `ToolSpec` 里声明）；Agent 在调用前触发用户回调（`chemaster.agent.confirmation.ConfirmationCallback`），用户 A/E/R/Q 决策。**不再有中央 token 校验**（V1 的 HMAC `confirm_token` 已废）。所有确认事件写入 `runs/<task_id>/confirmations.jsonl` 留痕。
 
 ### 5.5 单位带类型
 
@@ -220,18 +218,21 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ---
 
-## 6. 开发阶段（详见 [`docs/ROADMAP.md`](docs/ROADMAP.md)）
+## 6. 开发阶段（V2 修订版，详见 [`docs/ROADMAP.md`](docs/ROADMAP.md) 顶部 V2 状态段）
 
-| Phase | 内容 | 周数 | 验收 |
-|---|---|---|---|
-| 0 | 仓库重构 + 脚手架 + TUI 骨架 | 1 | `chemaster` 命令能进 REPL |
-| 1 | MVP 闭环：H2O opt+freq | 4 | 终端输入"算 H2O 的能量"5 分钟出报告 |
-| 2 | 知识库 + 智能决策 + 建议+纠偏 | 4 | 用户选 CCSD(T)/aug-cc-pVTZ 算苯环 → Agent 主动警告 |
-| 3 | HPC 集成（学校超算） | 3 | 提交 30 原子任务到 SLURM 自动拉回 |
-| 4 | TADF 流水线 + benchmark + 真人对照 | 5 | 5-10 个 TADF 分子误差合格；人力节省 ≥50% |
-| 5 | 扩展（ORCA/BDF/MultiWFN/PDF→复算 demo） | 2-4 | "读论文-自动复算"端到端 demo |
-| 6 | 文档 + 论文 | 1 | 初稿完成 |
-| 7 | **打包发布**（PyPI / Homebrew / Docker / Plugin） | 1-2 | 详见 [`docs/PACKAGING.md`](docs/PACKAGING.md) |
+| Phase | 状态 | 内容 |
+|---|---|---|
+| 0 | ✅ | 仓库脚手架 + 设计文档 |
+| 1 | ✅ | 工具链路打通（硬编码 H2O e2e） |
+| **1.5** | ✅ | **真 Claude tool-use Agent loop** (V2 核心，0.2.0a1) |
+| 2 | ✅ | 多 LLM provider（Anthropic + OpenAI-compat + Qwen + DeepSeek + MiniMax） |
+| 3 | 🔧 | TADF 流水线 anchor 分子（HCHO ✅、jingti S0 SP ✅、jingti TDDFT 进行中、4CzIPN/DMAC-* 待跑） |
+| 4 | 🔧 | 真实引擎接入：psi4 全 ✅、Gaussian parser ✅、ORCA/BDF/MultiWFN 骨架 ⬜ |
+| 5 | 🔧 | HPC 异步集成（`chem.hpc_slurm` 已 paramiko ✅，需真集群联调） |
+| 6 | ⬜ | 文档 + 论文 |
+| 7 | ⬜ | PyPI 发布（多渠道发布推到未来工作） |
+
+**已砍掉**（推到论文"未来工作"章节）：3 个月复现率验证、50% 人力对照实验、conda-forge / Homebrew / Docker / Claude Code Plugin 多渠道发布、benchmark Iterator 闭环作为毕设核心。
 
 ---
 
@@ -252,13 +253,13 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ## 8. 立即可做的下一步（新会话从这里开始）
 
-V2 架构已落地。当前最关键的开放工作：
+V2 架构 + Phase 2 LLM 矩阵 + Phase 3 起步（HCHO 完成、jingti S0/TDDFT 进行中）已落地。当前最关键的开放工作，按性价比排：
 
-1. **接入真 LLM**：用户在 [llm_client.py](chemaster/agent/llm_client.py) 的 `AnthropicLLM` 已实现；需要 export `ANTHROPIC_API_KEY`，跑 `chemaster run "compute energy of benzene"`。可选：补一个 `OpenAICompatLLM` 给国产模型（Qwen / DeepSeek）。
-2. **TADF 流水线落地**：在 5 个 anchor 分子（4CzIPN, DMAC-DPS, ...）上跑端到端 TADF 流水线，对比文献值。Skill 文档已经在 `kb/skills/tadf-pipeline/SKILL.md`。
-3. **Textual TUI**：CLI 已经够用，TUI 是体验提升项；做 `chemaster.tui.app` 提供对话流 + 实时工具调用渲染。
-4. **HPC 异步集成**：`chem.hpc.slurm` MCP 接入学校超算；Agent 提交后立即返回 `{job_id, eta}`，不阻塞。
-5. **更多 MCP**：ORCA / BDF / MultiWFN 真实接入（目前 server.py 是占位）。
+1. **跑完 jingti 端到端 + 论文 Section 数据**（性价比最高）：jingti vertical TDDFT 已经在跑；接着做 S1/T1 TD-opt（用 `optimize_excited_state`）→ 算 ΔE_ST 的 vert / adiab 两套数→ 用 `k_mlj` 算 k_ISC，对比师姐 MOMAP 1.17e9。预计本地 6-12 小时；产出 `benchmarks/REPORT_v0.2.0a3.md`。
+2. **真 SOC 接入（k_ISC 算硬数）**：当前 MLJ 用文献典型 SOC=5.56 cm⁻¹ 当 input。让 ChemMaster 自己算 SOC：(a) ORCA `RI-SOMF` 包装到 `calc_orca` MCP，对小体系跑通；(b) 等用户拿到 BDF 后接 `calc_bdf.tddft_soc`。
+3. **MOMAP-grade k_F (Franck-Condon FCWD)**：当前 `kr_einstein_from_dipole` / `kf_strickler_berg` 是垂直近似；想要全振动结构的 FCWD，需 normal-mode displacement → Huang-Rhys 全集 → FC 积分。1-2 周工作。
+4. **NACME 解析 / k_IC**：师姐 k_IC = 6.12e11 s⁻¹ 没法不读 NACME 重现。Gaussian / ORCA NACME parser → `kic_marcus(nacme)` 已经有公式。3-5 天。
+5. **更多 anchor 分子**：4CzIPN (76 atoms)、DMAC-DPS / DMAC-BP (82-83 atoms) — 需要 HPC 才现实，等 #1 把 jingti 跑漂亮再说。
 
 每一步都先写 test 再写实现。每完成一步用 git commit。
 
@@ -266,6 +267,7 @@ V2 架构已落地。当前最关键的开放工作：
 - 不要重构现有 PDF 代码 —— 它在 `tools/pdf-structure-extract/`，是外挂工具，未来通过 `chem.pdf` MCP 集成。
 - 不要让 Agent "自由发挥" 选基组/泛函 —— 必须先调 `kb_search` 或 `use_skill` 拿建议。
 - 不要在 system prompt 里写公式 —— 公式只在 `chemaster.kb.formulas` Python 模块里。
+- 不要把 benchmark 结果写进 `runs/`（gitignored），要写进 `benchmarks/<task>-<date>/`，论文 Section 才能引。
 
 ---
 
@@ -288,37 +290,41 @@ V2 架构已落地。当前最关键的开放工作：
 |---|---|
 | **本文件** (`CLAUDE.md`) | 新会话第一个读 |
 | [`README.md`](README.md) | 项目对外介绍（用户、贡献者读） |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 想知道整体阶段安排 |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 写代码前理解六层架构 |
+| [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) | 一页用户操作手册（新用户跑通 H2O / 苯 / TADF anchor） |
+| [`docs/V2_RELEASE_NOTES.md`](docs/V2_RELEASE_NOTES.md) | V2 架构详解（5 层、tool-use loop、per-tool confirm） |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 想知道整体阶段安排（顶部有 V2 状态段） |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 写代码前理解 5 层架构 |
 | [`docs/SETUP.md`](docs/SETUP.md) | 第一次搭环境 |
 | [`docs/PITFALLS.md`](docs/PITFALLS.md) | **写每个 MCP/Skill 前必读** |
-| [`docs/PACKAGING.md`](docs/PACKAGING.md) | Phase 7 发布前 |
+| [`docs/PACKAGING.md`](docs/PACKAGING.md) | 发布前 |
 | [`docs/MCP_GUIDE.md`](docs/MCP_GUIDE.md) | 写 MCP server 时 |
-| [`docs/SKILLS_GUIDE.md`](docs/SKILLS_GUIDE.md) | 写 Skill 时 |
+| [`docs/SKILLS_GUIDE.md`](docs/SKILLS_GUIDE.md) | 写 Skill markdown 时 |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | 写代码前 |
 | [`docs/TADF_PIPELINE.md`](docs/TADF_PIPELINE.md) | 写 TADF skill 时 |
+| [`benchmarks/REPORT_v0.2.0a2.md`](benchmarks/REPORT_v0.2.0a2.md) | **本批次（HCHO + jingti + MLJ）综合证据报告，论文 Section 直接引** |
+| [`benchmarks/momap-jingti/STATUS.md`](benchmarks/momap-jingti/STATUS.md) | 师姐 jingti 复现进度（已合 → 待办对照） |
 | [`docs/KICKOFF.md`](docs/KICKOFF.md) | **开新会话前给模型抄的 prompt 模板** |
 
 ---
 
-## 11. 当前状态快照
+## 11. 当前状态快照（2026-05-03）
 
-V2 架构已落地（参见 [CHANGELOG.md](CHANGELOG.md) v0.2.0 段）：
+V2 架构 + Phase 2 LLM 矩阵已落地，Phase 3 TADF 流水线进行中（参见 [CHANGELOG.md](CHANGELOG.md) 0.2.0a1/a2 + [`benchmarks/REPORT_v0.2.0a2.md`](benchmarks/REPORT_v0.2.0a2.md)）：
 
 - ✅ Phase 0 仓库脚手架 + 设计文档
-- ✅ Phase 1 工具链路打通：硬编码 H2O e2e（commit 9bbe51e）
-- ✅ **Phase 1.5 真 Claude tool-use Agent loop**（V2 核心里程碑，本批次提交）
-  - `chemaster.agent.{types,llm_client,context,tool_registry,builtins,agent}`
-  - `system_prompt.md` 化学专家 prompt
-  - `tool_loader.build_default_registry()` 注册 22 工具（含 finish/ask_user/think + 7 计算 + KB 三件套 + viz + parse + io）
-  - `chem.kb` MCP（`kb_search` / `list_skills` / `use_skill`）
-  - 旧 `chemaster/skills/` → `chemaster/kb/skills/`
-  - Per-tool confirmation + audit log（`runs/<task_id>/confirmations.jsonl`）
-  - CLI: `chemaster run / skills / kb / tools / mcps / --check-engines`
-  - 测试：166 单元 + 6 集成 = 172 全绿（agent + real psi4 端到端跑通 CH4 / NH3 / H2O）
-- ⬜ Phase 2 接入 ANTHROPIC_API_KEY 跑真 Claude（用户保留）
-- ⬜ Phase 3-5 TADF / HPC / ORCA / BDF / MultiWFN
+- ✅ Phase 1 工具链路打通（硬编码 H2O e2e，commit 9bbe51e）
+- ✅ **Phase 1.5 真 Claude tool-use Agent loop**（V2 核心，commit f6de8f9 / 0.2.0a1）
+- ✅ Phase 2 LLM provider 矩阵：Anthropic + OpenAI-compat + Qwen + DeepSeek + MiniMax
+- ✅ Phase 3 起步：HCHO 端到端 (GS opt + freq + vertical TDDFT + S1/T1 TD-opt) ✓ 2.5 min
+- 🔧 Phase 3 进行中：jingti vertical TDDFT 后台跑（46 atoms, 4×I）
+- ✅ **Phase 4 (psi4)**：S0 SP / opt / freq / TDDFT / **TD-opt（commit 2b19e6a, NEW）** 全跑通真实分子
+- ✅ **Phase 4 (rate constants)**：MLJ k_mlj 公式（commit cd0e5d3, NEW）—— 师姐 jingti k_ISC 1.17e9 复现到 1 量级内
+- ⬜ Phase 4 (其他引擎)：ORCA / BDF / MultiWFN MCP 骨架在，缺真集群跑
+- ⬜ Phase 5 HPC: `chem.hpc_slurm` paramiko 已实现，缺真集群联调
+- 🔧 工具数：32 → **33 MCPs**；测试：229 → **245 unit + 3 integration**（全绿）
+
+下一步重点见 §8。
 
 ---
 
-*文档版本：v2.0 (2026-04-29)。每次重大架构调整后更新本文档的 §2、§3、§5、§11。*
+*文档版本：v2.1 (2026-05-03)。每次重大架构调整或 Phase 状态变化后更新本文档的 §2、§3、§5、§6、§11。*

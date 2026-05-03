@@ -1,0 +1,62 @@
+{
+  "elapsed_s": 739.7631251811981,
+  "result": {
+    "ok": true,
+    "result": {
+      "ground_state_energy": {
+        "value": -3017.353438230535,
+        "unit": "Hartree"
+      },
+      "singlets": [
+        {
+          "state": 1,
+          "excitation_energy": {
+            "value": 3.6741,
+            "unit": "eV"
+          },
+          "wavelength_nm": 337.45,
+          "oscillator_strength": 0.0135
+        },
+        {
+          "state": 2,
+          "excitation_energy": {
+            "value": 3.676,
+            "unit": "eV"
+          },
+          "wavelength_nm": 337.29,
+          "oscillator_strength": 0.0097
+        }
+      ],
+      "triplets": [
+        {
+          "state": 1,
+          "excitation_energy": {
+            "value": 3.1171,
+            "unit": "eV"
+          },
+          "wavelength_nm": 397.77,
+          "oscillator_strength": 0.0
+        },
+        {
+          "state": 2,
+          "excitation_energy": {
+            "value": 3.6129,
+            "unit": "eV"
+          },
+          "wavelength_nm": 343.17,
+          "oscillator_strength": 0.0
+        }
+      ],
+      "delta_E_ST_eV": -0.557,
+      "method": "B3LYP",
+      "basis": "def2-SVP",
+      "tda": true
+    },
+    "warnings": [],
+    "meta": {
+      "psi4_version": "1.10",
+      "wall_time_s": 739.5,
+      "output_path": "tddft_output.log"
+    }
+  }
+}
