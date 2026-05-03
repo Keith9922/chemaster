@@ -152,6 +152,117 @@ def kic_marcus(
                        reorganization_energy_eV, temperature_K)
 
 
+def k_mlj(
+    delta_G_eV: float,
+    coupling_cm_inv: float,
+    reorg_classical_eV: float,
+    reorg_quantum_eV: float,
+    omega_eff_cm_inv: float,
+    temperature_K: float = 298.15,
+    n_max: int = 30,
+) -> float:
+    """Marcus-Levich-Jortner rate constant (semi-classical with one
+    high-frequency vibrational acceptor mode).
+
+    k_MLJ = (2π/ℏ)·|H|² · √(1/(4π λ_s k_B T)) ·
+            Σ_{n=0}^{n_max} [e^{-S} S^n / n!] ·
+                            exp[−(ΔG° + n·ℏω + λ_s)² / (4 λ_s k_B T)]
+
+    where the high-frequency mode contributes a Franck-Condon weighted
+    density of vibrational acceptor states with Huang-Rhys factor
+    S = λ_v / ℏω. This is what extends classical Marcus to large electronic
+    energy gaps where the simple classical form predicts vanishing rates.
+
+    Use this for ISC, RISC, and IC at gaps ≳ 0.5 eV (where classical Marcus
+    underestimates by many orders of magnitude). The dominant vibrational
+    acceptor in organic emitters is typically a C=C / C=N stretch at
+    ~1400–1600 cm⁻¹.
+
+    Sign convention (Marcus standard):
+        ΔG° < 0  → exoergic (downhill); maximum rate at ΔG° = -λ_total
+        ΔG° > 0  → endoergic (uphill); thermally activated
+        For ISC  (S1 → T1):  ΔG° = -|ΔE_ST|  (negative, S1 is above T1)
+        For RISC (T1 → S1):  ΔG° = +|ΔE_ST|  (positive)
+
+    Args:
+        delta_G_eV: Signed Marcus driving force ΔG° in eV (see convention
+            above).
+        coupling_cm_inv: |H| matrix element in cm⁻¹. SOC for spin-flip
+            (ISC, RISC), NACME for same-spin (IC).
+        reorg_classical_eV: λ_s, the LOW-frequency / solvent / classical
+            reorganization energy (typ. 0.05–0.5 eV for organics).
+        reorg_quantum_eV: λ_v, the HIGH-frequency vibrational reorganization
+            energy (typ. 0.05–0.4 eV); used to compute S = λ_v / ℏω.
+        omega_eff_cm_inv: effective high-frequency mode ℏω in cm⁻¹
+            (typ. 1300–1700 for C=C/C=N stretch in TADF emitters).
+        temperature_K: temperature in K.
+        n_max: truncate the Franck-Condon sum at this many vibrational quanta
+            (30 is overkill for ΔG° < 1.5 eV; bump for very large gaps).
+
+    Returns:
+        Rate constant in s⁻¹.
+
+    Raises:
+        ValueError: λ_s ≤ 0 or ℏω ≤ 0.
+
+    Notes:
+        - When λ_v → 0 (S → 0), only the n=0 term survives and k_MLJ
+          reduces to classical Marcus with the same |H|, λ_s, ΔG°. This is
+          a useful sanity check.
+        - Truncation: for the n=n_max term to contribute negligibly, you need
+          (n_max·ℏω) ≫ |ΔG°+λ_s|. The Poisson FC weight S^n/n! also dies for
+          n ≫ S, but the exponential matters more in the inverted region.
+        - For very large ΔG° (≳ 2 eV) consider using the analytic
+          high-frequency limit (e.g. Bixon-Jortner energy-gap law) instead;
+          numerical truncation here may need n_max > 30.
+
+    References:
+        Jortner, J. *J. Chem. Phys.* 1976, 64, 4860.
+        Bixon, M.; Jortner, J. *Adv. Chem. Phys.* 1999, 106, 35.
+        Marian, C. M. *WIREs Comput. Mol. Sci.* 2012, 2, 187.
+    """
+    if reorg_classical_eV <= 0:
+        raise ValueError("Classical reorganization energy λ_s must be > 0.")
+    if omega_eff_cm_inv <= 0:
+        raise ValueError("Effective vibrational frequency ω must be > 0.")
+    if reorg_quantum_eV < 0:
+        raise ValueError("Quantum reorganization energy λ_v must be ≥ 0.")
+    if n_max < 0:
+        raise ValueError("n_max must be ≥ 0.")
+
+    h_J = C.get("planck").value
+    hbar_J = C.get("hbar").value
+    kB_J = C.get("kb").value
+    c_m_per_s = C.get("c").value
+
+    delta_G_J = U.eV_to_J(delta_G_eV)
+    lam_s_J = U.eV_to_J(reorg_classical_eV)
+    coupling_J = (coupling_cm_inv * 100.0) * h_J * c_m_per_s   # cm⁻¹ → m⁻¹ → J
+    omega_J = (omega_eff_cm_inv * 100.0) * h_J * c_m_per_s
+
+    # Huang-Rhys factor for the dominant high-frequency mode
+    S_HR = U.eV_to_J(reorg_quantum_eV) / omega_J  # dimensionless
+
+    pre = (2.0 * math.pi / hbar_J) * (coupling_J ** 2)
+    fc_envelope = 1.0 / math.sqrt(4.0 * math.pi * lam_s_J * kB_J * temperature_K)
+
+    # Franck-Condon weighted sum over vibrational acceptor states
+    # FC_n = e^{-S} S^n / n!     (Poisson distribution)
+    # exp_n = exp[-(ΔG° + nℏω + λ_s)² / (4 λ_s kBT)]
+    #
+    # Compute FC_n iteratively to avoid overflow at large n (S^n / n!).
+    fc_sum = 0.0
+    fc_n = math.exp(-S_HR)  # FC_0 = e^{-S}
+    for n in range(n_max + 1):
+        if n > 0:
+            fc_n = fc_n * S_HR / n  # FC_n = FC_{n-1} * S / n
+        gap_n = delta_G_J + n * omega_J + lam_s_J
+        expo = -(gap_n ** 2) / (4.0 * lam_s_J * kB_J * temperature_K)
+        fc_sum += fc_n * math.exp(expo)
+
+    return pre * fc_envelope * fc_sum
+
+
 def plqy(kf: float, knr: float, kisc: float = 0.0) -> float:
     """光致发光量子产率。
 
