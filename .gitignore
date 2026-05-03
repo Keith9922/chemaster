@@ -109,3 +109,6 @@ yarn.lock
 # psi4 leaves these in CWD when tests run
 timer.dat
 psi.*.clean
+
+# Claude Code worktrees & session state
+.claude/
