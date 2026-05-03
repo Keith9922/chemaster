@@ -98,6 +98,69 @@ def test_invalid_target_state_real_psi4() -> None:
 
 
 @pytest.mark.integration
+def test_hcho_s1_pyramidalization() -> None:
+    """HCHO S1 (n→π*) opt from a SLIGHTLY pyramidalized start should
+    converge to the textbook sp³-pyramidalized minimum with H atoms
+    well above/below the original molecular plane. Verifies that the
+    MCP correctly drives the FD-gradient optimizer to a real S1
+    minimum, not just the GS stationary point.
+
+    Reference: HCHO S1 minimum has a C-H out-of-plane angle of ~30°
+    (Adamo & Jacquemin, J. Chem. Theory Comput. 2013, 9, 2143). At
+    B3LYP/def2-SVP this manifests as |H_z| ≈ 0.9 Å (vs 0 Å in the
+    planar GS).
+
+    Cost: ~60 s on 4 cores.
+    """
+    # Perturb H atoms 0.25 Å out-of-plane (y direction) to seed the
+    # optimizer onto the S1 PES.
+    hcho_perturbed = """4
+HCHO perturbed start
+C  0.000  0.000   0.000
+O  0.000  0.000   1.220
+H  0.940  0.250  -0.560
+H -0.940  0.250  -0.560"""
+    result = optimize_excited_state(
+        geometry_xyz=hcho_perturbed,
+        target_state=1,
+        target_spin="singlet",
+        method="B3LYP",
+        basis="def2-SVP",
+        n_states=3,
+        convergence="normal",
+        max_iter=30,
+        n_threads=4,
+        memory_gb=4,
+    )
+    assert result["ok"], result
+    res = result["result"]
+    assert res["converged"]
+    # Real opt: should take more than 1 macro step
+    assert res["n_iterations"] >= 2, (
+        f"Only {res['n_iterations']} OPTKING step — "
+        f"optimizer didn't relax. Check FD gradient is on S1 surface."
+    )
+    # Adiabatic excitation energy: 2.5 - 4.5 eV for HCHO S1 at TDA-B3LYP/def2-SVP.
+    e_adiab = res["excitation_energy_at_opt"]["value"]
+    assert 2.5 < e_adiab < 4.5, f"HCHO S1 adiabatic out of range: {e_adiab} eV"
+    # Adiabatic should be LOWER than the vertical (~4.08 eV) — geometry
+    # relaxation always lowers the excited-state energy.
+    assert e_adiab < 4.05, (
+        f"adiabatic ({e_adiab} eV) ≮ vertical (~4.08 eV); did the geometry "
+        "actually relax?"
+    )
+    # Pyramidalization check: H z-coordinates should be well off the
+    # original z=-0.56 plane and |z| should now be > 0.5 Å (out-of-plane
+    # bend pushes them away from the C-O plane).
+    rows = [r.split() for r in res["optimized_geometry_xyz"].splitlines()
+            if r.strip() and len(r.split()) == 4]
+    h_z_coords = [abs(float(r[3])) for r in rows if r[0] == "H"]
+    assert all(z > 0.5 for z in h_z_coords), (
+        f"H atoms not pyramidalized; |z| = {h_z_coords}"
+    )
+
+
+@pytest.mark.integration
 @pytest.mark.skipif(
     not os.environ.get("CHEMASTER_E2E_FULL"),
     reason="formaldehyde S1 opt at def2-SVP takes ~3 min; "
