@@ -224,6 +224,22 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_long_running=True,
     ),
     _ToolDecl(
+        exposed_name="io_compute_descriptors",
+        module="chemaster.mcp.io_ase.server",
+        function="compute_descriptors",
+        description=(
+            "Compute deterministic geometry descriptors (bond lengths, "
+            "bond angles, dihedrals) from an XYZ block. **Use this whenever "
+            "you need to report any bond length, angle, or torsion** — do NOT "
+            "compute these yourself from coordinates. LLMs routinely get the "
+            "trigonometry subtly wrong (this is the 'LLM doesn't do math' "
+            "rule from CLAUDE.md §5.1, applied to geometry). Atom indices are "
+            "0-based in the order atoms appear in the XYZ. Pass `bonds=[[i,j]]`, "
+            "`angles=[[i,j,k]]` (j is the vertex), `dihedrals=[[i,j,k,l]]`."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
         exposed_name="calc_psi4_optimize_excited_state",
         module="chemaster.mcp.calc_psi4.server",
         function="optimize_excited_state",

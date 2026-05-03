@@ -148,3 +148,83 @@ def test_lookup_case_insensitive():
     result = S.lookup_by_name("AMMONIA")
     assert result["ok"] is True
     assert result["result"]["formula"] == "NH3"
+
+
+# ──────────────────────────────────────────────────────────────────────
+# compute_descriptors — bond lengths / angles / dihedrals from XYZ
+# ──────────────────────────────────────────────────────────────────────
+
+
+# Optimized H2O at B3LYP-D3(BJ)/def2-TZVP from the chemaster Agent demo.
+_H2O_OPT = """3
+H2O B3LYP-D3(BJ)/def2-TZVP
+O  0.000000000000   0.000000000000   0.065401292884
+H  0.000000000000   0.765035071022  -0.518982989229
+H  0.000000000000  -0.765035071024  -0.518982989229"""
+
+
+def test_compute_descriptors_h2o_geometry():
+    """B3LYP H2O: O-H ≈ 0.96 Å, H-O-H ≈ 105°.
+
+    These numbers are deterministic geometry — the LLM Agent reading them
+    must match the values from this tool exactly, not its own arithmetic.
+    """
+    r = S.compute_descriptors(_H2O_OPT, bonds=[[0, 1], [0, 2]], angles=[[1, 0, 2]])
+    assert r["ok"], r
+    assert len(r["result"]["bonds"]) == 2
+    assert r["result"]["bonds"][0]["unit"] == "Å"
+    # Both O-H bonds are symmetric → identical to 4 dp
+    assert r["result"]["bonds"][0]["value"] == r["result"]["bonds"][1]["value"]
+    assert abs(r["result"]["bonds"][0]["value"] - 0.9627) < 1e-3
+    assert r["result"]["angles"][0]["unit"] == "deg"
+    # Hand-calc check: 105.25° (this is the bug that caught our LLM)
+    assert abs(r["result"]["angles"][0]["value"] - 105.25) < 0.05
+    assert r["result"]["angles"][0]["elements"] == ["H", "O", "H"]
+
+
+def test_compute_descriptors_dihedral_h2o2():
+    """H2O2: H-O-O-H dihedral is well-defined and non-zero."""
+    h2o2 = """4
+H2O2 idealised
+O  0.000  0.000  0.0
+O  1.475  0.000  0.0
+H -0.388  0.939  0.0
+H  1.863  0.469  0.812"""
+    r = S.compute_descriptors(h2o2, dihedrals=[[2, 0, 1, 3]])
+    assert r["ok"]
+    val = r["result"]["dihedrals"][0]["value"]
+    assert -180 < val <= 180
+    assert abs(val) > 30   # Real, non-collinear dihedral
+
+
+def test_compute_descriptors_invalid_index():
+    """Out-of-range atom index → INVALID_INDEX."""
+    r = S.compute_descriptors(_H2O_OPT, bonds=[[0, 99]])
+    assert r["ok"] is False
+    assert r["error_code"] == "INVALID_INDEX"
+
+
+def test_compute_descriptors_bad_arity():
+    """bond [i] (only one index) → INVALID_INDEX."""
+    r = S.compute_descriptors(_H2O_OPT, bonds=[[0]])
+    assert r["ok"] is False
+    assert r["error_code"] == "INVALID_INDEX"
+    assert "two indices" in r["suggestion"].lower()
+
+
+def test_compute_descriptors_no_descriptors_requested():
+    """Empty inputs return empty lists, not an error."""
+    r = S.compute_descriptors(_H2O_OPT)
+    assert r["ok"]
+    assert r["result"]["bonds"] == []
+    assert r["result"]["angles"] == []
+    assert r["result"]["dihedrals"] == []
+    assert r["meta"]["n_atoms"] == 3
+
+
+def test_compute_descriptors_bare_coords():
+    """Coord-only input (no header) also works."""
+    bare = "O 0 0 0\nH 0.96 0 0\nH -0.24 0.93 0"
+    r = S.compute_descriptors(bare, bonds=[[0, 1]], angles=[[1, 0, 2]])
+    assert r["ok"]
+    assert abs(r["result"]["bonds"][0]["value"] - 0.96) < 1e-3
