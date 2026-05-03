@@ -3,6 +3,88 @@
 所有面向用户可见的变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0a2] — TD-opt MCP + MLJ rate constant + 师姐 jingti pipeline (2026-05-03)
+
+> Phase 3 (TADF anchor reproduction) goes from "S0 single point only" to
+> "full vertical excited-state pipeline with rate-constant prediction
+> within 30% of师姐's MOMAP TVCF reference".
+>
+> Headline benchmark: [`benchmarks/REPORT_v0.2.0a2.md`](benchmarks/REPORT_v0.2.0a2.md)
+
+### Added
+
+- **`chemaster.mcp.calc_psi4.optimize_excited_state`** — TDA-based
+  excited-state geometry optimization MCP. Uses psi4 1.10's
+  `td-{method}` driver with finite-difference gradients (no analytic
+  TDDFT gradient in psi4 1.10).
+  - Targets arbitrary root: `target_state` (1=S1/T1, 2=S2/T2, ...) +
+    `target_spin` ('singlet' / 'triplet').
+  - Forces TDA=True (full RPA gradient is NYI in psi4).
+  - Returns optimized XYZ, GS energy at opt geometry, excitation energy
+    at opt geometry, OPTKING macro-step count, converged flag.
+  - Error codes: INVALID_TARGET_STATE (root > n_states OR Davidson
+    out-of-bounds at runtime), GEOMETRY_NOT_CONVERGED, SCF_NOT_CONVERGED,
+    INVALID_MULTIPLICITY, PSI4_INTERNAL_ERROR.
+  - **Verified end-to-end**: H2O S1 (10s, OH bonds elongate) and HCHO S1
+    (60s, sp³ pyramidalization, |H_z| = 0.94 Å — textbook).
+
+- **`chemaster.kb.formulas.photophysics.k_mlj`** — Marcus-Levich-Jortner
+  rate constant with one effective high-frequency vibrational acceptor
+  mode. Closes the 18-order gap left by classical Marcus at large
+  electronic gaps (师姐's k_ISC at 0.93 eV).
+  - Sign convention: ΔG° < 0 exoergic, > 0 endoergic; `k_mlj` reduces to
+    classical Marcus when λ_v → 0 (S → 0); approaches classical with
+    λ = λ_s + λ_v in the high-T limit.
+  - Recovers师姐's k_ISC = 1.17e9 s⁻¹ to k_MLJ = 8.66e8 (within 30%) at
+    literature-typical organic-emitter parameters.
+
+- **`benchmarks/hcho-pipeline-2026-05-03/results.json`** — full HCHO
+  end-to-end run artifact (GS opt + freq + vertical TDDFT + S1/T1 TD-opt,
+  2.5 min wall, 4 cores). Energies, frequencies, geometries, oscillator
+  strengths, per-stage walls.
+
+- **`benchmarks/jingti-tddft-2026-05-03/result.json`** — vertical TDDFT
+  on 师姐 jingti (46 atoms, 4×I) at TDA-B3LYP/def2-SVP, 12.3 min wall.
+  S1=3.674 eV (f=0.0135), T1=3.117 eV, ΔE_ST_vert = 0.557 eV.
+
+- **`benchmarks/REPORT_v0.2.0a2.md`** — thesis-ready benchmark report:
+  HCHO §1 (full pipeline + experimental comparison), jingti §2 (vertical
+  TDDFT + 师姐 comparison), MLJ §3 (formula + jingti rate recovery), §4
+  defensible-claims summary.
+
+### Fixed
+
+- `optimize_excited_state` and `tddft` now pass `tdscf_states` as
+  `[n_states]` (length-1 list) to match c1's single-irrep layout. Plain
+  int triggered psi4's broken internal expansion `[3, 3]` and crashed
+  during FD-gradient driver loop with "States requested ([3, 3]) do not
+  match number of irreps (1)".
+
+### Tests
+
+- 245 unit tests (was 229 in 0.2.0a1):
+  * test_calc_psi4.py: +8 (optimize_excited_state validation, OK paths,
+    error paths, target_spin → tdscf_triplets="ONLY" check).
+  * test_photophysics.py: +9 (MLJ jingti recovery, classical-Marcus
+    failure, λ_v=0 reduces to Marcus, high-T limit, 5 input validations).
+- 3 new integration tests (real psi4):
+  * test_optimize_excited_state.py: H2O S1 smoke (~10s),
+    INVALID_TARGET_STATE pre-flight, HCHO S1 pyramidalization (~60s).
+
+### Tool registry
+
+32 → **33 tools** (`+optimize_excited_state`).
+
+### Documentation
+
+- `CLAUDE.md` synced to V2.1: project layout reflects V2 directory
+  structure (kb/skills/, agent.py, llm_client.py); §5.4 documents
+  per-tool confirmation (HMAC token retired); §6 phases V2-aware;
+  §8 next-steps points at jingti TD-opt → real SOC → MOMAP-grade FCWD;
+  §11 status updated to 0.2.0a2.
+
+---
+
 ## [0.2.0a1] — Architecture V2 + production polish (2026-04-30)
 
 ### Added — P0: TADF pipeline blockers cleared
