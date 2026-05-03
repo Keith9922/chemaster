@@ -223,6 +223,25 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         ),
         is_long_running=True,
     ),
+    _ToolDecl(
+        exposed_name="calc_psi4_optimize_excited_state",
+        module="chemaster.mcp.calc_psi4.server",
+        function="optimize_excited_state",
+        description=(
+            "Excited-state geometry optimization (TDA only) via psi4. Use this "
+            "AFTER calc_psi4_optimize (ground state) to get the *adiabatic* "
+            "S1/T1/Sn/Tn geometry — the input to adiabatic ΔE_ST and Stokes "
+            "shift. Args: target_state (1=S1/T1, 2=S2/T2, ...), "
+            "target_spin ('singlet' / 'triplet'), n_states (≥ target_state). "
+            "WARNING: psi4 1.10 has FD-only TDDFT gradients, so cost scales as "
+            "3·N_atom per opt step. ≤20 atoms is realistic on a laptop; bigger "
+            "needs HPC. Tip: for molecules that break symmetry on excitation "
+            "(HCHO pyramidalization etc.), pre-perturb the input geometry by "
+            "~0.2 Å along the expected distortion mode, otherwise the optimizer "
+            "may converge in 1 step at the GS stationary point."
+        ),
+        is_long_running=True,
+    ),
 
     # calc_gaussian — read user-supplied Gaussian inputs (.com / .gjf) ───
     _ToolDecl(
