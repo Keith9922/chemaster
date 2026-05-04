@@ -239,3 +239,166 @@ class TaskInstance:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AgentEvent — streaming event protocol
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# These events are produced by `ChemAgent.run_streaming()` (an async generator)
+# and consumed by:
+#   - the CLI live renderer (`chemaster run`)
+#   - the WebSocket server (`chemaster web`) for browser clients
+#   - tests (asserting the order/payload of events)
+#
+# They are JSON-serializable via `to_dict()` so they can travel over the wire
+# without further transformation.  Every event carries `type` (discriminator)
+# and `timestamp`.  The LLM/tool/dialog dataclasses above remain the source
+# of truth — events are just lightweight projections suitable for streaming.
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+@dataclass
+class StepStartedEvent:
+    """A new turn of the Agent loop has begun."""
+
+    step_id: int
+    type: str = "step_started"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class AssistantMessageEvent:
+    """The LLM has responded with text and zero or more tool calls."""
+
+    step_id: int
+    text: str
+    tool_calls: list[dict[str, Any]]      # serialized ToolCall.to_dict()
+    type: str = "assistant_message"
+    timestamp: str = field(default_factory=_now_iso)
+    meta: dict[str, Any] = field(default_factory=dict)   # usage, stop_reason, …
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ConfirmationRequiredEvent:
+    """A destructive / long-running tool needs explicit user approval.
+
+    Emitted *before* `ToolStartedEvent` for that tool.  The streaming consumer
+    is responsible for routing the request to a human and then resolving the
+    Agent's confirmation future (see `agent.py::_dispatch_tool_streaming`).
+    """
+
+    step_id: int
+    tool_call_id: str
+    tool_name: str
+    arguments: dict[str, Any]
+    reason: str                           # e.g. "destructive (writes external state)"
+    type: str = "confirmation_required"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ToolStartedEvent:
+    """A tool dispatch has begun (after any confirmation)."""
+
+    step_id: int
+    tool_call_id: str
+    tool_name: str
+    arguments: dict[str, Any]
+    type: str = "tool_started"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ToolCompletedEvent:
+    """A tool finished (success, failure, or user-declined)."""
+
+    step_id: int
+    tool_call_id: str
+    tool_name: str
+    ok: bool
+    is_error: bool
+    observation: str                      # human-readable summary fed back to LLM
+    data: dict[str, Any] | None = None    # structured ToolResult.data
+    declined: bool = False                # True if user declined a confirmation
+    type: str = "tool_completed"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class StepCompletedEvent:
+    """Current turn of the Agent loop has finished."""
+
+    step_id: int
+    finish_signaled: bool = False         # True if `finish` / `ask_user` triggered termination
+    type: str = "step_completed"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class RunCompletedEvent:
+    """Terminal event for a `run_streaming` invocation.
+
+    `status` matches `Trajectory.status`:
+      - "completed"           → finish tool fired
+      - "waiting_for_input"   → ask_user tool fired
+      - "failed"              → error or max_turns_exceeded
+    """
+
+    task_id: str
+    status: str
+    finish_payload: dict[str, Any] | None = None
+    reason: str | None = None             # set when status == "failed"
+    type: str = "run_completed"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass
+class ErrorEvent:
+    """Non-fatal error inside the loop (logged but does not necessarily abort)."""
+
+    step_id: int
+    error_type: str
+    message: str
+    type: str = "error"
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+AgentEvent = (
+    StepStartedEvent
+    | AssistantMessageEvent
+    | ConfirmationRequiredEvent
+    | ToolStartedEvent
+    | ToolCompletedEvent
+    | StepCompletedEvent
+    | RunCompletedEvent
+    | ErrorEvent
+)
+"""Discriminated union of all events produced by `run_streaming`."""

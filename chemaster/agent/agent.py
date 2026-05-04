@@ -25,11 +25,13 @@ Reference: EvoMaster's BaseAgent (evomaster/agent/agent.py).
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, AsyncIterator, Awaitable, Callable
 
 from chemaster.agent.builtins import register_builtins
 from chemaster.agent.context import ContextConfig, ContextManager
@@ -42,15 +44,24 @@ from chemaster.agent.llm_client import (
 from chemaster.agent.tool_registry import BaseTool, ToolRegistry, ToolResult
 from chemaster.agent.types import (
     AssistantMessage,
+    AssistantMessageEvent,
+    ConfirmationRequiredEvent,
     Dialog,
+    ErrorEvent,
+    RunCompletedEvent,
+    StepCompletedEvent,
     StepRecord,
+    StepStartedEvent,
     SystemMessage,
     TaskInstance,
     ToolCall,
+    ToolCompletedEvent,
     ToolMessage,
+    ToolStartedEvent,
     Trajectory,
     UserMessage,
 )
+from chemaster.agent.types import AgentEvent  # type: ignore  # union, for typing
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +78,16 @@ Returning False causes the Agent to abort that tool call (it is fed back as
 an observation so the Agent can pick a different action)."""
 
 
+AsyncConfirmCallback = Callable[[str, dict, str], Awaitable[bool]]
+"""Async variant of ConfirmCallback for use with `run_streaming`.
+
+The Web UI / WebSocket layer needs to suspend on user input without blocking
+the event loop, so it provides this instead of (or in addition to) the sync
+callback.  When `run_streaming` is invoked, the agent prefers
+`async_confirm_callback`; it falls back to `confirm_callback` (called inline)
+if only the sync version is supplied."""
+
+
 @dataclass
 class AgentConfig:
     max_turns: int = 30                   # safe default; H2O finishes in 3-5
@@ -75,6 +96,7 @@ class AgentConfig:
     enable_builtins: bool = True
     enabled_tools: list[str] | None = None      # None = all registered tools exposed
     confirm_callback: ConfirmCallback | None = None   # None = auto-approve
+    async_confirm_callback: AsyncConfirmCallback | None = None  # used by run_streaming
     max_tool_observation_chars: int = 30_000
     finish_on_no_tool_calls: bool = False        # treat plain text as completion?
 
@@ -178,6 +200,311 @@ class BaseAgent:
             self.trajectory.finish("failed", {"reason": "max_turns_exceeded"})
         self._persist_trajectory()
         return self.trajectory
+
+    # ------------------------------------------------------------------
+    # Streaming loop  (used by `chemaster web` and live CLI rendering)
+    # ------------------------------------------------------------------
+
+    async def run_streaming(
+        self,
+        task: TaskInstance,
+    ) -> AsyncIterator[AgentEvent]:
+        """Execute one task and yield AgentEvents as they happen.
+
+        This is the source-of-truth for browser clients (FastAPI WebSocket
+        consumer) and for the new live-rendering CLI path.  It does NOT
+        replace the sync `run()` — that codepath is preserved unchanged so
+        the existing 172-test suite stays green.
+
+        Confirmation flow: when a destructive / long-running tool fires, a
+        ConfirmationRequiredEvent is yielded *before* the tool runs.  The
+        consumer must resolve `config.async_confirm_callback` (or fall back
+        to `config.confirm_callback`) before the tool dispatches.
+
+        Errors: a non-fatal step-level error becomes an ErrorEvent.  A fatal
+        (the loop itself crashes) marks the trajectory failed and yields a
+        terminal RunCompletedEvent with status="failed".
+        """
+        self._initialize(task)
+        assert self.trajectory is not None
+        try:
+            for turn in range(self.config.max_turns):
+                step_id = turn + 1
+                yield StepStartedEvent(step_id=step_id)
+                logger.info("─" * 60)
+                logger.info("Step %d / %d", step_id, self.config.max_turns)
+
+                done = False
+                async for event in self._step_streaming(step_id):
+                    yield event
+                    if isinstance(event, StepCompletedEvent) and event.finish_signaled:
+                        done = True
+
+                if done:
+                    if self._pending_ask_user:
+                        self.trajectory.finish("waiting_for_input", self._pending_ask_user)
+                    else:
+                        self.trajectory.finish("completed")
+                    break
+            else:
+                logger.warning("Reached max_turns=%d without finishing", self.config.max_turns)
+                self.trajectory.finish("failed", {"reason": "max_turns_exceeded"})
+        except Exception as exc:
+            logger.exception("Streaming agent loop raised")
+            self.trajectory.finish("failed", {"reason": str(exc)})
+            yield ErrorEvent(
+                step_id=self._step_count,
+                error_type=type(exc).__name__,
+                message=str(exc),
+            )
+        finally:
+            self._persist_trajectory()
+
+        # finish_payload semantics:
+        #   - status="completed"          → args of the finish tool call
+        #   - status="waiting_for_input"  → pending ask_user payload (mirrors trajectory)
+        #   - status="failed"             → leave None; surface "reason" instead
+        finish_payload: dict[str, Any] | None
+        reason: str | None
+        if self.trajectory.status == "failed":
+            finish_payload = None
+            reason = (self.trajectory.finish_payload or {}).get("reason")
+        else:
+            finish_payload = (
+                getattr(self, "_finish_payload", None) or self.trajectory.finish_payload
+            )
+            reason = None
+        yield RunCompletedEvent(
+            task_id=self.trajectory.task_id,
+            status=self.trajectory.status,
+            finish_payload=finish_payload,
+            reason=reason,
+        )
+
+    async def _step_streaming(self, step_id: int) -> AsyncIterator[AgentEvent]:
+        """One iteration of the loop, emitting events at every transition."""
+        assert self.dialog is not None and self.trajectory is not None
+        self._step_count += 1
+
+        dialog_for_query, compacted = self.context_manager.prepare_for_query(self.dialog)
+        if compacted:
+            self.dialog = dialog_for_query
+            self.context_manager.reset_prompt_tokens()
+
+        try:
+            assistant = self.llm.query(dialog_for_query)
+        except ContextOverflowError:
+            logger.warning("Context overflow, emergency truncate + retry")
+            self.dialog = self.context_manager.truncate(self.dialog)
+            self.context_manager.reset_prompt_tokens()
+            assistant = self.llm.query(self.dialog)
+
+        usage = (assistant.meta or {}).get("usage")
+        if usage:
+            self.context_manager.update_usage(usage)
+            if self.context_manager.is_overflow(usage):
+                self.dialog = self.context_manager.truncate(self.dialog)
+                self.context_manager.reset_prompt_tokens()
+
+        self.dialog.add_message(assistant)
+        step = StepRecord(step_id=self._step_count, assistant_message=assistant)
+
+        yield AssistantMessageEvent(
+            step_id=step_id,
+            text=assistant.content or "",
+            tool_calls=[tc.to_dict() for tc in assistant.tool_calls],
+            meta=dict(assistant.meta or {}),
+        )
+
+        # Plain text without tool call.
+        if not assistant.tool_calls:
+            if self.config.finish_on_no_tool_calls:
+                self.trajectory.add_step(step)
+                yield StepCompletedEvent(step_id=step_id, finish_signaled=True)
+                return
+            self._nudge_no_tool_call()
+            self.trajectory.add_step(step)
+            yield StepCompletedEvent(step_id=step_id, finish_signaled=False)
+            return
+
+        should_finish = False
+        for tc in assistant.tool_calls:
+            # finish / ask_user are control-flow built-ins, never dispatched.
+            if tc.name == "finish":
+                should_finish = True
+                tool_msg = ToolMessage(
+                    content="[finished]",
+                    tool_call_id=tc.id,
+                    name=tc.name,
+                    meta={"finish_payload": tc.arguments},
+                )
+                self.dialog.add_message(tool_msg)
+                step.tool_responses.append(tool_msg)
+                self._finish_payload = tc.arguments
+                yield ToolCompletedEvent(
+                    step_id=step_id,
+                    tool_call_id=tc.id,
+                    tool_name=tc.name,
+                    ok=True,
+                    is_error=False,
+                    observation="[finished]",
+                    data={"finish_payload": tc.arguments},
+                )
+                break
+
+            if tc.name == "ask_user":
+                self._pending_ask_user = {
+                    "questions": tc.arguments.get("questions", []),
+                    "context": tc.arguments.get("context", ""),
+                }
+                tool_msg = ToolMessage(
+                    content="[ask_user] Awaiting user response.",
+                    tool_call_id=tc.id,
+                    name=tc.name,
+                    meta=self._pending_ask_user,
+                )
+                self.dialog.add_message(tool_msg)
+                step.tool_responses.append(tool_msg)
+                should_finish = True
+                yield ToolCompletedEvent(
+                    step_id=step_id,
+                    tool_call_id=tc.id,
+                    tool_name=tc.name,
+                    ok=True,
+                    is_error=False,
+                    observation="[ask_user] Awaiting user response.",
+                    data=dict(self._pending_ask_user),
+                )
+                break
+
+            # Real tool — emit confirmation/started/completed events.
+            async for event in self._dispatch_tool_streaming(tc, step_id):
+                yield event
+                if isinstance(event, ToolCompletedEvent):
+                    # Reconstruct the ToolMessage that the sync path would
+                    # have appended, so the dialog history is consistent
+                    # with how `_dispatch_tool` builds it.
+                    tool_msg = ToolMessage(
+                        content=event.observation,
+                        tool_call_id=event.tool_call_id,
+                        name=event.tool_name,
+                        is_error=event.is_error,
+                        meta={"data": event.data} if event.data else (
+                            {"declined": True, "reason": event.observation}
+                            if event.declined else {}
+                        ),
+                    )
+                    self.dialog.add_message(tool_msg)
+                    step.tool_responses.append(tool_msg)
+
+        self.trajectory.add_step(step)
+        yield StepCompletedEvent(step_id=step_id, finish_signaled=should_finish)
+
+    async def _dispatch_tool_streaming(
+        self,
+        tc: ToolCall,
+        step_id: int,
+    ) -> AsyncIterator[AgentEvent]:
+        """Dispatch one tool call, yielding (Confirmation?, Started, Completed)."""
+        tool = self.tools.get(tc.name)
+        if tool is None:
+            yield ToolCompletedEvent(
+                step_id=step_id,
+                tool_call_id=tc.id,
+                tool_name=tc.name,
+                ok=False,
+                is_error=True,
+                observation=f"[error] Unknown tool: {tc.name}. Available: {self.tools.names()}",
+                data={"error": "unknown_tool"},
+            )
+            return
+
+        if tool.needs_confirmation():
+            reason = self._confirmation_reason(tool)
+            yield ConfirmationRequiredEvent(
+                step_id=step_id,
+                tool_call_id=tc.id,
+                tool_name=tc.name,
+                arguments=dict(tc.arguments),
+                reason=reason,
+            )
+            approved = await self._await_confirmation(tc, reason)
+            self._record_confirmation(tc, reason, approved)
+            if not approved:
+                yield ToolCompletedEvent(
+                    step_id=step_id,
+                    tool_call_id=tc.id,
+                    tool_name=tc.name,
+                    ok=False,
+                    is_error=False,
+                    declined=True,
+                    observation=(
+                        f"[user_declined] User declined to run {tc.name}. "
+                        "Choose a different action or ask the user for clarification."
+                    ),
+                    data={"declined": True, "reason": reason},
+                )
+                return
+
+        yield ToolStartedEvent(
+            step_id=step_id,
+            tool_call_id=tc.id,
+            tool_name=tc.name,
+            arguments=dict(tc.arguments),
+        )
+
+        try:
+            result = tool.run(**tc.arguments)
+        except TypeError as exc:
+            result = ToolResult(
+                ok=False,
+                observation=f"[error] Tool {tc.name} called with invalid arguments: {exc}",
+                data={"error_code": "INVALID_ARGS", "details": str(exc)},
+                is_error=True,
+            )
+        except Exception as exc:
+            logger.exception("Tool %s raised", tc.name)
+            result = ToolResult(
+                ok=False,
+                observation=f"[error] Tool {tc.name} raised: {type(exc).__name__}: {exc}",
+                data={"error_code": "TOOL_EXCEPTION", "details": str(exc)},
+                is_error=True,
+            )
+
+        observation = result.observation
+        if len(observation) > self.config.max_tool_observation_chars:
+            half = self.config.max_tool_observation_chars // 2
+            observation = (
+                observation[:half]
+                + "\n... [truncated] ...\n"
+                + observation[-half:]
+            )
+
+        yield ToolCompletedEvent(
+            step_id=step_id,
+            tool_call_id=tc.id,
+            tool_name=tc.name,
+            ok=result.ok,
+            is_error=result.is_error or not result.ok,
+            observation=observation,
+            data=result.data if result.data else None,
+        )
+
+    async def _await_confirmation(self, tc: ToolCall, reason: str) -> bool:
+        """Resolve confirmation via async callback, falling back to sync."""
+        async_cb = self.config.async_confirm_callback
+        if async_cb is not None:
+            res = async_cb(tc.name, dict(tc.arguments), reason)
+            if inspect.isawaitable(res):
+                return bool(await res)
+            return bool(res)
+        sync_cb = self.config.confirm_callback
+        if sync_cb is not None:
+            # Run sync callback in a thread so a slow blocking prompt does
+            # not stall the event loop.
+            return bool(await asyncio.to_thread(sync_cb, tc.name, dict(tc.arguments), reason))
+        # No callback configured → auto-approve (legacy default).
+        return True
 
     # ------------------------------------------------------------------
     # Loop body

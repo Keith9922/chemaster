@@ -3,6 +3,51 @@
 所有面向用户可见的变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased] — Streaming agent loop (foundation for `chemaster web`)
+
+### Added — `chemaster.agent.types` AgentEvent protocol
+- 8 dataclasses describing every state transition of the Agent loop:
+  `StepStartedEvent`, `AssistantMessageEvent`, `ConfirmationRequiredEvent`,
+  `ToolStartedEvent`, `ToolCompletedEvent`, `StepCompletedEvent`,
+  `RunCompletedEvent`, `ErrorEvent`. All carry `type` (discriminator) +
+  `timestamp`; all are JSON-serialisable via `to_dict()` for the WebSocket
+  wire format. `AgentEvent` union type aliased for callers.
+
+### Added — `ChemAgent.run_streaming` async generator
+- `async def run_streaming(task) -> AsyncIterator[AgentEvent]` mirrors the
+  sync `run()` loop and yields events at every transition. Designed for the
+  upcoming FastAPI WebSocket server (`chemaster web`) and a future live-
+  rendering CLI.
+- Internals: `_step_streaming` and `_dispatch_tool_streaming` are async
+  generators that delegate to the existing tool registry — no behavioural
+  drift from sync path.
+- Confirmation flow is properly awaitable: `ConfirmationRequiredEvent` is
+  yielded *before* the tool runs; `_await_confirmation` resolves
+  `AgentConfig.async_confirm_callback` (preferred) or falls back to the
+  legacy sync `confirm_callback` (run via `asyncio.to_thread` so a slow
+  prompt cannot stall the event loop).
+- Three terminal payload semantics on `RunCompletedEvent`:
+  `completed` → finish-tool args; `waiting_for_input` → ask_user payload;
+  `failed` → `reason` (e.g. `"max_turns_exceeded"`).
+
+### Added — `AgentConfig.async_confirm_callback`
+- New optional field; takes precedence over `confirm_callback` when running
+  via `run_streaming`. Sync callback continues to work for the legacy CLI.
+
+### Tests
+- `tests/unit/test_agent_streaming.py` — 13 tests covering: event order;
+  approval / decline / no-callback paths; long-running flag; sync-fallback;
+  ask_user → waiting_for_input; max_turns_exceeded → failed; unknown tool →
+  is_error; trajectory persistence; per-step started/completed pairing; full
+  JSON round-trip of every event payload.
+- All 13 pass; the existing 27 agent_loop + 16 plan/planner/confirmation +
+  10 executor/confirmation_log tests still pass (zero regression).
+
+### Tooling
+- Repo hygiene: residual logs in repo root (`frequency_output.log`,
+  `optimize_output.log`, `test_opt.log`, `psi.91710.clean`) are already
+  covered by `.gitignore` but should be removed manually from working trees.
+
 ## [0.2.0a1] — Architecture V2 + production polish (2026-04-30)
 
 ### Added — P0: TADF pipeline blockers cleared
