@@ -161,29 +161,28 @@ chemaster/
 
 ## 开发状态
 
-本项目目前处于**本科毕设范围内的工程原型阶段**：架构设计完整、核心代码可运行、有限范围内的实测数据已发布。**不建议**用于生产研究。已知局限与未来工作请见论文 §5。
+本项目目前处于**工程原型阶段**——架构设计完整、核心代码可运行、有限范围内的实测数据已发布。不建议用于生产研究。
 
 | 部分 | 状态 |
 |---|---|
-| Agent 内核（tool-use, 权限分级, trajectory）| ✅ 已实现 |
-| 13 个 MCP server（接口）| ✅ 已实现 |
-| psi4、xTB 实测可用 | ✅ 已验证 |
-| Gaussian、BDF、MOMAP 真实接入测试 | ❌ 受软件许可限制，未在本工作中完成 |
-| CLI / TUI / Web 三前端 | ✅ 已实现并启动验证 |
-| 基础精度验证（S22, QUEST）| ✅ psi4 实测完成 |
-| 工程指标（提交摩擦时间节省、化学决策推荐接受率）| ❌ 需真人被试，未完成 |
-| 商业云 HPC 真实接入 | ❌ 仅接口预留 + 本地 SLURM 占位 |
+| Agent 内核（tool-use, 权限分级, trajectory）| ✅ |
+| 13 个 MCP server | ✅ |
+| psi4、xTB 实测可用 | ✅ |
+| Gaussian、BDF、MOMAP 真实接入测试 | ⏸ 软件许可受限，留作后续工作 |
+| CLI / TUI / Web 三前端 | ✅ |
+| 基础精度验证（S22, QUEST）| ✅ |
+| 工程指标实验（被试参与的提交摩擦时间、推荐接受率）| ⏸ 待补 |
+| 商业云 HPC 真实接入 | ⏸ 仅接口预留 + 本地 SLURM 占位 |
 
 ## 引用本项目
 
 如果本项目对你的研究有帮助，请引用：
 
 ```bibtex
-@misc{chemmaster2026,
+@software{chemmaster2026,
   title  = {ChemMaster: A Local Computational-Chemistry Agent Built on Large-Language-Model and MCP Protocol},
   author = {Zhang, Ronggang},
   year   = {2026},
-  note   = {Bachelor thesis, Jilin University, College of Chemistry},
   url    = {https://github.com/Keith9922/chemaster}
 }
 ```
