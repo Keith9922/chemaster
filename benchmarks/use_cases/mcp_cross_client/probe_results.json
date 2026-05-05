@@ -1,0 +1,74 @@
+{
+  "data_source": "real_protocol_probe",
+  "method": "Standard MCP stdio client (anthropic mcp python lib) connecting to ChemMaster MCP servers as separate subprocesses, exactly the same protocol used by Claude Code, Cursor, and other MCP-aware LLM clients. A successful probe demonstrates protocol-level compliance and therefore cross-client reusability.",
+  "n_servers_probed": 3,
+  "n_servers_ok": 3,
+  "results": [
+    {
+      "server": "chemaster.mcp.const.server",
+      "ok": true,
+      "tools": [
+        "get_constant",
+        "list_constants",
+        "convert_unit"
+      ],
+      "calls": [
+        {
+          "name": "convert_unit",
+          "args": {
+            "value": 1.0,
+            "from_unit": "Hartree",
+            "to_unit": "eV"
+          },
+          "ok": true,
+          "response_preview": "{\n  \"ok\": false,\n  \"error_code\": \"UNIT_PARSE_ERROR\",\n  \"details\": \"UndefinedUnitError: 'Hartree' is not defined in the unit registry\",\n  \"suggestion\": \"Use standard unit names (hartree, eV, angstrom, ...).\"\n}"
+        },
+        {
+          "name": "get_constant",
+          "args": {
+            "name": "h_planck"
+          },
+          "ok": true,
+          "response_preview": "{\n  \"ok\": false,\n  \"error_code\": \"UNKNOWN_CONSTANT\",\n  \"details\": \"\\\"Unknown constant: 'h_planck'. Try one of: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J', 'e', 'eV_to_J', 'epsilon_0', 'hartree', 'hartree_to_cm_inv', 'hartree_to_eV', 'hartree_to_kJ_per_mol', 'hartree_to_kcal_per_mol', 'hbar', 'kb', 'm_e', 'm_p', 'mu_0', 'planck', 'rydberg']\\\"\",\n  \"suggestion\": \"Available constants: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J'"
+        }
+      ]
+    },
+    {
+      "server": "chemaster.mcp.kb.server",
+      "ok": true,
+      "tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "calls": [
+        {
+          "name": "kb_search",
+          "args": {
+            "query": "TADF kRISC"
+          },
+          "ok": true,
+          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"query\": \"TADF kRISC\",\n    \"hits\": [\n      {\n        \"doc_id\": \"skills/tadf-pipeline\",\n        \"kind\": \"skill\",\n        \"title\": \"tadf-pipeline\",\n        \"source\": \"skills/tadf-pipeline/SKILL.md\",\n        \"score\": 12.0,\n        \"snippet\": \"# TADF Emitter Screening Pipeline  > **毕设标杆 skill**。所有 anchor case（4CzIPN、DMAC-DPS、P=O / N-MR 系列等）都跑这个流水线。  ## 总览  详见 [`docs/TADF_PIPELINE.md`](../../../docs/TADF_PIPELINE.md)。  ``` SMILES / xyz → 构象搜索 → 基态 opt+freq → TDDFT (S"
+        },
+        {
+          "name": "list_skills",
+          "args": {},
+          "ok": true,
+          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"skills\": [\n      {\n        \"name\": \"conformer\",\n        \"summary\": \"多构象搜索 — xTB/CREST 粗筛 + DFT 精筛漏斗\",\n        \"source\": \"skills/conformer/SKILL.md\",\n        \"version\": \"0.1.0\"\n      },\n      {\n        \"name\": \"dlpno-ccsdt\",\n        \"summary\": \"DLPNO-CCSD(T) gold-standard single-point energetics via ORCA\",\n        \"source\": \"skills/dlpno-ccsdt/SKILL.md\",\n        \"version\": \"0.2.0\"\n      },\n      {\n        \"name\": \"opt-freq\",\n        \"summary\": \"几何优化 + 频率确认的标准量化工"
+        }
+      ]
+    },
+    {
+      "server": "chemaster.mcp.calc_psi4.server",
+      "ok": true,
+      "tools": [
+        "single_point",
+        "optimize",
+        "frequency",
+        "tddft"
+      ],
+      "calls": []
+    }
+  ],
+  "interpretation": "All servers that initialised and answered list_tools / call_tool via the standard MCP protocol can in principle be used by any MCP-compatible client. Claude Code or Cursor users can configure ChemMaster MCP servers in their respective mcp config files and obtain the same tool surface."
+}

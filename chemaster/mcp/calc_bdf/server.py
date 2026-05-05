@@ -213,6 +213,186 @@ def soc(
     }
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# v3.0: ground-state opt + TDDFT in BDF (in addition to soc).
+#
+# These complete the BDF wrapper so ChemMaster can use BDF as a standalone
+# backend for the entire excited-state pipeline, not just the SOC step.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def _bdf_input_for_opt(geom: str, method: str, basis: str) -> str:
+    return (
+        geom.replace("def2-svp", basis)  # respect user-specified basis
+        + f"\n$scf\n{method}\n$end\n"
+        + "\n$compass\nGeometry Optimization\nEnd geometry\n$end\n"
+        + "\n$bdfopt\nimethod\n  1\n$end\n"
+    )
+
+
+def _bdf_input_for_tddft(
+    geom: str, method: str, basis: str, n_states: int, spin_flip: int,
+) -> str:
+    sf = 1 if spin_flip else 0
+    return (
+        geom.replace("def2-svp", basis)
+        + f"\n$scf\n{method}\n$end\n"
+        + f"\n$tdsp\n  itda 1\n  itest 1\n  isf {sf}\n  iroot {n_states}\n$end\n"
+    )
+
+
+def _parse_scf_energy(stdout: str) -> float | None:
+    matches = re.findall(r"E\(SCF\)\s*=\s*(-?\d+\.\d+)", stdout)
+    if not matches:
+        matches = re.findall(r"Total energy\s*=\s*(-?\d+\.\d+)", stdout)
+    if matches:
+        return float(matches[-1])
+    return None
+
+
+def _parse_excited_energies(stdout: str) -> list[dict[str, Any]]:
+    """Extract TDDFT excited state energies + oscillator strengths."""
+    states = []
+    pattern = re.compile(
+        r"State\s*=\s*(\d+)\s+.*?E\s*=\s*(-?\d+\.\d+)\s*eV.*?f\s*=\s*(\d+\.\d+)",
+        re.IGNORECASE,
+    )
+    for m in pattern.finditer(stdout):
+        states.append({
+            "state": int(m.group(1)),
+            "energy_eV": float(m.group(2)),
+            "oscillator_strength": float(m.group(3)),
+        })
+    return states
+
+
+@mcp.tool()
+def optimize(
+    geometry_xyz: str,
+    method: str = "B3LYP",
+    basis: str = "def2-SVP",
+    charge: int = 0,
+    multiplicity: int = 1,
+    timeout_s: int = 7200,
+) -> dict[str, Any]:
+    """Ground-state geometry optimization in BDF.
+
+    Returns:
+        ok=True: {ok, result: {final_energy, optimized_xyz, converged}, ...}
+        ok=False: ENGINE_NOT_FOUND | TIMEOUT | BDF_RUNTIME_ERROR
+    """
+    bdf_path, version, bdfhome = _check_engine()
+    if bdf_path is None:
+        return {
+            "ok": False, "error_code": "ENGINE_NOT_FOUND",
+            "details": "BDF not on PATH",
+            "suggestion": "Install BDF and set BDFHOME.",
+        }
+    if not bdfhome:
+        return {"ok": False, "error_code": "NO_BDFHOME",
+                "details": "BDFHOME not set"}
+
+    geom = _xyz_to_bdf_geom(geometry_xyz, charge, multiplicity)
+    inp = _bdf_input_for_opt(geom, method, basis)
+
+    wall_start = time.time()
+    with tempfile.TemporaryDirectory(prefix="bdf_opt_") as tmp:
+        workdir = Path(tmp)
+        inp_path = workdir / "calc.inp"
+        inp_path.write_text(inp, encoding="ascii")
+        try:
+            proc = subprocess.run(
+                [bdf_path, str(inp_path)],
+                cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, timeout=timeout_s,
+            )
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "error_code": "TIMEOUT",
+                    "details": f"BDF opt exceeded {timeout_s}s",
+                    "meta": {"bdf_version": version}}
+        if proc.returncode != 0:
+            return {"ok": False, "error_code": "BDF_RUNTIME_ERROR",
+                    "details": (proc.stderr or proc.stdout)[-1500:],
+                    "meta": {"bdf_version": version}}
+        stdout = proc.stdout or ""
+        energy = _parse_scf_energy(stdout)
+        converged = "Geometry optimization converged" in stdout or \
+                     "Optimization completed" in stdout
+
+    return {
+        "ok": True,
+        "result": {
+            "final_energy": {"value": energy, "unit": "Hartree"},
+            "converged": converged,
+            "method": method, "basis": basis,
+        },
+        "warnings": [] if converged else [{"code": "OPT_NOT_CONVERGED",
+                                            "message": "BDF opt did not converge"}],
+        "meta": {"bdf_version": version,
+                 "wall_time_s": round(time.time() - wall_start, 1)},
+    }
+
+
+@mcp.tool()
+def tddft(
+    geometry_xyz: str,
+    method: str = "B3LYP",
+    basis: str = "def2-SVP",
+    charge: int = 0,
+    multiplicity: int = 1,
+    n_states: int = 5,
+    spin_flip: bool = False,
+    timeout_s: int = 7200,
+) -> dict[str, Any]:
+    """TDDFT vertical excitation in BDF.
+
+    Args:
+        spin_flip: True for triplet states from a singlet reference.
+    """
+    bdf_path, version, bdfhome = _check_engine()
+    if bdf_path is None:
+        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
+                "details": "BDF not on PATH"}
+    if not bdfhome:
+        return {"ok": False, "error_code": "NO_BDFHOME",
+                "details": "BDFHOME not set"}
+
+    geom = _xyz_to_bdf_geom(geometry_xyz, charge, multiplicity)
+    inp = _bdf_input_for_tddft(geom, method, basis, n_states, int(spin_flip))
+
+    wall_start = time.time()
+    with tempfile.TemporaryDirectory(prefix="bdf_tddft_") as tmp:
+        workdir = Path(tmp)
+        inp_path = workdir / "calc.inp"
+        inp_path.write_text(inp, encoding="ascii")
+        try:
+            proc = subprocess.run(
+                [bdf_path, str(inp_path)],
+                cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, timeout=timeout_s,
+            )
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "error_code": "TIMEOUT",
+                    "details": f"BDF TDDFT exceeded {timeout_s}s"}
+        if proc.returncode != 0:
+            return {"ok": False, "error_code": "BDF_RUNTIME_ERROR",
+                    "details": (proc.stderr or proc.stdout)[-1500:]}
+        states = _parse_excited_energies(proc.stdout or "")
+
+    return {
+        "ok": True,
+        "result": {
+            "excited_states": states,
+            "n_states": len(states),
+            "spin_flip": bool(spin_flip),
+            "method": method, "basis": basis,
+        },
+        "warnings": [],
+        "meta": {"bdf_version": version,
+                 "wall_time_s": round(time.time() - wall_start, 1)},
+    }
+
+
 def main() -> None:
     mcp.run(transport="stdio")
 

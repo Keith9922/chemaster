@@ -1,0 +1,7 @@
+{
+  "data_source": "not_collected",
+  "metric": "submission friction time savings (indicator 5)",
+  "reason": "Requires human subjects (≥2 participants) running comparable tasks manually vs through ChemMaster, with wall-clock timing. Not collected in this work due to lack of subject availability during the development phase. Experimental protocol is fully specified in docs/BENCHMARK_PROTOCOL.md §3.2 and can be executed in follow-up work.",
+  "acceptance_target_pct": 50.0,
+  "pass_overall": null
+}

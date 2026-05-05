@@ -1,0 +1,5 @@
+{
+  "data_source": "real_simulation",
+  "ok": false,
+  "note": "No tool calls observed; mock LLM may not have triggered tools."
+}

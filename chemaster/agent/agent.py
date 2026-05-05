@@ -88,6 +88,15 @@ callback.  When `run_streaming` is invoked, the agent prefers
 if only the sync version is supplied."""
 
 
+# v3.0: callback signature for the recommend mode.
+# Input: a payload describing the chemistry decision (decision, recommendation,
+#        reasoning, alternatives, tradeoffs, decision_class).
+# Output: dict with at least ``status`` ∈ {"accept", "modify", "cancel"}, and
+#         optionally ``modified_value`` (when status == "modify") or
+#         ``user_note`` (free-form context the agent should respect).
+RecommendCallback = Callable[[dict], dict]
+
+
 @dataclass
 class AgentConfig:
     max_turns: int = 30                   # safe default; H2O finishes in 3-5
@@ -97,6 +106,7 @@ class AgentConfig:
     enabled_tools: list[str] | None = None      # None = all registered tools exposed
     confirm_callback: ConfirmCallback | None = None   # None = auto-approve
     async_confirm_callback: AsyncConfirmCallback | None = None  # used by run_streaming
+    recommend_callback: "RecommendCallback | None" = None  # v3.0: recommend mode handler
     max_tool_observation_chars: int = 30_000
     finish_on_no_tool_calls: bool = False        # treat plain text as completion?
 
@@ -572,12 +582,26 @@ class BaseAgent:
                     content="[ask_user] Awaiting user response.",
                     tool_call_id=tc.id,
                     name=tc.name,
-                    meta=self._pending_ask_user,
+                    meta={
+                        **self._pending_ask_user,
+                        "decision_authority": "user-chemistry",
+                    },
                 )
                 self.dialog.add_message(tool_msg)
                 step.tool_responses.append(tool_msg)
                 should_finish = True
                 break
+
+            if tc.name == "recommend":
+                # v3.0 recommend mode: surface chemistry decision to the user.
+                tool_msg = self._handle_recommend(tc)
+                self.dialog.add_message(tool_msg)
+                step.tool_responses.append(tool_msg)
+                # If the user cancelled, treat as task termination.
+                if tool_msg.meta and tool_msg.meta.get("recommend_status") == "cancel":
+                    should_finish = True
+                    break
+                continue
 
             tool_msg = self._dispatch_tool(tc)
             self.dialog.add_message(tool_msg)
@@ -644,13 +668,149 @@ class BaseAgent:
                 + "\n... [truncated] ...\n"
                 + observation[-half:]
             )
+        # v3.0: tag decision_authority on every tool message
+        if tool.is_chemistry_decision:
+            authority = "user-chemistry"
+        elif tool.needs_confirmation():
+            authority = "user-binary"
+        else:
+            authority = "agent"
+        meta = {"decision_authority": authority}
+        if result.data:
+            meta["data"] = result.data
         return ToolMessage(
             content=observation,
             tool_call_id=tc.id,
             name=tc.name,
             is_error=result.is_error or not result.ok,
-            meta={"data": result.data} if result.data else {},
+            meta=meta,
         )
+
+    # ------------------------------------------------------------------
+    # Recommend mode (v3.0)
+    # ------------------------------------------------------------------
+
+    def _handle_recommend(self, tc: ToolCall) -> ToolMessage:
+        """Process a `recommend` tool call by routing through the user.
+
+        The recommend_callback receives the recommendation payload and returns:
+            {"status": "accept" | "modify" | "cancel",
+             "modified_value": "<user override>",   # iff status == "modify"
+             "user_note": "<free-form note>"}        # optional
+
+        If no callback is configured (script / test mode), default to accepting
+        the agent's recommendation so the loop progresses.
+        """
+        payload = {
+            "decision": tc.arguments.get("decision", ""),
+            "recommendation": tc.arguments.get("recommendation", ""),
+            "reasoning": tc.arguments.get("reasoning", ""),
+            "alternatives": tc.arguments.get("alternatives", []),
+            "tradeoffs": tc.arguments.get("tradeoffs", ""),
+            "decision_class": tc.arguments.get("decision_class", "other"),
+        }
+
+        cb = self.config.recommend_callback
+        if cb is None:
+            # Auto-accept fallback so scripted tasks don't deadlock. The
+            # trajectory still records this as a chemistry decision point.
+            decision_payload = {
+                "status": "accept",
+                "modified_value": "",
+                "user_note": "(auto-accepted: no recommend_callback configured)",
+            }
+        else:
+            try:
+                decision_payload = cb(payload) or {"status": "accept"}
+            except Exception as exc:
+                logger.exception("recommend_callback raised on %s", payload.get("decision"))
+                decision_payload = {
+                    "status": "cancel",
+                    "user_note": f"recommend_callback error: {exc}",
+                }
+
+        status = decision_payload.get("status", "accept")
+        modified = decision_payload.get("modified_value", "")
+        user_note = decision_payload.get("user_note", "")
+
+        # Build the observation the LLM sees.
+        if status == "accept":
+            obs = (
+                f"[recommend:accepted] User accepted: {payload['recommendation']}. "
+                f"Proceed with this choice."
+            )
+        elif status == "modify":
+            obs = (
+                f"[recommend:modified] User overrode the recommendation. "
+                f"Use this value instead: {modified}. "
+                f"User note: {user_note}"
+            )
+        else:  # cancel
+            obs = (
+                f"[recommend:cancel] User cancelled the task at this decision "
+                f"point. Note: {user_note}"
+            )
+
+        # Record this as a chemistry decision in confirmations.jsonl.
+        self._record_recommend(tc, payload, decision_payload)
+
+        return ToolMessage(
+            content=obs,
+            tool_call_id=tc.id,
+            name=tc.name,
+            meta={
+                "recommend_payload": payload,
+                "recommend_decision": decision_payload,
+                "recommend_status": status,
+                "decision_authority": "user-chemistry",
+            },
+        )
+
+    def _record_recommend(
+        self,
+        tc: ToolCall,
+        payload: dict,
+        decision: dict,
+    ) -> None:
+        """Log every recommend interaction to confirmations.jsonl + trajectory meta."""
+        if self.trajectory is None:
+            return
+        meta = self.trajectory.meta
+        meta.setdefault(
+            "recommendations",
+            {"accepted": 0, "modified": 0, "cancelled": 0, "log": []},
+        )
+        status = decision.get("status", "accept")
+        record = {
+            "tool": tc.name,
+            "decision": payload.get("decision"),
+            "recommendation": payload.get("recommendation"),
+            "decision_class": payload.get("decision_class"),
+            "status": status,
+            "modified_value": decision.get("modified_value", ""),
+            "user_note": decision.get("user_note", ""),
+        }
+        meta["recommendations"]["log"].append(record)
+        if status == "accept":
+            meta["recommendations"]["accepted"] += 1
+        elif status == "modify":
+            meta["recommendations"]["modified"] += 1
+        else:
+            meta["recommendations"]["cancelled"] += 1
+
+        try:
+            task_dir = self.config.runs_dir / self.trajectory.task_id
+            task_dir.mkdir(parents=True, exist_ok=True)
+            log_path = task_dir / "confirmations.jsonl"
+            line = json.dumps(
+                {"type": "recommend", **record},
+                ensure_ascii=False,
+                default=str,
+            )
+            with log_path.open("a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+        except OSError:
+            logger.exception("Failed to write recommend log")
 
     @staticmethod
     def _confirmation_reason(tool: BaseTool) -> str:

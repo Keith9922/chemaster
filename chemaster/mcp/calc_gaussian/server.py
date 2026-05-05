@@ -26,6 +26,7 @@ import logging
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -394,6 +395,469 @@ def run(input_file: str, timeout_s: int = 7200) -> dict[str, Any]:
         "warnings": [],
         "meta": {"engine": g_name,
                  "wall_time_s": round(time.time() - wall_start, 1)},
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# v3.0: structured calculation tools (optimize / frequency / tddft / etc.)
+#
+# These wrap the generic parse_input/run pair into typed, single-purpose
+# entry points the agent can call without hand-crafting Gaussian input
+# strings. Each tool:
+#   1. Builds a Gaussian .com from xyz + method + basis + task-specific knobs
+#   2. Drives g16 via the existing run() helper
+#   3. Parses the .log for the relevant numbers (energy / freqs / excited states)
+#
+# When g16 is unavailable, tools return ENGINE_NOT_FOUND (same as run()).
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def _xyz_to_gaussian_geom(xyz: str, charge: int, multiplicity: int) -> str:
+    """Convert standard xyz block into Gaussian "charge mult\\n<atoms>" form."""
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
+    try:
+        n_atoms = int(lines[0].strip())
+        atom_lines = lines[2 : 2 + n_atoms]
+    except ValueError:
+        atom_lines = lines
+    coords = "\n".join(atom_lines)
+    return f"{charge} {multiplicity}\n{coords}\n"
+
+
+def _build_input(
+    *,
+    route: str,
+    geom_block: str,
+    title: str = "ChemMaster Gaussian job",
+    nproc: int = 4,
+    mem: str = "4GB",
+    chk: str | None = None,
+) -> str:
+    """Compose a complete Gaussian .com text from route + geometry."""
+    link0 = [f"%nprocshared={nproc}", f"%mem={mem}"]
+    if chk:
+        link0.append(f"%chk={chk}")
+    parts = [
+        "\n".join(link0),
+        route.strip(),
+        "",
+        title,
+        "",
+        geom_block.strip(),
+        "",
+        "",
+    ]
+    return "\n".join(parts)
+
+
+def _parse_scf_energy(log_text: str) -> float | None:
+    """Extract final SCF energy from Gaussian log."""
+    matches = re.findall(r"SCF Done:\s+E\([^)]+\)\s*=\s*(-?\d+\.\d+)", log_text)
+    if matches:
+        return float(matches[-1])
+    return None
+
+
+def _parse_optimized_xyz(log_text: str) -> str | None:
+    """Extract the last "Standard orientation" block as xyz text."""
+    blocks = re.findall(
+        r"Standard orientation:.*?\n.*?\n.*?\n.*?\n.*?\n(.*?)\n\s*-+",
+        log_text,
+        re.DOTALL,
+    )
+    if not blocks:
+        # Try input orientation as fallback
+        blocks = re.findall(
+            r"Input orientation:.*?\n.*?\n.*?\n.*?\n.*?\n(.*?)\n\s*-+",
+            log_text,
+            re.DOTALL,
+        )
+    if not blocks:
+        return None
+    last = blocks[-1].strip().splitlines()
+    z_to_sym = {
+        1: "H", 2: "He", 3: "Li", 4: "Be", 5: "B", 6: "C", 7: "N", 8: "O",
+        9: "F", 10: "Ne", 11: "Na", 12: "Mg", 13: "Al", 14: "Si", 15: "P",
+        16: "S", 17: "Cl", 18: "Ar", 19: "K", 20: "Ca", 26: "Fe", 29: "Cu",
+        30: "Zn", 35: "Br", 53: "I",
+    }
+    atom_lines = []
+    for line in last:
+        parts = line.split()
+        if len(parts) >= 6:
+            try:
+                z = int(parts[1])
+                x, y, zc = float(parts[3]), float(parts[4]), float(parts[5])
+                sym = z_to_sym.get(z, f"X{z}")
+                atom_lines.append(f"{sym} {x:.6f} {y:.6f} {zc:.6f}")
+            except ValueError:
+                continue
+    if not atom_lines:
+        return None
+    return f"{len(atom_lines)}\nGaussian optimized geometry\n" + "\n".join(atom_lines)
+
+
+def _parse_frequencies(log_text: str) -> list[float]:
+    """Extract harmonic frequencies (cm^-1)."""
+    freqs: list[float] = []
+    for m in re.finditer(r"Frequencies\s+--\s+(.+)", log_text):
+        line = m.group(1)
+        for tok in line.split():
+            try:
+                freqs.append(float(tok))
+            except ValueError:
+                pass
+    return freqs
+
+
+def _parse_thermal(log_text: str) -> dict[str, float]:
+    """Extract ZPE, thermal corrections, free energy."""
+    out: dict[str, float] = {}
+    patterns = {
+        "zpe_Hartree": r"Zero-point correction=\s+(-?\d+\.\d+)",
+        "thermal_E_Hartree": r"Thermal correction to Energy=\s+(-?\d+\.\d+)",
+        "thermal_H_Hartree": r"Thermal correction to Enthalpy=\s+(-?\d+\.\d+)",
+        "thermal_G_Hartree": r"Thermal correction to Gibbs Free Energy=\s+(-?\d+\.\d+)",
+        "sum_E_zpe_Hartree": r"Sum of electronic and zero-point Energies=\s+(-?\d+\.\d+)",
+        "sum_E_thermal_Hartree": r"Sum of electronic and thermal Energies=\s+(-?\d+\.\d+)",
+        "sum_H_thermal_Hartree": r"Sum of electronic and thermal Enthalpies=\s+(-?\d+\.\d+)",
+        "sum_G_thermal_Hartree": r"Sum of electronic and thermal Free Energies=\s+(-?\d+\.\d+)",
+    }
+    for key, pat in patterns.items():
+        m = re.search(pat, log_text)
+        if m:
+            out[key] = float(m.group(1))
+    return out
+
+
+def _parse_excited_states(log_text: str) -> list[dict[str, Any]]:
+    """Extract TDDFT excited-state info from Gaussian output."""
+    states: list[dict[str, Any]] = []
+    pattern = re.compile(
+        r"Excited State\s+(\d+):\s+(\S+)\s+(-?\d+\.\d+)\s+eV\s+"
+        r"(-?\d+\.\d+)\s+nm\s+f=(\d+\.\d+)"
+    )
+    for m in pattern.finditer(log_text):
+        states.append({
+            "state": int(m.group(1)),
+            "spin_label": m.group(2),
+            "energy_eV": float(m.group(3)),
+            "wavelength_nm": float(m.group(4)),
+            "oscillator_strength": float(m.group(5)),
+        })
+    return states
+
+
+def _execute_gaussian_job(
+    input_text: str,
+    workdir: Path,
+    job_name: str,
+    timeout_s: int,
+) -> tuple[bool, str, str]:
+    """Drive g16 on a generated input. Returns (ok, stdout_path, stderr)."""
+    g_path, g_name = _check_engine()
+    if not g_path:
+        return False, "", "ENGINE_NOT_FOUND"
+
+    workdir.mkdir(parents=True, exist_ok=True)
+    com_path = workdir / f"{job_name}.com"
+    log_path = workdir / f"{job_name}.log"
+    com_path.write_text(input_text, encoding="ascii", errors="replace")
+
+    try:
+        proc = subprocess.run(
+            [g_path],
+            input=input_text,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+            cwd=str(workdir),
+        )
+    except subprocess.TimeoutExpired:
+        return False, str(log_path), "TIMEOUT"
+
+    log_path.write_text(proc.stdout, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        return False, str(log_path), proc.stderr or "NONZERO_RETURN"
+    return True, str(log_path), ""
+
+
+@mcp.tool()
+def optimize(
+    geometry_xyz: str,
+    method: str = "B3LYP",
+    basis: str = "6-31G(d)",
+    charge: int = 0,
+    multiplicity: int = 1,
+    dispersion: str = "GD3BJ",
+    workdir: str = "",
+    timeout_s: int = 7200,
+) -> dict[str, Any]:
+    """Run a ground-state geometry optimization in Gaussian.
+
+    Returns:
+        ok=True: {ok, result: {final_energy_Hartree, optimized_xyz, converged,
+                                 wall_time_s}, meta}
+        ok=False: ENGINE_NOT_FOUND | TIMEOUT | OPT_NOT_CONVERGED | ...
+    """
+    g_path, g_name = _check_engine()
+    if not g_path:
+        return {
+            "ok": False, "error_code": "ENGINE_NOT_FOUND",
+            "details": "g16 / g09 not on PATH",
+            "suggestion": "Install Gaussian or use calc_psi4 / calc_orca.",
+        }
+
+    wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_opt_"))
+    geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
+    disp = f" EmpiricalDispersion={dispersion}" if dispersion else ""
+    route = f"#p {method}/{basis}{disp} Opt"
+    inp = _build_input(route=route, geom_block=geom, title=f"opt {method}/{basis}")
+
+    wall_start = time.time()
+    ok, log_path, err = _execute_gaussian_job(inp, wd, "opt", timeout_s)
+    wall = round(time.time() - wall_start, 1)
+    if not ok:
+        if err == "TIMEOUT":
+            return {"ok": False, "error_code": "TIMEOUT",
+                    "details": f"timeout after {timeout_s}s", "log_path": log_path}
+        return {"ok": False, "error_code": "GAUSSIAN_FAILED",
+                "details": err, "log_path": log_path}
+
+    log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    converged = "Stationary point found" in log_text
+    energy = _parse_scf_energy(log_text)
+    opt_xyz = _parse_optimized_xyz(log_text)
+    warnings = []
+    if not converged:
+        warnings.append({"code": "OPT_NOT_CONVERGED",
+                         "message": "Optimization did not reach stationary point"})
+
+    return {
+        "ok": True,
+        "result": {
+            "final_energy": {"value": energy, "unit": "Hartree"},
+            "optimized_xyz": opt_xyz or "",
+            "converged": converged,
+            "method": method,
+            "basis": basis,
+            "wall_time_s": wall,
+        },
+        "warnings": warnings,
+        "meta": {"engine": g_name, "log_path": log_path, "workdir": str(wd)},
+    }
+
+
+@mcp.tool()
+def frequency(
+    geometry_xyz: str,
+    method: str = "B3LYP",
+    basis: str = "6-31G(d)",
+    charge: int = 0,
+    multiplicity: int = 1,
+    dispersion: str = "GD3BJ",
+    temperature: float = 298.15,
+    workdir: str = "",
+    timeout_s: int = 7200,
+) -> dict[str, Any]:
+    """Run a harmonic frequency analysis in Gaussian.
+
+    The `geometry_xyz` MUST be already optimized at the same method/basis.
+    Returns frequencies (cm-1), thermal corrections, ZPE, imaginary count.
+    """
+    g_path, g_name = _check_engine()
+    if not g_path:
+        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
+                "details": "g16 / g09 not on PATH"}
+
+    wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_freq_"))
+    geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
+    disp = f" EmpiricalDispersion={dispersion}" if dispersion else ""
+    route = f"#p {method}/{basis}{disp} Freq Temperature={temperature}"
+    inp = _build_input(route=route, geom_block=geom, title=f"freq {method}/{basis}")
+
+    wall_start = time.time()
+    ok, log_path, err = _execute_gaussian_job(inp, wd, "freq", timeout_s)
+    wall = round(time.time() - wall_start, 1)
+    if not ok:
+        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
+                "details": err, "log_path": log_path}
+
+    log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    freqs = _parse_frequencies(log_text)
+    thermal = _parse_thermal(log_text)
+    n_imag = sum(1 for f in freqs if f < -10.0)
+    warnings = []
+    if n_imag > 0:
+        warnings.append({"code": "NEGATIVE_FREQUENCIES",
+                         "message": f"{n_imag} imaginary mode(s) below -10 cm-1"})
+
+    return {
+        "ok": True,
+        "result": {
+            "frequencies_cm_inv": freqs,
+            "n_imaginary": n_imag,
+            "thermal": thermal,
+            "method": method,
+            "basis": basis,
+            "wall_time_s": wall,
+        },
+        "warnings": warnings,
+        "meta": {"engine": g_name, "log_path": log_path, "workdir": str(wd)},
+    }
+
+
+@mcp.tool()
+def tddft(
+    geometry_xyz: str,
+    method: str = "CAM-B3LYP",
+    basis: str = "def2-SVP",
+    charge: int = 0,
+    multiplicity: int = 1,
+    n_singlets: int = 5,
+    n_triplets: int = 0,
+    use_tda: bool = True,
+    workdir: str = "",
+    timeout_s: int = 7200,
+) -> dict[str, Any]:
+    """Run a TDDFT vertical excitation calculation.
+
+    n_triplets > 0 routes to "TDA(50-50,nstates=N)" or "TD(50-50,nstates=N)" so
+    both spin manifolds appear in the output.
+    """
+    g_path, g_name = _check_engine()
+    if not g_path:
+        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
+                "details": "g16 / g09 not on PATH"}
+
+    wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_tddft_"))
+    geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
+    method_kw = "TDA" if use_tda else "TD"
+    if n_triplets > 0:
+        nstates = n_singlets + n_triplets
+        td_kw = f"{method_kw}(50-50,nstates={nstates})"
+    else:
+        td_kw = f"{method_kw}(nstates={n_singlets})"
+    route = f"#p {method}/{basis} {td_kw}"
+    inp = _build_input(route=route, geom_block=geom, title=f"tddft {method}/{basis}")
+
+    wall_start = time.time()
+    ok, log_path, err = _execute_gaussian_job(inp, wd, "tddft", timeout_s)
+    wall = round(time.time() - wall_start, 1)
+    if not ok:
+        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
+                "details": err, "log_path": log_path}
+
+    log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    states = _parse_excited_states(log_text)
+    return {
+        "ok": True,
+        "result": {
+            "excited_states": states,
+            "n_states": len(states),
+            "method": method,
+            "basis": basis,
+            "tda": use_tda,
+            "wall_time_s": wall,
+        },
+        "warnings": [],
+        "meta": {"engine": g_name, "log_path": log_path, "workdir": str(wd)},
+    }
+
+
+@mcp.tool()
+def opt_excited_state(
+    geometry_xyz: str,
+    method: str = "CAM-B3LYP",
+    basis: str = "def2-SVP",
+    charge: int = 0,
+    multiplicity: int = 1,
+    target_state: int = 1,
+    use_tda: bool = True,
+    workdir: str = "",
+    timeout_s: int = 14400,
+) -> dict[str, Any]:
+    """TD-opt: optimize a specific excited-state geometry."""
+    g_path, g_name = _check_engine()
+    if not g_path:
+        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
+                "details": "g16 / g09 not on PATH"}
+
+    wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_topt_"))
+    geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
+    method_kw = "TDA" if use_tda else "TD"
+    route = f"#p {method}/{basis} {method_kw}(root={target_state},nstates=5) Opt"
+    inp = _build_input(route=route, geom_block=geom,
+                       title=f"td-opt root={target_state}")
+
+    wall_start = time.time()
+    ok, log_path, err = _execute_gaussian_job(inp, wd, "topt", timeout_s)
+    wall = round(time.time() - wall_start, 1)
+    if not ok:
+        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
+                "details": err, "log_path": log_path}
+
+    log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    converged = "Stationary point found" in log_text
+    states = _parse_excited_states(log_text)
+    opt_xyz = _parse_optimized_xyz(log_text)
+    return {
+        "ok": True,
+        "result": {
+            "optimized_xyz": opt_xyz or "",
+            "excited_states": states,
+            "target_state": target_state,
+            "converged": converged,
+            "method": method, "basis": basis,
+            "wall_time_s": wall,
+        },
+        "warnings": [] if converged else [{"code": "OPT_NOT_CONVERGED",
+                                            "message": "TD-opt did not converge"}],
+        "meta": {"engine": g_name, "log_path": log_path, "workdir": str(wd)},
+    }
+
+
+@mcp.tool()
+def single_point(
+    geometry_xyz: str,
+    method: str = "B3LYP",
+    basis: str = "def2-TZVP",
+    charge: int = 0,
+    multiplicity: int = 1,
+    dispersion: str = "GD3BJ",
+    workdir: str = "",
+    timeout_s: int = 3600,
+) -> dict[str, Any]:
+    """Single-point energy at a fixed geometry."""
+    g_path, g_name = _check_engine()
+    if not g_path:
+        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
+                "details": "g16 / g09 not on PATH"}
+
+    wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_sp_"))
+    geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
+    disp = f" EmpiricalDispersion={dispersion}" if dispersion else ""
+    route = f"#p {method}/{basis}{disp}"
+    inp = _build_input(route=route, geom_block=geom, title=f"sp {method}/{basis}")
+
+    wall_start = time.time()
+    ok, log_path, err = _execute_gaussian_job(inp, wd, "sp", timeout_s)
+    wall = round(time.time() - wall_start, 1)
+    if not ok:
+        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
+                "details": err, "log_path": log_path}
+
+    log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    energy = _parse_scf_energy(log_text)
+    return {
+        "ok": True,
+        "result": {
+            "final_energy": {"value": energy, "unit": "Hartree"},
+            "method": method, "basis": basis,
+            "wall_time_s": wall,
+        },
+        "warnings": [],
+        "meta": {"engine": g_name, "log_path": log_path, "workdir": str(wd)},
     }
 
 

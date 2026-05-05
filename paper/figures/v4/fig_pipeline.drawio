@@ -1,0 +1,115 @@
+<mxfile host="app.diagrams.net" version="29.6.1">
+  <diagram id="pipe" name="Multi-software pipeline">
+    <mxGraphModel dx="1300" dy="700" grid="1" gridSize="10" pageWidth="1300" pageHeight="650">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="图 3.3  ChemMaster 调度多软件流水线的典型示例（苯分子的 S1/T1 能隙与 k_RISC 计算）" style="text;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="20" width="1200" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- User intent -->
+        <mxCell id="intent" value="用户意图&#xa;&#xa;算苯分子的&#xa;S1/T1 能隙与 k_RISC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1976d2;strokeColor=#0d47a1;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="160" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- 7 pipeline steps in a horizontal flow -->
+        <!-- Step 1 -->
+        <mxCell id="s1" value="① io_ase&#xa;.smiles_to_xyz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b3e5fc;strokeColor=#0277bd;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="240" y="100" width="135" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s1_tag" value="agent" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#0277bd;" vertex="1" parent="1">
+          <mxGeometry x="240" y="160" width="135" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 2 -->
+        <mxCell id="s2" value="② recommend&#xa;method &amp; basis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe082;strokeColor=#f57c00;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="395" y="100" width="135" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2_tag" value="user-chemistry" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#e65100;" vertex="1" parent="1">
+          <mxGeometry x="395" y="160" width="135" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 3 -->
+        <mxCell id="s3" value="③ gaussian&#xa;.optimize (S0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#ef6c00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="550" y="100" width="135" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3_tag" value="user-binary (long-running)" style="text;html=1;align=center;fontSize=9;fontStyle=2;fontColor=#bf360c;" vertex="1" parent="1">
+          <mxGeometry x="550" y="160" width="135" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 4 -->
+        <mxCell id="s4" value="④ gaussian&#xa;.opt_excited&#xa;(S1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#ef6c00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="705" y="100" width="135" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s4_tag" value="user-binary" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#bf360c;" vertex="1" parent="1">
+          <mxGeometry x="705" y="160" width="135" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 5 -->
+        <mxCell id="s5" value="⑤ calc_bdf&#xa;.soc&#xa;(T1↔S0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#6a1b9a;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="860" y="100" width="135" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s5_tag" value="user-binary" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#4a148c;" vertex="1" parent="1">
+          <mxGeometry x="860" y="160" width="135" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 6 -->
+        <mxCell id="s6" value="⑥ kb.formulas&#xa;.krisc_marcus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="100" width="135" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s6_tag" value="agent" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#1b5e20;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="160" width="135" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 7: finish -->
+        <mxCell id="s7" value="⑦ finish" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1976d2;strokeColor=#0d47a1;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="100" width="100" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="s7_tag" value="agent" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#0d47a1;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="160" width="100" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges between steps -->
+        <mxCell id="e_intent_s1" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="intent" target="s1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e12" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s1" target="s2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e23" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e34" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e45" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e56" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e67" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s6" target="s7"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- Below: backend layer -->
+        <mxCell id="backend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9e9e9e;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="380" width="1030" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="backend_label" value="计算后端 (本地软件)" style="text;html=1;align=left;fontSize=11;fontStyle=1;fontColor=#666;" vertex="1" parent="1">
+          <mxGeometry x="260" y="385" width="200" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="g16" value="Gaussian g16&#xa;(B3LYP / TDA TDDFT)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#ef6c00;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="555" y="430" width="280" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="bdf" value="BDF&#xa;(X2C-TDA SOC 矩阵元)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#6a1b9a;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="430" width="135" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="kbpy" value="kb/formulas&#xa;photophysics.krisc_marcus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="430" width="135" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Connectors steps → backends -->
+        <mxCell id="e_s3_g16" style="endArrow=open;html=1;dashed=1;strokeColor=#888;exitX=0.5;exitY=1;entryX=0.2;entryY=0;" edge="1" parent="1" source="s3" target="g16"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e_s4_g16" style="endArrow=open;html=1;dashed=1;strokeColor=#888;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="s4" target="g16"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e_s5_bdf" style="endArrow=open;html=1;dashed=1;strokeColor=#888;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="s5" target="bdf"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e_s6_kb" style="endArrow=open;html=1;dashed=1;strokeColor=#888;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="s6" target="kbpy"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <!-- Bottom: legend -->
+        <mxCell id="legend" value="trajectory 标签图例：&#xa;agent = Agent 自主执行   |   user-binary = 二元 y/n 确认   |   user-chemistry = 化学决策（recommend / ask_user）" style="text;html=1;align=center;verticalAlign=middle;fontSize=10;fontStyle=2;fontColor=#666;" vertex="1" parent="1">
+          <mxGeometry x="240" y="570" width="1030" height="50" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

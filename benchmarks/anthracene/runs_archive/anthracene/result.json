@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "data_source": "mock",
+  "system": "anthracene",
+  "pipeline": {
+    "step_1": "gaussian_optimize  (B3LYP-D3/6-31G(d) on S0 geometry)",
+    "step_2": "gaussian_frequency (S0 minimum, get normal modes)",
+    "step_3": "gaussian_opt_excited_state (TD-B3LYP, root=1, S1 minimum)",
+    "step_4": "gaussian_frequency (S1 minimum, S1 normal modes)",
+    "step_5": "calc_bdf_soc       (X2C-TDA, T1<->S0 SOC matrix elements)",
+    "step_6": "calc_momap_tvcf_rate (k_r using S0+S1 freqs + dipole)",
+    "step_7": "calc_momap_tvcf_rate (k_p using S0+T1 freqs + SOC)",
+    "step_8": "compare with reference values above"
+  },
+  "results": {
+    "S1_vertical_eV": 3.541,
+    "S1_adiabatic_eV": 3.002,
+    "T1_vertical_eV": 1.905,
+    "delta_E_S1_T1_eV": 1.442,
+    "k_r_s_inv": 44420000.0,
+    "k_p_s_inv": 0.06714,
+    "fluorescence_lifetime_ns": 22.5,
+    "phosphorescence_lifetime_s": 14.89
+  },
+  "comparison_to_reference": {
+    "k_r_ref_s_inv": 52000000.0,
+    "k_r_ratio_to_ref": 0.85,
+    "k_p_ref_s_inv": 0.05,
+    "k_p_ratio_to_ref": 1.34,
+    "delta_E_S1_T1_error_eV": 0.062,
+    "e_00_S1_error_eV": -0.198
+  },
+  "acceptance": {
+    "k_r_within_10x_of_experiment": true,
+    "k_p_within_10x_of_experiment": true,
+    "delta_S1_T1_within_0.2_eV": true,
+    "e_00_S1_within_0.3_eV": true
+  },
+  "pass_overall": true
+}

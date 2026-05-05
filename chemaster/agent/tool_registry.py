@@ -60,10 +60,15 @@ class BaseTool(ABC):
     description: str = ""
     input_schema: dict[str, Any] = {"type": "object", "properties": {}}
 
-    # Permission flags
+    # Permission flags (v3.0)
     is_read_only: bool = False             # safe to run in parallel, no confirm
     is_destructive: bool = False           # irreversible / external side-effect
     is_long_running: bool = False          # wall clock > 30 s expected
+    is_chemistry_decision: bool = False    # v3.0: tool surfaces a chemistry choice
+                                           # to the user (e.g. RecommendTool, or
+                                           # any computational tool whose default
+                                           # arguments encode a chemistry choice
+                                           # the user should approve)
 
     @abstractmethod
     def run(self, **kwargs) -> ToolResult:
@@ -78,6 +83,19 @@ class BaseTool(ABC):
 
     def needs_confirmation(self) -> bool:
         return self.is_destructive or self.is_long_running
+
+    def confirmation_mode(self) -> str:
+        """v3.0: return one of 'silent' / 'confirm' / 'recommend'.
+
+        - silent     : agent runs without UI interruption (read-only / fast)
+        - confirm    : binary y/n card before execution (destructive / long)
+        - recommend  : recommend card with accept/modify/cancel (chemistry)
+        """
+        if self.is_chemistry_decision:
+            return "recommend"
+        if self.needs_confirmation():
+            return "confirm"
+        return "silent"
 
 
 # ══════════════════════════════════════════════════════════════════════════════

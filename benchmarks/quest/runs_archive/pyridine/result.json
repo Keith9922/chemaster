@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "pyridine",
+  "formula": "C5H5N",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 5.117,
+      "ref_cc3_eV": 5.07,
+      "ref_character": "n -> π*",
+      "error_eV": 0.047,
+      "abs_error_eV": 0.047,
+      "oscillator_strength": 0.0067
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 5.406,
+      "ref_cc3_eV": 5.25,
+      "ref_character": "π -> π*",
+      "error_eV": 0.156,
+      "abs_error_eV": 0.156,
+      "oscillator_strength": 0.0
+    },
+    {
+      "state_idx": 3,
+      "computed_eV": 5.859,
+      "ref_cc3_eV": 6.81,
+      "ref_character": "π -> π*",
+      "error_eV": -0.951,
+      "abs_error_eV": 0.951,
+      "oscillator_strength": 0.0293
+    }
+  ],
+  "mae_eV": 0.385,
+  "max_abs_error_eV": 0.951,
+  "wall_time_s": 4.7
+}

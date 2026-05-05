@@ -1,0 +1,80 @@
+<mxfile host="app.diagrams.net" version="29.6.1">
+  <diagram id="perm" name="Permission tier flow">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" pageWidth="1100" pageHeight="850">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="图 3.1  操作性工作 vs 化学决策的权限分级机制" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="800" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- User intent -->
+        <mxCell id="user" value="用户自然语言意图&#xa;例：&quot;算苯分子的 S1 与 T1 优化几何并计算 ΔE_ST 与 k_RISC&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1976d2;strokeColor=#0d47a1;fontColor=#ffffff;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="80" width="740" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Agent kernel -->
+        <mxCell id="kernel" value="Agent 内核（基于 Anthropic SDK tool-use 循环）&#xa;按 ~/.chemaster/policy.yaml 中的权限分级表，对每一个候选动作判定 L1 / L2 / L3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#388e3c;strokeColor=#1b5e20;fontColor=#ffffff;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="180" width="740" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Edge: user → kernel -->
+        <mxCell id="e_user_kernel" style="endArrow=classic;html=1;rounded=0;strokeColor=#444;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="user" target="kernel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Three branches -->
+        <!-- L1 -->
+        <mxCell id="L1_head" value="L1  Agent 自主&#xa;(silent execution)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#2e7d32;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#1b5e20;" vertex="1" parent="1">
+          <mxGeometry x="100" y="320" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="L1_body" value="• 输入文件语法微调&#xa;• SCF 初始猜测 SAD → GWH&#xa;• 提高 damping / maxiter&#xa;• 磁盘清理 + 重试&#xa;• 网络瞬时异常 重试 ×3&#xa;• 文件 IO 错误 自动恢复" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;fontSize=11;align=left;verticalAlign=top;spacingLeft=15;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="400" width="280" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="L1_tag" value="trajectory 标签：agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8e9;strokeColor=#558b2f;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="600" width="280" height="32" as="geometry"/>
+        </mxCell>
+
+        <!-- L2 -->
+        <mxCell id="L2_head" value="L2  Agent 推荐 + 用户确认&#xa;(recommend tool)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe082;strokeColor=#f57c00;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#e65100;" vertex="1" parent="1">
+          <mxGeometry x="410" y="320" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="L2_body" value="• 方法 / 基组 / 泛函选择&#xa;• 溶剂模型选择&#xa;• 单虚频处理&#xa;• L1 失败后的方法替换建议&#xa;&#xa;Agent 提交推荐卡片&#xa;用户：接受 / 修改 / 取消" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57c00;fontSize=11;align=left;verticalAlign=top;spacingLeft=15;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="410" y="400" width="280" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="L2_tag" value="trajectory 标签：user-chemistry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#f9a825;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="410" y="600" width="280" height="32" as="geometry"/>
+        </mxCell>
+
+        <!-- L3 -->
+        <mxCell id="L3_head" value="L3  必须用户判断&#xa;(ask_user, 无默认值)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef9a9a;strokeColor=#c62828;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#b71c1c;" vertex="1" parent="1">
+          <mxGeometry x="720" y="320" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="L3_body" value="• 多重度模糊（自由基/复合物）&#xa;• TS vs 极小值判定&#xa;• L2 推荐被拒后再次失败&#xa;• 切换软件后端&#xa;• 跨方法结果不一致&#xa;&#xa;Agent 强制升级，等待用户决断" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;fontSize=11;align=left;verticalAlign=top;spacingLeft=15;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="720" y="400" width="280" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="L3_tag" value="trajectory 标签：user-chemistry (escalation=true)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffebee;strokeColor=#c62828;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="720" y="600" width="280" height="32" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges from kernel to three branches -->
+        <mxCell id="e_k_L1" style="endArrow=classic;html=1;rounded=0;strokeColor=#2e7d32;exitX=0.2;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="kernel" target="L1_head">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_k_L2" style="endArrow=classic;html=1;rounded=0;strokeColor=#f57c00;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="kernel" target="L2_head">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_k_L3" style="endArrow=classic;html=1;rounded=0;strokeColor=#c62828;exitX=0.8;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="kernel" target="L3_head">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Bottom note -->
+        <mxCell id="note" value="所有三类决策在运行轨迹（trajectory.jsonl）中均带 decision_authority 标签，事后可统计「Agent 自主步占比」并审计每一步授权来源" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=2;fontColor=#555;" vertex="1" parent="1">
+          <mxGeometry x="100" y="660" width="900" height="40" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

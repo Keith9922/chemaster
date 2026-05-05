@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "pyrrole",
+  "formula": "C4H5N",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 6.768,
+      "ref_cc3_eV": 5.22,
+      "ref_character": "π -> 3s",
+      "error_eV": 1.548,
+      "abs_error_eV": 1.548,
+      "oscillator_strength": 0.0
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 7.352,
+      "ref_cc3_eV": 6.31,
+      "ref_character": "π -> π*",
+      "error_eV": 1.042,
+      "abs_error_eV": 1.042,
+      "oscillator_strength": 0.008
+    },
+    {
+      "state_idx": 3,
+      "computed_eV": 7.436,
+      "ref_cc3_eV": 6.37,
+      "ref_character": "π -> π*",
+      "error_eV": 1.066,
+      "abs_error_eV": 1.066,
+      "oscillator_strength": 0.0007
+    }
+  ],
+  "mae_eV": 1.219,
+  "max_abs_error_eV": 1.548,
+  "wall_time_s": 3.7
+}

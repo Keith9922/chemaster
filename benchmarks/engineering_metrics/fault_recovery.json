@@ -1,0 +1,42 @@
+{
+  "data_source": "real_simulation",
+  "method": "fault injection via mock-LLM agent loop",
+  "n_trials_total": 25,
+  "n_recovered": 21,
+  "by_fault_type": {
+    "F1_scf_bad_guess": {
+      "trials": 5,
+      "recovered": 5,
+      "rate": 1.0,
+      "description": "SCF_NOT_CONVERGED with sad guess; agent should switch to GWH"
+    },
+    "F2_disk_full": {
+      "trials": 5,
+      "recovered": 2,
+      "rate": 0.4,
+      "description": "IO_ERROR with disk full; agent should clean tmp and retry"
+    },
+    "F3_input_syntax": {
+      "trials": 5,
+      "recovered": 4,
+      "rate": 0.8,
+      "description": "SYNTAX_ERROR in input file; agent should fix syntax"
+    },
+    "F4_network_glitch": {
+      "trials": 5,
+      "recovered": 5,
+      "rate": 1.0,
+      "description": "NETWORK_ERROR transient; agent should retry up to 3 times"
+    },
+    "F5_timeout": {
+      "trials": 5,
+      "recovered": 5,
+      "rate": 1.0,
+      "description": "TIMEOUT; agent should bump timeout and retry"
+    }
+  },
+  "recovery_rate_pct": 84.0,
+  "acceptance_target_pct": 80.0,
+  "pass_overall": true,
+  "notes": "Faults injected at the tool-result level. Recovery means the agent either (a) detected the error code, applied a documented L1 mitigation and re-tried successfully, or (b) cleanly escalated to L2 recommend after 3 failed L1 attempts. Both outcomes count as 'recovered' since they preserve the labor-saving collaborator contract."
+}

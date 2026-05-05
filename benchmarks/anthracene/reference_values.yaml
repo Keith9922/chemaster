@@ -1,0 +1,79 @@
+# 蒽 (anthracene, C14H10) 速率与动力学参考值
+#
+# 来源：
+#   - Niu, Y.; Peng, Q.; Shuai, Z. Sci. China B Chem. 2008, 51, 1153.
+#     (TVCF method paper, anthracene as test case)
+#   - Peng, Q.; Yi, Y.; Shuai, Z.; Shao, J. J. Am. Chem. Soc. 2007, 129, 9333.
+#     (TVCF rate calculations)
+#   - Marchetti, A. P.; Kearns, D. R. J. Am. Chem. Soc. 1967, 89, 768.
+#     (Phosphorescence lifetime, classical experimental reference)
+#   - Berlman, I. B. Handbook of Fluorescence Spectra of Aromatic Molecules,
+#     2nd ed., 1971. (Fluorescence quantum yield + lifetime)
+#
+# 蒽的发射特性：S0 ↔ S1 (π-π* allowed) ; T1 < S1 (intersystem crossing path)
+
+properties:
+  ground_state:
+    geometry_method_ref: "B3LYP/6-31G(d)"
+    point_group: "D2h"
+    n_atoms: 24
+
+  s1_excited_state:
+    character: "1B2u (π,π*)"
+    vertical_excitation_eV: 3.43           # ref: experimental absorption max ~3.31 eV (374 nm)
+    adiabatic_excitation_eV_ref: 3.20      # 0-0 transition, S0 -> S1
+    oscillator_strength_ref: 0.10
+    notes:
+      - "Strong, allowed π-π* transition"
+      - "Mirror image fluorescence/absorption"
+
+  t1_excited_state:
+    character: "3B2u (π,π*)"
+    vertical_excitation_eV: 1.85           # ref: T1 ~ 1.85 eV (ESR + phos spectrum)
+    adiabatic_excitation_eV_ref: 1.82
+    notes:
+      - "T1 well below S1 (gap ~ 1.4 eV) — reason for low fluorescence quantum yield"
+
+  energy_gap:
+    delta_S1_T1_eV: 1.38
+
+# Radiative rate constants
+rates:
+  k_r_fluorescence:
+    description: "S1 -> S0 fluorescence rate"
+    experimental_s_inv: 4.5e7              # Berlman, 1/lifetime ≈ 1/(22 ns)
+    computed_TVCF_s_inv_ref: 5.2e7         # Niu/Shuai 2008, B3LYP TVCF
+    expected_chemmaster_range_s_inv:
+      lower: 1.0e7
+      upper: 1.0e8
+    method_under_test: "B3LYP/6-31G(d), TVCF, Duschinsky on, 298 K"
+
+  k_p_phosphorescence:
+    description: "T1 -> S0 phosphorescence rate (with SOC)"
+    experimental_s_inv: 2.5e-2             # Marchetti/Kearns ~ 40 s lifetime
+    computed_TVCF_s_inv_ref: 5.0e-2
+    expected_chemmaster_range_s_inv:
+      lower: 1.0e-3
+      upper: 1.0e0
+    method_under_test: "B3LYP/6-31G(d) opt + BDF X2C-TDA SOC + MOMAP TVCF"
+
+  k_isc:
+    description: "S1 -> T1 intersystem crossing"
+    experimental_s_inv: 4.4e8     # Birks 1970 photophysics
+    notes: "Used in dynamics evolution validation, not primary benchmark"
+
+acceptance_criteria:
+  k_r_order_of_magnitude_match: true
+  k_p_order_of_magnitude_match: true
+  delta_S1_T1_eV_max_error: 0.2
+  e_00_S1_eV_max_error: 0.3
+
+pipeline:
+  step_1: "gaussian_optimize  (B3LYP-D3/6-31G(d) on S0 geometry)"
+  step_2: "gaussian_frequency (S0 minimum, get normal modes)"
+  step_3: "gaussian_opt_excited_state (TD-B3LYP, root=1, S1 minimum)"
+  step_4: "gaussian_frequency (S1 minimum, S1 normal modes)"
+  step_5: "calc_bdf_soc       (X2C-TDA, T1<->S0 SOC matrix elements)"
+  step_6: "calc_momap_tvcf_rate (k_r using S0+S1 freqs + dipole)"
+  step_7: "calc_momap_tvcf_rate (k_p using S0+T1 freqs + SOC)"
+  step_8: "compare with reference values above"
