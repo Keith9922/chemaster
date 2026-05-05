@@ -38,7 +38,7 @@
 ### 安装
 
 ```bash
-git clone https://github.com/zhangronggang/chemaster.git
+git clone https://github.com/Keith9922/chemaster.git
 cd chemaster
 
 # 推荐使用 Conda 安装（psi4 仅在 Conda 上提供）
@@ -184,7 +184,7 @@ chemaster/
   author = {Zhang, Ronggang},
   year   = {2026},
   note   = {Bachelor thesis, Jilin University, College of Chemistry},
-  url    = {https://github.com/zhangronggang/chemaster}
+  url    = {https://github.com/Keith9922/chemaster}
 }
 ```
 

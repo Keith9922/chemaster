@@ -35,7 +35,7 @@ FIGS_REAL = Path(__file__).resolve().parents[1] / "paper" / "figures" / "v3_real
 FIGS_V4 = Path(__file__).resolve().parents[1] / "paper" / "figures" / "v4"  # drawio 干净架构图
 
 # GitHub 仓库 URL（用户创建后填入此处）
-GITHUB_URL = "https://github.com/zhangronggang/chemaster"  # 占位，待用户确认
+GITHUB_URL = "https://github.com/Keith9922/chemaster"  # 占位，待用户确认
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_PATH = ROOT / "paper" / "thesis_draft.docx"

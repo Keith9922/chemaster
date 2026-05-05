@@ -15,7 +15,7 @@
    - **Public**（推荐——毕设答辩可作为开源工作展示）
    - 不要勾 `Initialize with README / .gitignore / LICENSE`（仓库已有）
 3. 点 `Create repository`
-4. 复制屏幕上显示的 git URL，形如 `git@github.com:zhangronggang/chemaster.git` 或 `https://github.com/zhangronggang/chemaster.git`
+4. 复制屏幕上显示的 git URL，形如 `git@github.com:Keith9922/chemaster.git` 或 `https://github.com/Keith9922/chemaster.git`
 
 ---
 
@@ -48,13 +48,13 @@ git log --oneline -5
 
 ```bash
 # 添加 remote（用上一步复制的 URL；改成你自己的）
-git remote add origin git@github.com:zhangronggang/chemaster.git
+git remote add origin git@github.com:Keith9922/chemaster.git
 
 # 验证
 git remote -v
 # 应输出:
-# origin  git@github.com:zhangronggang/chemaster.git (fetch)
-# origin  git@github.com:zhangronggang/chemaster.git (push)
+# origin  git@github.com:Keith9922/chemaster.git (fetch)
+# origin  git@github.com:Keith9922/chemaster.git (push)
 
 # 推 main / master 分支
 git branch -M main           # 把当前分支重命名为 main（如果你想要标准命名）
@@ -67,17 +67,17 @@ git push -u origin main
 
 ## 四、Step 4：把 GitHub URL 填回论文
 
-如果你创建的仓库 URL 与默认占位 `https://github.com/zhangronggang/chemaster` 不同，更新这两个地方：
+如果你创建的仓库 URL 与默认占位 `https://github.com/Keith9922/chemaster` 不同，更新这两个地方：
 
 ```bash
 cd /Users/ronggang/code/funcode/chemaster/.claude/worktrees/funny-aryabhata-7d1804
 
 # 1. 改 scripts/generate_thesis_docx.py 顶部的 GITHUB_URL 常量
-sed -i '' 's|https://github.com/zhangronggang/chemaster|<你的真实 URL>|g' scripts/generate_thesis_docx.py
+sed -i '' 's|https://github.com/Keith9922/chemaster|<你的真实 URL>|g' scripts/generate_thesis_docx.py
 
 # 2. 改 README.md（仓库根 + worktree 都改）
-sed -i '' 's|https://github.com/zhangronggang/chemaster|<你的真实 URL>|g' README.md
-sed -i '' 's|https://github.com/zhangronggang/chemaster|<你的真实 URL>|g' /Users/ronggang/code/funcode/chemaster/README.md
+sed -i '' 's|https://github.com/Keith9922/chemaster|<你的真实 URL>|g' README.md
+sed -i '' 's|https://github.com/Keith9922/chemaster|<你的真实 URL>|g' /Users/ronggang/code/funcode/chemaster/README.md
 
 # 3. 重新生成 docx
 python scripts/generate_thesis_docx.py
