@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "formaldehyde",
+  "formula": "CH2O",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 4.021,
+      "ref_cc3_eV": 3.98,
+      "ref_character": "n -> π*",
+      "error_eV": 0.041,
+      "abs_error_eV": 0.041,
+      "oscillator_strength": 0.0
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 8.66,
+      "ref_cc3_eV": 7.23,
+      "ref_character": "n -> 3s (Rydberg)",
+      "error_eV": 1.43,
+      "abs_error_eV": 1.43,
+      "oscillator_strength": 0.1767
+    }
+  ],
+  "mae_eV": 0.735,
+  "max_abs_error_eV": 1.43,
+  "wall_time_s": 0.9
+}

@@ -1,0 +1,103 @@
+# QUEST 激发态参考值
+#
+# 来源：
+#   - Loos, P.-F.; Scemama, A.; Blondel, A.; Garniron, Y.; Caffarel, M.;
+#     Jacquemin, D. J. Chem. Theory Comput. 2018, 14, 4360-4379. (QUEST#1)
+#   - Loos, P.-F.; Lipparini, F.; Boggio-Pasqua, M.; Scemama, A.; Jacquemin, D.
+#     J. Chem. Theory Comput. 2020, 16, 1711-1741. (QUEST#3)
+#   - Database: https://lcpq.github.io/QUESTDB_website/
+#
+# 参考方法：CC3 / aug-cc-pVTZ 垂直激发能（vertical excitation energies, VEE）
+# 单位：eV
+
+method_reference: "CC3/aug-cc-pVTZ"
+unit: "eV"
+
+systems:
+  formaldehyde:
+    formula: "CH2O"
+    geometry_method: "CCSD(T)/aug-cc-pVTZ optimized"
+    excited_states:
+      - state: 1
+        symmetry: "1A2"
+        character: "n -> π*"
+        spin: "singlet"
+        vee_cc3: 3.98
+      - state: 2
+        symmetry: "1B1"
+        character: "n -> 3s (Rydberg)"
+        spin: "singlet"
+        vee_cc3: 7.23
+      - state: 1
+        symmetry: "3A2"
+        character: "n -> π*"
+        spin: "triplet"
+        vee_cc3: 3.58
+
+  pyridine:
+    formula: "C5H5N"
+    geometry_method: "CC3/aug-cc-pVTZ optimized"
+    excited_states:
+      - state: 1
+        symmetry: "1B1"
+        character: "n -> π*"
+        spin: "singlet"
+        vee_cc3: 5.07
+      - state: 1
+        symmetry: "1B2"
+        character: "π -> π*"
+        spin: "singlet"
+        vee_cc3: 5.25
+      - state: 1
+        symmetry: "1A1"
+        character: "π -> π*"
+        spin: "singlet"
+        vee_cc3: 6.81
+
+  pyrrole:
+    formula: "C4H5N"
+    geometry_method: "CC3/aug-cc-pVTZ optimized"
+    excited_states:
+      - state: 1
+        symmetry: "1A2"
+        character: "π -> 3s"
+        spin: "singlet"
+        vee_cc3: 5.22
+      - state: 1
+        symmetry: "1B1"
+        character: "π -> π*"
+        spin: "singlet"
+        vee_cc3: 6.31
+      - state: 2
+        symmetry: "1A1"
+        character: "π -> π*"
+        spin: "singlet"
+        vee_cc3: 6.37
+
+  acetaldehyde:
+    formula: "CH3CHO"
+    geometry_method: "CC3/aug-cc-pVTZ optimized"
+    excited_states:
+      - state: 1
+        symmetry: "1A''"
+        character: "n -> π*"
+        spin: "singlet"
+        vee_cc3: 4.31
+      - state: 1
+        symmetry: "3A''"
+        character: "n -> π*"
+        spin: "triplet"
+        vee_cc3: 3.97
+
+acceptance_criteria:
+  # TD-DFT internal accuracy on QUEST small molecules:
+  mae_eV_max: 0.4
+  per_state_max_error_eV: 0.6
+
+method_under_test:
+  functional: "CAM-B3LYP"
+  basis: "def2-TZVP"
+  tda: true
+  notes:
+    - "CAM-B3LYP shows systematic blue-shift vs CC3 (typically +0.1 to +0.3 eV)"
+    - "TDA stabilizes triplets vs full TDDFT but small effect for these systems"

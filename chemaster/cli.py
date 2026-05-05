@@ -52,15 +52,70 @@ def main(ctx: click.Context, version: bool, check_engines: bool, tui: bool) -> N
         _check_engines()
         return
     if tui:
-        try:
-            from chemaster.tui.app import run_tui
-            run_tui()
-        except Exception as exc:
-            click.secho(f"TUI failed to launch: {exc}", fg="red", err=True)
-            sys.exit(1)
+        # Backwards-compatible flag; prefer `chemaster tui` subcommand.
+        ctx.invoke(tui_cmd)
         return
     if ctx.invoked_subcommand is None:
         _interactive_repl()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# `tui` and `web` subcommands (v3.0 multi-frontend)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@click.command(name="tui")
+def tui_cmd() -> None:
+    """Launch the Textual TUI (interactive terminal UI)."""
+    try:
+        from chemaster.tui.app import main as tui_main
+    except ImportError as exc:
+        click.secho(f"TUI dependencies missing: {exc}", fg="red", err=True)
+        sys.exit(1)
+    # Build a minimal agent for the TUI to use, if possible.
+    try:
+        from chemaster.agent.agent import AgentConfig, ChemAgent
+        from chemaster.agent.llm_client import LLMConfig, create_llm
+        from chemaster.agent.tool_loader import build_default_registry
+        registry = build_default_registry()
+        llm_config = LLMConfig(provider="mock", model="mock")
+        llm = create_llm(llm_config)
+        agent = ChemAgent(
+            llm=llm, tools=registry,
+            config=AgentConfig(),
+        )
+        tui_main(agent=agent)
+    except Exception:
+        # Fall through to display-only mode
+        tui_main(agent=None)
+
+
+@click.command(name="web")
+@click.option("--host", default="127.0.0.1", show_default=True)
+@click.option("--port", default=8765, show_default=True)
+@click.option("--llm-provider",
+              type=click.Choice(["mock", "anthropic", "minimax", "qwen",
+                                 "deepseek", "openai_compat"]),
+              default="mock",
+              help="LLM provider for tasks submitted via the Web UI.")
+def web_cmd(host: str, port: int, llm_provider: str) -> None:
+    """Launch the local Web UI (FastAPI + minimal SPA)."""
+    try:
+        from chemaster.web.app import main as web_main
+    except RuntimeError as exc:
+        click.secho(f"Web dependencies missing: {exc}", fg="red", err=True)
+        sys.exit(1)
+
+    def agent_factory():
+        from chemaster.agent.agent import AgentConfig, ChemAgent
+        from chemaster.agent.llm_client import LLMConfig, create_llm
+        from chemaster.agent.tool_loader import build_default_registry
+        registry = build_default_registry()
+        llm_config = LLMConfig(provider=llm_provider, model=None)
+        llm = create_llm(llm_config)
+        return ChemAgent(llm=llm, tools=registry, config=AgentConfig())
+
+    web_main(host=host, port=port, agent_factory=agent_factory)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -788,6 +843,11 @@ def _print_summary(traj, runs_dir: Path) -> None:
         qs = traj.finish_payload.get("questions", [])
         for q in qs:
             console.print(f"  [yellow]?[/yellow] {q}")
+
+
+# Register the v3.0 multi-frontend subcommands.
+main.add_command(tui_cmd)
+main.add_command(web_cmd)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "water_dimer",
+  "method": "B3LYP-D3(BJ)/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -5.552,
+  "reference_binding_energy_kcal": -5.02,
+  "error_kcal": -0.532,
+  "abs_error_kcal": 0.532,
+  "within_acceptance": false,
+  "interaction_hartree": -0.008848,
+  "wall_time_s": 1.82,
+  "geometry_note": "Standard S22 hydrogen-bonded geometry (Hobza 2006)."
+}

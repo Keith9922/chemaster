@@ -1,0 +1,7 @@
+{
+  "data_source": "not_collected",
+  "metric": "chemistry decision recommendation acceptance rate (indicator 3b)",
+  "reason": "Requires human subjects (≥2 participants) responding to recommend cards on a set of anchor tasks. Not collected in this work. Protocol specified in docs/BENCHMARK_PROTOCOL.md §3.4.",
+  "acceptance_target_pct": 70.0,
+  "pass_overall": null
+}

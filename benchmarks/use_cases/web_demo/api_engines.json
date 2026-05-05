@@ -1,0 +1,1 @@
+{"engines":[{"name":"g16","available":false,"path":null},{"name":"g09","available":false,"path":null},{"name":"bdf","available":false,"path":null},{"name":"momap","available":false,"path":null},{"name":"psi4","available":true,"path":"/opt/miniconda3/bin/psi4"},{"name":"orca","available":false,"path":null},{"name":"xtb","available":true,"path":"/opt/miniconda3/bin/xtb"}]}

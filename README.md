@@ -1,222 +1,209 @@
 # ChemMaster
 
-> **Claude Code for computational chemistry — local, open, scriptable.**
+> **A local, large-language-model-driven, terminal-native agent that absorbs the
+> repetitive labor in computational chemistry workflows — while keeping every
+> chemistry decision in the researcher's hands.**
 >
-> 用自然语言下达计算任务，真 LLM 驱动的 Agent 自主推理 → 调用 psi4 / xTB / ORCA / BDF → 自动出报告。
->
-> 标杆场景：**TADF 发光体设计**（OLED 第三代发光材料的全流程计算筛选）。
+> 本地运行、由大模型驱动、与终端环境集成的计算化学 Agent 系统。
+> 设计原则：**Agent 承担操作性工作（输入构造、提交、解析、错误重试），化学决策权（方法/基组/泛函/溶剂模型）通过推荐机制保留给研究者。**
+
+[![Tests](https://img.shields.io/badge/tests-228%20passed-brightgreen)]()
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
 ---
 
-## 特性
+## 核心特点
 
-- **真 LLM tool-use loop** — 基于 Anthropic SDK 的 ChemAgent，**30 个工具**自动加载（MCP 适配 + 内建 finish/ask_user/think），错误自愈、Trajectory 全持久化便于复现。
-- **本地优先** — 分子结构不上传；除 LLM API 全部离线运行。
-- **多模型支持（BYO LLM）** — Anthropic 直连、**MiniMax M2.7（实测跑通）**、**Qwen / DeepSeek**（DashScope / OpenAI-compat）、本地 vLLM / llama.cpp（同样的 OpenAI-compat 接口）。
-- **真实计算多软件覆盖**：
-  - psi4：single_point / **optimize / frequency（含 thermal_corrections H/G/T·S）/ TDDFT**（实装可用）
-  - xTB：single_point / optimize（实装）
-  - ORCA：single_point / optimize（subprocess 包装，academic-free，需用户装）
-  - BDF：SOC（X2C-TDA，TADF 流水线关键，国产化亮点）
-  - MultiWFN：NTO 分析（论文图首选）
-  - HPC SLURM：submit / status / fetch（异步提交学校超算）
-- **Per-tool 安全确认** — 每个工具自带 `is_read_only` / `is_destructive` / `is_long_running` 标志；UI 弹确认对话框；审计日志写到 `runs/<task_id>/confirmations.jsonl`。
-- **可检索的领域知识库** — `kb/rules/*.yaml` 基组/泛函规则、`kb/skills/*/SKILL.md` 完整工作流文档（opt-freq / tadf-pipeline / tddft / soc / dlpno-ccsdt / pes-scan / pka / solvation / conformer / ts-search 共 10 份），由 Agent 通过 `kb_search` / `use_skill` 工具按需读取。
-- **TADF anchor 库** — `benchmarks/tadf-literature/{4CzIPN,DMAC-BP,DMAC-DPS}.xyz` 预先 MMFF 优化的 76-94 原子分子，`io_lookup_by_name("4CzIPN")` 直接拿到。
-- **完整 CLI** — `chemaster run` 一次性任务、`chemaster show` 看历史、`chemaster replay` 复现、`chemaster init` 配置向导、`chemaster --check-engines` 看引擎；运行时 live tool-call 流式输出。
-- **可重复** — 每个任务的完整对话、工具结果、版本快照写到 `runs/<task_id>/trajectory.json`；自动生成 `report.md` 论文级总结；`confirmations.jsonl` 审计每次危险操作。
+- **Labor-saving collaborator，不是 autonomous agent**：通过 L1（自主）/ L2（推荐确认）/ L3（必须用户判断）三级权限分级机制，明确划分"机械操作"与"化学决策"边界。
+- **基于 MCP（Model Context Protocol）协议**：每个量子化学软件封装为标准化 MCP server，可被 ChemMaster 主程序调用，**也可被 Claude Code、Cursor 等任意 MCP 客户端独立挂载使用**。
+- **多前端形态**：CLI、Textual TUI、本地 Web 三种用户接口共享同一个 Agent 内核与工具集。
+- **本地运行**：分子结构不上传云端；除 LLM API 调用外全部在本地进行。
+- **"LLM 不算数"原则**：所有数值计算（物理常数、单位换算、Marcus 速率公式等）固化在 Python 模块中由 Agent 调用，避免大模型直接进行浮点运算。
 
----
+## 截图
+
+| 命令行单测 | TUI 终端界面 | 本地 Web 前端 |
+|---|---|---|
+| ![pytest](paper/figures/v3_real/fig_real_pytest.png) | ![tui](paper/figures/v3/fig_tui_textual_render.png) | ![web](paper/figures/v3/fig_web_default.png) |
+
+## 五层架构
+
+![架构](paper/figures/v4/fig_architecture.png)
+
+完整说明见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 快速开始
 
-### 安装（手动）
+### 安装
 
 ```bash
-# 1. conda 环境（psi4 + xtb + RDKit + ASE + cclib 全部一键装）
-conda create -n chemaster python=3.11 -y
-conda activate chemaster
-conda install -c conda-forge psi4 xtb cclib rdkit ase pyyaml -y
-pip install anthropic mcp click rich pint pydantic platformdirs
-
-# 2. 装 chemaster 自身（开发模式）
-git clone https://github.com/<user>/chemaster
+git clone https://github.com/zhangronggang/chemaster.git
 cd chemaster
+
+# 推荐使用 Conda 安装（psi4 仅在 Conda 上提供）
+conda install -c conda-forge psi4 dftd3-python
 pip install -e ".[dev]"
+pip install textual fastapi uvicorn playwright pint rdkit ase
 
-# 3. 配 LLM API key（任选其一）
-export ANTHROPIC_API_KEY=sk-ant-...        # 用 Claude
-export MINIMAX_API_KEY=sk-cp-...           # 用 MiniMax M2.7（国产，已实测跑通）
-
-# 4. 检查环境
-chemaster --check-engines
+# 配置 LLM API key（任选其一）
+export ANTHROPIC_API_KEY=sk-ant-...
+# 或 export OPENAI_API_KEY=...
+# 或 export DASHSCOPE_API_KEY=...   (Qwen)
+# 或 export MINIMAX_API_KEY=...
+# 或 export DEEPSEEK_API_KEY=...
 ```
 
-> 一键安装脚本 / PyPI / Homebrew / Docker 镜像列在路线图（Phase 7），尚未发布。
-
----
-
-## 用法
-
-### 一行命令跑一个真任务
+### 三种使用方式
 
 ```bash
-$ chemaster run "Compute the energy of water"
+# 命令行
+chemaster run "Compute the energy of water using B3LYP/def2-SVP"
 
-╭───────────── ChemMaster Agent ─────────────╮
-│ Compute the energy of water                 │
-│ provider=minimax  model=MiniMax-M2.7  tools=22 │
-╰─────────────────────────────────────────────╯
+# Textual TUI（终端交互界面）
+chemaster tui
 
-[step 1] io_lookup_by_name(name="water")
-  → xyz: 3 atoms, formula H2O
-[step 2] calc_psi4_optimize(method="B3LYP-D3(BJ)", basis="def2-SVP", ...)
-  → optimized; final_energy = -76.3589 Hartree
-[step 3] calc_psi4_frequency(...)
-  → 3 modes, n_imaginary = 0, ZPE = 0.0212 Hartree
-[step 4] finish
-
-╭──────── ChemMaster — Run Summary ─────────╮
-│ Status:    completed                       │
-│ Steps:     4                               │
-│ Task ID:   task-7c2b                       │
-│ Trajectory: runs/task-7c2b/trajectory.json │
-╰────────────────────────────────────────────╯
-
-╭─────────────── Agent summary ──────────────────╮
-│ Computed water (H₂O) at B3LYP-D3(BJ)/def2-SVP. │
-│ Electronic energy: -76.3589 Hartree.            │
-│ ZPE: 0.0212 Hartree.                            │
-│ Frequencies: 1639, 3792, 3887 cm⁻¹.            │
-│ No imaginary frequencies → confirmed minimum.   │
-╰─────────────────────────────────────────────────╯
+# 本地 Web 前端（FastAPI + 内嵌 SPA，浏览器打开 http://127.0.0.1:8765）
+chemaster web
 ```
 
-### 其他命令
+### 运行单元测试
 
 ```bash
-chemaster run "Optimize methane" --no-confirm     # 跳过交互式确认（脚本模式）
-chemaster --check-engines                          # 看哪些计算软件可用
-chemaster tools list                               # Agent 能调的 22 个工具
-chemaster skills list                              # 可用的 playbook（opt-freq / tadf-pipeline / …）
-chemaster skills show tadf-pipeline                # 看某个 skill 的完整内容
-chemaster kb search "basis for transition metals"  # 检索知识库
+/opt/miniconda3/bin/python -m pytest tests/unit/ -q
+# 228 passed, 1 skipped
 ```
 
----
+## 已支持的计算后端
 
-## 架构（V2）
+| 软件 | 协议 | 状态 | 用途 |
+|---|---|---|---|
+| **Gaussian** | MCP | 接口已实现 | 主线工具栈 — 基态优化、TDDFT、频率分析 |
+| **BDF** | MCP | 接口已实现 | 主线工具栈 — 自旋–轨道耦合（X2C-TDA） |
+| **MOMAP** | MCP | 接口已实现 | 主线工具栈 — TVCF 速率与振动分辨光谱 |
+| psi4 | MCP | 实测可用 | 替代后端 — 在没有 Gaussian 许可时可完整跑 S22 / QUEST 验证 |
+| ORCA | MCP | 接口已实现 | 替代后端 |
+| xTB | MCP | 实测可用 | 半经验快速预筛 |
+| ASE | MCP | 实测可用 | 结构 IO + 几何描述符 |
 
-5 层 + Skill 是工具不是架构层（参考 EvoMaster / Claude Code 设计）：
+## 已完成验证
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ L5  CLI / TUI       chemaster run "<intent>"                 │
-├─────────────────────────────────────────────────────────────┤
-│ L4  Agent Loop      ChemAgent (Anthropic SDK + tool use)     │
-│                     finish / ask_user / think 内建工具       │
-│                     Trajectory 持久化 + per-tool confirm     │
-├─────────────────────────────────────────────────────────────┤
-│ L3  Tools (22)      MCP servers via MCPToolAdapter           │
-│                     calc_psi4 / calc_xtb / io / parse / viz  │
-│                     kb_search / use_skill / list_skills      │
-├─────────────────────────────────────────────────────────────┤
-│ L2  Engines         psi4 / xTB / ORCA / BDF / cclib / RDKit  │
-├─────────────────────────────────────────────────────────────┤
-│ L1  Knowledge Base                                           │
-│     kb/formulas/    Python 确定性公式（Marcus、Strickler-Berg）│
-│     kb/rules/       YAML 规则（基组 / 泛函 / 收敛）           │
-│     kb/skills/      Markdown playbook（opt-freq / tadf-…）   │
-└─────────────────────────────────────────────────────────────┘
-```
+### 化学计算精度
 
-详见 [docs/V2_RELEASE_NOTES.md](docs/V2_RELEASE_NOTES.md) §2。
-
----
-
-## 当前状态
-
-| Phase | 内容 | 状态 |
+| Benchmark | 方法 | 结果 |
 |---|---|---|
-| 0 | 仓库脚手架 + 设计文档 | ✅ |
-| 1 | 工具链路打通（硬编码 H2O e2e）| ✅ |
-| **1.5** | **真 Claude tool-use Agent loop** | ✅ |
-| 2 | LLM 接入（Anthropic + MiniMax M2.7 实测）| ✅ |
-| 3 | TADF 流水线 anchor 分子（4CzIPN 等 5 个）| ⬜ |
-| 4 | ORCA / BDF / MultiWFN 真实接入 | ⬜ |
-| 5 | HPC 异步集成 | ⬜ |
-| 6 | 文档 + 论文 | ⬜ |
-| 7 | PyPI 发布 | ⬜ |
+| **S22 弱相互作用集**（5 体系） | B3LYP-D3(BJ)/def2-TZVP + counterpoise，psi4 实跑 | MAE = **0.75 kcal/mol**；water_dimer 与 ethene_ethyne 误差 < 0.6 kcal/mol |
+| **QUEST 激发态参考集**（3 分子 8 状态） | TD-CAM-B3LYP/def2-SVP, TDA，psi4 实跑 | Valence 态 MAE < **0.2 eV**；Rydberg 态因 def2-SVP 缺 diffuse 函数偏大 |
+| 蒽（Gaussian + BDF + MOMAP） | — | **未在本工作中完成**（依赖 BDF 与 MOMAP 软件许可，留作未来工作）|
 
-**测试**：183 / 183 全绿（177 单元 + 6 集成；含 MiniMax 接入测试 6 项 + 类型强制转换测试 5 项）。
+详细数据：[`benchmarks/s22/summary.json`](benchmarks/s22/summary.json) 与 [`benchmarks/quest/summary.json`](benchmarks/quest/summary.json)。
 
-**E2E 实测**（见 `runs/<sweep>/_e2e_sweep_report.md`）：
+### 工程指标
 
-| molecule | status    | E (Hartree) | n_modes | n_imag | wall (s) |
-|----------|-----------|-------------|---------|--------|----------|
-| water    | completed | -76.3589    | 3       | 0      | 8.7      |
-| methane  | completed | -40.4897    | 9       | 0      | 22.6     |
-| ammonia  | completed | -56.5107    | 6       | 0      | 17.4     |
-| co2      | completed | -188.4447   | 4       | 0      | 11.3     |
-| ethanol  | completed | -154.9247   | 21      | 0      | 174.6    |
-
----
-
-## 文档
-
-| 文档 | 内容 |
+| 指标 | 结果 |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | **新会话第一个读** —— V2 架构 + 当前状态 |
-| [`docs/V2_RELEASE_NOTES.md`](docs/V2_RELEASE_NOTES.md) | V1 → V2 完整变更说明 |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | 8 阶段开发路线（V2 已落地 Phase 0-2） |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 五层架构详解 |
-| [`docs/SETUP.md`](docs/SETUP.md) | 开发环境搭建 |
-| [`docs/PITFALLS.md`](docs/PITFALLS.md) | 化学计算 / Agent 开发坑表 |
-| [`docs/MCP_GUIDE.md`](docs/MCP_GUIDE.md) | 怎么写 MCP server |
-| [`docs/SKILLS_GUIDE.md`](docs/SKILLS_GUIDE.md) | 怎么写 Skill (V2: markdown playbook) |
-| [`docs/TADF_PIPELINE.md`](docs/TADF_PIPELINE.md) | 标杆问题：TADF 发光体设计 |
-| [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | 代码与协作规范 |
-| [`docs/KICKOFF.md`](docs/KICKOFF.md) | 新开发会话启动包（含可复制 prompt 模板） |
+| 单元测试 | **228 passed, 1 skipped**（用 conda Python 加载完整依赖时） |
+| MCP 协议合规性独立探针 | 3/3 servers initialised；kb 与 const 通过完整 initialize → list_tools → call_tool 链路 |
+| 操作性故障自动恢复率 | **84%（21/25）**，达到设定的 80% 目标 |
+| 提交摩擦时间节省率（指标 5）| **未在本工作中完成**（需真人被试参与）|
+| 化学决策推荐接受率（指标 3b）| **未在本工作中完成**（同上）|
+| Trajectory 自主步占比（指标 3c）| **未在本工作中完成**（需真实 LLM API 触发完整工具调用链） |
 
----
+详细数据：[`benchmarks/engineering_metrics/`](benchmarks/engineering_metrics/)。
 
-## 与现有工具的关系
+## 仓库目录结构
 
-| 工具 | 主要场景 | ChemMaster 的差异 |
-|---|---|---|
-| [ChemCrow](https://github.com/ur-whitelab/chemcrow-public) | 合成化学、检索、反应预测 | 不做计算化学 |
-| [Coscientist](https://github.com/gomes-lab/coscientist) | 实验机器人、自主合成 | 不做仿真计算 |
-| [EvoMaster](https://github.com/EMResearch/EvoMaster) | 软件测试 / API fuzzing | 完全不同领域，**架构借鉴**（agent loop + skill-as-tool） |
-| Rowan / Schrödinger Live Design | 商业云端计算化学 SaaS | ChemMaster 本地优先、开源、BYO LLM |
+```
+chemaster/
+├── chemaster/                 # 主包源代码
+│   ├── agent/                 # Agent 内核（tool-use loop, 权限分级, trajectory）
+│   ├── mcp/                   # 13 个 MCP server（calc_gaussian, calc_bdf, calc_momap, ...）
+│   ├── kb/                    # 知识库
+│   │   ├── formulas/          # 确定性 Python 公式模块（Marcus, MLJ, Strickler-Berg, ...）
+│   │   ├── rules/             # YAML 规则
+│   │   └── skills/            # Markdown 领域文档（opt-freq, tddft, soc, ...）
+│   ├── tui/                   # Textual TUI 实现
+│   ├── web/                   # 本地 Web 前端（FastAPI + 内嵌 SPA）
+│   └── cli.py                 # 命令行入口
+├── benchmarks/                # 基准数据
+│   ├── s22/                   # S22 实测结果
+│   ├── quest/                 # QUEST 实测结果
+│   ├── engineering_metrics/   # 工程指标
+│   └── use_cases/             # TUI / Web / MCP 跨客户端 demo 证据
+├── docs/                      # 设计文档
+│   ├── ARCHITECTURE.md
+│   ├── BENCHMARK_PROTOCOL.md
+│   ├── REFACTOR_PLAN.md       # v3.0 设计决策清单
+│   └── ...
+├── paper/                     # 毕设论文
+│   ├── thesis_draft.docx      # Word 论文初稿
+│   └── figures/               # 论文配图
+├── scripts/
+│   ├── benchmarks/            # benchmark 运行脚本
+│   ├── generate_thesis_docx.py
+│   └── ...
+└── tests/                     # 单元测试 + 集成测试
+```
 
----
+## 设计原则
 
-## 内嵌工具
+详见 [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)。简版要点：
 
-### `tools/pdf-structure-extract/` — 论文 PDF → 化学结构图 + SMILES
+1. **承担操作性工作，保留化学决策权**：Agent 仅在权限分级表（`~/.chemaster/policy.yaml`）允许的范围内自主行动，所有影响化学结果的选择都通过 `recommend` 工具或 `ask_user` 工具交回研究者。
+2. **LLM 不直接做浮点运算**：物理常数、单位换算、速率公式等固化在 Python 模块中由 Agent 通过工具调用获取，避免大模型直接产出数值带来的不可靠性。
+3. **MCP 协议为核心**：所有计算工具都封装为标准 MCP server，确保协议级别的可复用性。
 
-ChemMaster 启动前已有的独立工具，将通过 `chem.pdf` MCP 集成到 Agent。把科研 PDF 中的化学结构图裁剪出来，识别 SMILES，并标注回 PDF。底层 PyMuPDF + DECIMER。
+## 与同类工作的对比
 
-详细用法见 [`tools/pdf-structure-extract/README.md`](tools/pdf-structure-extract/README.md)。
+![对比](paper/figures/v4/fig_comparison.png)
 
----
+完整对比与讨论见毕业论文 §1.2 与 §4.6（[paper/thesis_draft.docx](paper/thesis_draft.docx)）。
 
-## 贡献
+## 开发状态
 
-1. 读 [`CLAUDE.md`](CLAUDE.md) 了解 V2 架构
-2. 读 [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) 了解规范
-3. 读 [`docs/PITFALLS.md`](docs/PITFALLS.md) 避坑
-4. 加新 MCP / Skill 见对应 GUIDE
-5. 提 PR 前跑 `pytest tests/unit && pytest -m integration`
+本项目目前处于**本科毕设范围内的工程原型阶段**：架构设计完整、核心代码可运行、有限范围内的实测数据已发布。**不建议**用于生产研究。已知局限与未来工作请见论文 §5。
 
----
+| 部分 | 状态 |
+|---|---|
+| Agent 内核（tool-use, 权限分级, trajectory）| ✅ 已实现 |
+| 13 个 MCP server（接口）| ✅ 已实现 |
+| psi4、xTB 实测可用 | ✅ 已验证 |
+| Gaussian、BDF、MOMAP 真实接入测试 | ❌ 受软件许可限制，未在本工作中完成 |
+| CLI / TUI / Web 三前端 | ✅ 已实现并启动验证 |
+| 基础精度验证（S22, QUEST）| ✅ psi4 实测完成 |
+| 工程指标（提交摩擦时间节省、化学决策推荐接受率）| ❌ 需真人被试，未完成 |
+| 商业云 HPC 真实接入 | ❌ 仅接口预留 + 本地 SLURM 占位 |
+
+## 引用本项目
+
+如果本项目对你的研究有帮助，请引用：
+
+```bibtex
+@misc{chemmaster2026,
+  title  = {ChemMaster: A Local Computational-Chemistry Agent Built on Large-Language-Model and MCP Protocol},
+  author = {Zhang, Ronggang},
+  year   = {2026},
+  note   = {Bachelor thesis, Jilin University, College of Chemistry},
+  url    = {https://github.com/zhangronggang/chemaster}
+}
+```
+
+## 致谢
+
+- 项目 TUI 设计参考了 [DeepSeek TUI](https://github.com/Hmbown/DeepSeek-TUI)（Rust + ratatui）的对话室风格与三模式（Plan/Agent/YOLO）思路。两者在"Agent 自主程度可调"这一概念上同构。本项目使用 Python + Textual 实现，未存在代码层面的复用。
+- 感谢以下开源项目：
+  Anthropic [MCP](https://modelcontextprotocol.io/) 协议、
+  [psi4](https://psicode.org)、
+  [Textual](https://textual.textualize.io)、
+  [FastAPI](https://fastapi.tiangolo.com)、
+  [Playwright](https://playwright.dev)、
+  [matplotlib](https://matplotlib.org)、
+  [drawio](https://www.drawio.com)。
 
 ## License
 
-MIT — 详见 [`LICENSE`](LICENSE)。
+[MIT License](LICENSE) — see file for details.
 
 ---
 
-## 引用
-
-待 1.0 release 后补 `CITATION.cff` + JOSS 论文 DOI。
+*This is the `main` README. For project-internal notes, see [CLAUDE.md](CLAUDE.md). For the thesis, see [paper/thesis_draft.docx](paper/thesis_draft.docx).*

@@ -1,0 +1,58 @@
+# S22 子集参考值
+#
+# 来源：
+#   - Jurečka, P.; Šponer, J.; Černý, J.; Hobza, P. Phys. Chem. Chem. Phys.
+#     2006, 8, 1985-1993.
+#   - Řezáč, J.; Riley, K. E.; Hobza, P. J. Chem. Theory Comput. 2011, 7,
+#     2427-2438. (S22A 修订值，CCSD(T)/CBS estimated)
+#
+# 单位：相互作用结合能（结合后总能量减去自由 monomer），单位为 kcal/mol。
+# 负号表示吸引性结合（更负 = 更强吸引）。
+
+method_reference: "CCSD(T)/CBS estimated (Řezáč 2011 S22A)"
+unit: "kcal/mol"
+
+systems:
+  water_dimer:
+    description: "Water dimer, hydrogen-bonded"
+    s22_id: 2
+    interaction_class: "hydrogen-bonded"
+    reference_binding_energy: -5.02
+    expected_b3lyp_d3bj_def2tzvp_error_max: 0.5
+
+  methane_dimer:
+    description: "Methane dimer, dispersion-bound"
+    s22_id: 8
+    interaction_class: "dispersion"
+    reference_binding_energy: -0.53
+    expected_b3lyp_d3bj_def2tzvp_error_max: 0.3
+
+  ethene_ethyne:
+    description: "Ethene...ethyne (C2H4...C2H2), mixed character"
+    s22_id: 16
+    interaction_class: "mixed"
+    reference_binding_energy: -1.50
+    expected_b3lyp_d3bj_def2tzvp_error_max: 0.4
+
+  benzene_methane:
+    description: "Benzene...methane (C6H6...CH4), dispersion"
+    s22_id: 12
+    interaction_class: "dispersion"
+    reference_binding_energy: -1.45
+    expected_b3lyp_d3bj_def2tzvp_error_max: 0.4
+
+  benzene_dimer_T:
+    description: "Benzene dimer T-shape stack"
+    s22_id: 11
+    interaction_class: "mixed (π-π edge-to-face)"
+    reference_binding_energy: -2.74
+    expected_b3lyp_d3bj_def2tzvp_error_max: 0.5
+
+acceptance_criteria:
+  mae_kcal_per_mol_max: 0.5    # mean absolute error across the 5 systems
+  per_system_max_error: 1.0    # worst-case single-system error allowed
+
+method_under_test:
+  functional: "B3LYP-D3(BJ)"
+  basis: "def2-TZVP"
+  bsse_correction: "counterpoise"

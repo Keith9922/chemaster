@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" version="29.6.1">
+  <diagram id="arch" name="ChemMaster 五层架构">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" pageWidth="1100" pageHeight="800">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="图 3.2  ChemMaster 五层架构" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="700" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- L5 — User Interface layer -->
+        <mxCell id="l5_label" value="L5  用户接口层" style="text;html=1;align=right;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#1565c0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="80" width="140" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="l5_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="180" y="80" width="900" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="l5_cli" value="CLI&#xa;(click + rich)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976d2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="220" y="100" width="240" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="l5_tui" value="Textual TUI&#xa;(终端交互)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976d2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="100" width="240" height="42" as="geometry"/>
+        </mxCell>
+        <mxCell id="l5_web" value="本地 Web&#xa;(FastAPI + 单页 SPA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976d2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="780" y="100" width="260" height="42" as="geometry"/>
+        </mxCell>
+
+        <!-- L4 — Agent kernel -->
+        <mxCell id="l4_label" value="L4  Agent 内核层" style="text;html=1;align=right;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#2e7d32;" vertex="1" parent="1">
+          <mxGeometry x="20" y="200" width="140" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="l4_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#388e3c;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="180" y="200" width="900" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="l4_loop" value="Tool-use 循环&#xa;(Anthropic SDK)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="200" y="220" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="l4_perm" value="L1 / L2 / L3 权限分级&#xa;(silent / confirm / recommend)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="430" y="220" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="l4_traj" value="Trajectory 持久化&#xa;(可复现 + decision_authority 标签)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="220" width="320" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- L3 — MCP tools -->
+        <mxCell id="l3_label" value="L3  MCP 工具层" style="text;html=1;align=right;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#e65100;" vertex="1" parent="1">
+          <mxGeometry x="20" y="340" width="140" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="l3_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#f57c00;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="180" y="340" width="900" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="l3_main" value="主线 (用户工作流)&#xa;calc_gaussian | calc_bdf | calc_momap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57c00;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="360" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="l3_aux" value="辅助 (通用性演示)&#xa;calc_psi4 | calc_orca | calc_xtb" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57c00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="360" width="280" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="l3_misc" value="支持工具&#xa;io_ase | parse_cclib | viz | hpc | kb" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f57c00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="360" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- L2 — Engines -->
+        <mxCell id="l2_label" value="L2  计算后端层" style="text;html=1;align=right;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#6a1b9a;" vertex="1" parent="1">
+          <mxGeometry x="20" y="480" width="140" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="l2_box" value="Gaussian       BDF       MOMAP       psi4       ORCA       xTB       ASE       RDKit       cclib" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;strokeWidth=2;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="180" y="480" width="900" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- L1 — Knowledge base -->
+        <mxCell id="l1_label" value="L1  知识库层" style="text;html=1;align=right;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#00695c;" vertex="1" parent="1">
+          <mxGeometry x="20" y="600" width="140" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="l1_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0f2f1;strokeColor=#00897b;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="180" y="600" width="900" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="l1_form" value="formulas/&#xa;确定性 Python 公式模块&#xa;(Marcus, MLJ, Strickler-Berg, ...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#00897b;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="220" y="620" width="380" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="l1_skill" value="skills/&#xa;领域 Markdown 文档&#xa;(opt-freq, tddft, soc, tadf-pipeline, ...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#00897b;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="640" y="620" width="420" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Vertical data-flow arrow on the right side -->
+        <mxCell id="dataflow_arrow" value="数据流" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#777;fontSize=10;fontColor=#777;" edge="1" parent="1">
+          <mxGeometry x="0" y="0" as="geometry">
+            <mxPoint x="1093" y="120" as="sourcePoint"/>
+            <mxPoint x="1093" y="660" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

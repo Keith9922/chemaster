@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "data_source": "mock",
+  "system": "acetaldehyde",
+  "formula": "CH3CHO",
+  "method": "TD-CAM-B3LYP/def2-TZVP, TDA",
+  "states": [
+    {
+      "state": 1,
+      "symmetry": "1A''",
+      "spin": "singlet",
+      "character": "n -> π*",
+      "vee_cc3_eV": 4.31,
+      "vee_computed_eV": 4.434,
+      "error_eV": 0.124,
+      "within_acceptance": true
+    },
+    {
+      "state": 1,
+      "symmetry": "3A''",
+      "spin": "triplet",
+      "character": "n -> π*",
+      "vee_cc3_eV": 3.97,
+      "vee_computed_eV": 4.077,
+      "error_eV": 0.107,
+      "within_acceptance": true
+    }
+  ]
+}

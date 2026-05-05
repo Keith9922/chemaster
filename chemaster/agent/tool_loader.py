@@ -173,9 +173,64 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         module="chemaster.mcp.calc_gaussian.server",
         function="run",
         description=(
-            "Drive the g16 / g09 binary on a Gaussian input file. Only "
-            "use when Gaussian is licensed and on PATH; otherwise prefer "
-            "calc_psi4_* / calc_orca_*."
+            "Drive the g16 / g09 binary on an existing Gaussian input file. "
+            "Prefer the structured tools (gaussian_optimize / _frequency / "
+            "_tddft / _opt_excited_state / _single_point) which build the "
+            "input for you."
+        ),
+        is_long_running=True,
+    ),
+    # v3.0: structured Gaussian tools (the v3.0 main path)
+    _ToolDecl(
+        exposed_name="gaussian_optimize",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="optimize",
+        description=(
+            "Ground-state geometry optimization in Gaussian (g16). Builds the "
+            ".com from xyz + method + basis, runs g16, parses the optimized "
+            "geometry and final SCF energy. Default B3LYP/6-31G(d) with D3BJ "
+            "dispersion. Returns ENGINE_NOT_FOUND if Gaussian is unavailable."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="gaussian_frequency",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="frequency",
+        description=(
+            "Harmonic frequency analysis in Gaussian. Returns frequencies, "
+            "ZPE, thermal corrections, imaginary-mode count. Method/basis "
+            "MUST match the prior optimization."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="gaussian_tddft",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="tddft",
+        description=(
+            "TDDFT vertical excitation in Gaussian (TDA by default). "
+            "Returns excited-state energies, oscillator strengths, "
+            "wavelengths. Use n_triplets > 0 to include triplet states."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="gaussian_opt_excited_state",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="opt_excited_state",
+        description=(
+            "TD-opt: optimize geometry of a specific excited state in "
+            "Gaussian. Critical for fluorescence/phosphorescence rates."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="gaussian_single_point",
+        module="chemaster.mcp.calc_gaussian.server",
+        function="single_point",
+        description=(
+            "Single-point energy at a fixed geometry in Gaussian."
         ),
         is_long_running=True,
     ),
@@ -205,19 +260,69 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_long_running=True,
     ),
 
-    # calc_bdf — TADF SOC engine (国产化亮点) ────────────────────────────
+    # calc_bdf — SOC + opt + TDDFT (国产化亮点) ────────────────────────────
     _ToolDecl(
         exposed_name="calc_bdf_soc",
         module="chemaster.mcp.calc_bdf.server",
         function="soc",
         description=(
             "Spin-orbit coupling matrix elements via BDF X2C-TDA. THE step "
-            "in the TADF pipeline that's hard to get right elsewhere — psi4 "
-            "doesn't do SOC natively, ORCA's RI-SOMF is faster but less "
-            "accurate. BDF is academic-free (Wenjian Liu group, Peking U). "
-            "Returns ENGINE_NOT_FOUND with install hint when BDF isn't set up."
+            "in the TADF / phosphorescence pipeline that's hard to get right "
+            "elsewhere. BDF is academic-free (Wenjian Liu group, Peking U)."
         ),
         is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_bdf_optimize",
+        module="chemaster.mcp.calc_bdf.server",
+        function="optimize",
+        description="Ground-state geometry optimization in BDF.",
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_bdf_tddft",
+        module="chemaster.mcp.calc_bdf.server",
+        function="tddft",
+        description=(
+            "TDDFT vertical excitation in BDF. Use spin_flip=True for triplet "
+            "states from a singlet reference."
+        ),
+        is_long_running=True,
+    ),
+
+    # calc_momap — TVCF rate / spectrum (Shuai 组招牌) ──────────────────
+    _ToolDecl(
+        exposed_name="calc_momap_tvcf_rate",
+        module="chemaster.mcp.calc_momap.server",
+        function="tvcf_rate",
+        description=(
+            "TVCF rate constant via MOMAP. Computes k_r (fluorescence) when "
+            "transition_dipole is provided, k_p (phosphorescence) when "
+            "soc_matrix_element_cm_inv > 0. Requires Gaussian/BDF freq "
+            "outputs for both electronic states. dry_run=True returns the "
+            "would-be input file without invoking momap."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_momap_tvcf_spec",
+        module="chemaster.mcp.calc_momap.server",
+        function="tvcf_spec",
+        description=(
+            "Vibrationally-resolved emission or absorption spectrum via MOMAP "
+            "TVCF. Returns peak positions and (path to) full spectrum data."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_momap_parse_output",
+        module="chemaster.mcp.calc_momap.server",
+        function="parse_output",
+        description=(
+            "Parse an existing MOMAP output file (run elsewhere) for rates "
+            "and spectrum data. Use to harvest results from HPC runs."
+        ),
+        is_read_only=True,
     ),
 
     # analysis_multiwfn — wavefunction analysis (NTO etc.) ──────────────
