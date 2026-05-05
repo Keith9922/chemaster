@@ -112,3 +112,4 @@ psi.*.clean
 
 # Claude Code worktrees & session state
 .claude/
+.github/workflows/
