@@ -189,15 +189,17 @@ chemaster/
 
 ## 致谢
 
-- 项目 TUI 设计参考了 [DeepSeek TUI](https://github.com/Hmbown/DeepSeek-TUI)（Rust + ratatui）的对话室风格与三模式（Plan/Agent/YOLO）思路。两者在"Agent 自主程度可调"这一概念上同构。本项目使用 Python + Textual 实现，未存在代码层面的复用。
-- 感谢以下开源项目：
-  Anthropic [MCP](https://modelcontextprotocol.io/) 协议、
-  [psi4](https://psicode.org)、
-  [Textual](https://textual.textualize.io)、
-  [FastAPI](https://fastapi.tiangolo.com)、
-  [Playwright](https://playwright.dev)、
-  [matplotlib](https://matplotlib.org)、
-  [drawio](https://www.drawio.com)。
+本项目站在多个优秀开源工作的肩膀之上。在协议与运行时层面，使用了 Anthropic 提出的 [MCP](https://modelcontextprotocol.io/) 协议规范及其 [Python SDK](https://github.com/modelcontextprotocol/python-sdk)。在 Agent 形态的设计上，本项目从 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 与 [DeepSeek TUI](https://github.com/Hmbown/DeepSeek-TUI) 的交互范式中受到启发；化学 Agent 的研究方向受 [ChemCrow](https://github.com/ur-whitelab/chemcrow-public) 与 [Coscientist](https://github.com/gomesgroup/coscientist) 等工作的启发；科学计算工作流的设计参考了 [ASE](https://wiki.fysik.dtu.dk/ase/)、[AiiDA](https://www.aiida.net/)、[Atomate](https://atomate.org/) 等系统。
+
+代码运行时直接依赖以下开源项目：
+量子化学与化学信息工具 [psi4](https://psicode.org)、[xTB](https://github.com/grimme-lab/xtb)、[ASE](https://wiki.fysik.dtu.dk/ase/)、[RDKit](https://www.rdkit.org)、[cclib](https://cclib.github.io)、[pint](https://pint.readthedocs.io)；
+LLM Agent 与协议 [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python)、[MCP](https://modelcontextprotocol.io/)；
+用户界面与命令行 [click](https://click.palletsprojects.com)、[rich](https://rich.readthedocs.io)、[Textual](https://textual.textualize.io)；
+Web 后端与浏览器自动化 [FastAPI](https://fastapi.tiangolo.com)、[uvicorn](https://www.uvicorn.org)、[Playwright](https://playwright.dev)；
+数据处理与可视化 [NumPy](https://numpy.org)、[matplotlib](https://matplotlib.org)、[PyYAML](https://pyyaml.org)；
+SSH 与 HPC 集成 [paramiko](https://www.paramiko.org)；
+文档与图表 [python-docx](https://python-docx.readthedocs.io)、[drawio](https://www.drawio.com)；
+开发工具 [pytest](https://pytest.org)、[git-filter-repo](https://github.com/newren/git-filter-repo)。
 
 ## License
 

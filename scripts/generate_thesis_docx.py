@@ -755,10 +755,11 @@ def write_chapter3(doc):
         "应用（HTML + JavaScript，约 200 行），可由浏览器直接打开。三个前端"
         "在第 4 章经实测验证均可独立启动并正确响应，详见 §4.5。")
     add_body(doc,
-        "本系统 TUI 的整体布局参考了 DeepSeek TUI[33] 的对话室风格设计；其"
-        "三模式（Plan / Agent / YOLO）与本文 L1 / L2 / L3 权限分级在概念上"
-        "存在相似处。两者实现语言不同（前者 Rust + ratatui，本系统 Python +"
-        "Textual），无代码层面的复用。")
+        "Agent 形态与对话式 UI 的设计上，本工作受到 Claude Code[19]、Codex"
+        "等通用编程 Agent 与 DeepSeek TUI[33] 等终端 Agent 项目的启发。其"
+        "中 DeepSeek TUI 的三模式（Plan / Agent / YOLO）与本文 L1 / L2 / "
+        "L3 权限分级在「Agent 自主程度可调」这一概念上存在相似之处，但两"
+        "者实现语言与代码均不相同，本工作未涉及代码层面的复用。")
 
     add_page_break(doc)
 
@@ -1132,11 +1133,16 @@ def write_thanks(doc):
         "感谢课题组各位师兄师姐在 Gaussian、BDF、MOMAP 等软件使用经验上的"
         "无私分享，以及对本论文初稿提出的宝贵修改意见。")
     add_body(doc,
-        "本工作的实跑验证使用了 psi4 开源量子化学软件、textual 终端 UI 框"
-        "架与 FastAPI Web 框架，感谢上述开源社区的贡献。本系统的工具协议"
-        "采用了 Anthropic 公司提出的 MCP 开放协议，本文 TUI 设计参考了"
-        "DeepSeek TUI 项目的 chat-room 风格，感谢相关项目作者公开发布上述"
-        "成果。")
+        "本工作的实现与实跑验证依赖众多开源项目的贡献。在工具协议层面，本"
+        "系统采用了 Anthropic 公司提出的 Model Context Protocol 与对应的 "
+        "Python SDK；在量子化学计算层面，使用了 psi4、xTB、ASE、RDKit、"
+        "cclib、pint 等开源软件；在用户界面层面，使用了 click、rich、"
+        "Textual、FastAPI、uvicorn、Playwright 等框架；在数据处理与可视化"
+        "层面，使用了 NumPy、matplotlib、PyYAML、python-docx、drawio 等"
+        "工具；在 SSH 与 HPC 集成层面，使用了 paramiko；在测试层面，使用"
+        "了 pytest。在 Agent 形态与交互范式上，本工作受到 Claude Code、"
+        "DeepSeek TUI 等开源项目以及 ChemCrow、Coscientist 等学术工作的"
+        "启发。在此一并向上述项目的作者与社区致以诚挚谢意。")
     add_body(doc,
         "感谢吉林大学化学学院在本科四年学习期间提供的良好学习环境。最后，"
         "感谢家人与朋友在本科学习与本论文撰写过程中给予的支持与鼓励。")
