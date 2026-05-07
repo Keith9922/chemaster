@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/keith9922-chemaster-badge.png)](https://mseep.ai/app/keith9922-chemaster)
+
 # ChemMaster
 
 > **A local, large-language-model-driven, terminal-native agent that absorbs the
