@@ -170,7 +170,7 @@ class BaseAgent:
                     if self._pending_ask_user:
                         self.trajectory.finish("waiting_for_input", self._pending_ask_user)
                     else:
-                        self.trajectory.finish("completed")
+                        self.trajectory.finish("completed", getattr(self, "_finish_payload", None))
                     break
             else:
                 logger.warning("Reached max_turns=%d without finishing", self.config.max_turns)
@@ -204,7 +204,7 @@ class BaseAgent:
                 if self._pending_ask_user:
                     self.trajectory.finish("waiting_for_input", self._pending_ask_user)
                 else:
-                    self.trajectory.finish("completed")
+                    self.trajectory.finish("completed", getattr(self, "_finish_payload", None))
                 break
         else:
             self.trajectory.finish("failed", {"reason": "max_turns_exceeded"})
@@ -254,7 +254,7 @@ class BaseAgent:
                     if self._pending_ask_user:
                         self.trajectory.finish("waiting_for_input", self._pending_ask_user)
                     else:
-                        self.trajectory.finish("completed")
+                        self.trajectory.finish("completed", getattr(self, "_finish_payload", None))
                     break
             else:
                 logger.warning("Reached max_turns=%d without finishing", self.config.max_turns)
