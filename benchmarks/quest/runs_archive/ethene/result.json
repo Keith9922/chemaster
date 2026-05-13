@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "ethene",
+  "formula": "C2H4",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 8.359,
+      "ref_cc3_eV": 8.05,
+      "ref_character": "π -> π* (V state)",
+      "error_eV": 0.309,
+      "abs_error_eV": 0.309,
+      "oscillator_strength": 0.0
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 8.813,
+      "ref_cc3_eV": 7.43,
+      "ref_character": "π -> 3s (Rydberg)",
+      "error_eV": 1.383,
+      "abs_error_eV": 1.383,
+      "oscillator_strength": 0.0048
+    }
+  ],
+  "mae_eV": 0.846,
+  "max_abs_error_eV": 1.383,
+  "wall_time_s": 1.3
+}

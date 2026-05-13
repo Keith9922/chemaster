@@ -18,6 +18,7 @@ Sub-commands:
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -335,6 +336,112 @@ def kb_list() -> None:
     for child in sorted(base.iterdir()):
         if child.is_file():
             click.echo(child.name)
+
+
+# ── User KB sub-commands (advisor-feedback revision) ────────────────────────
+
+
+@kb.command(name="add")
+@click.argument("source", type=click.Path(exists=True, dir_okay=False))
+@click.option("--kind", type=click.Choice(["auto", "skill", "rules", "notes"]),
+              default="auto", show_default=True,
+              help="What kind of user doc this is.")
+@click.option("--name", default=None,
+              help="Override destination name (default: source stem).")
+def kb_add(source: str, kind: str, name: str | None) -> None:
+    """Import a user file into ~/.chemaster/user_kb/.
+
+    Examples:
+
+      chemaster kb add my_emitters.yaml                # auto → rules
+      chemaster kb add my_pipeline_SKILL.md            # auto → skills/my_pipeline
+      chemaster kb add notes.md --kind notes
+      chemaster kb add custom.yaml --kind rules --name oled_emitters
+    """
+    from chemaster.agent import user_kb
+
+    dest = user_kb.add_user_doc(Path(source), kind=kind, dest_name=name)
+    click.secho(f"✓ Added → {dest}", fg="green")
+    click.echo("(restart any running agent / CLI to pick up the new doc; "
+                "or call kb.server.reset_doc_cache() in-process.)")
+
+
+@kb.command(name="user-list")
+def kb_user_list() -> None:
+    """List user-provided rules / skills / notes under ~/.chemaster/user_kb/."""
+    from chemaster.agent import user_kb
+
+    docs = user_kb.list_user_docs()
+    root = user_kb.user_kb_root()
+    if not any(docs.values()):
+        click.echo(f"No user docs found under {root}")
+        click.echo("Use 'chemaster kb add <file>' to add one.")
+        return
+    click.echo(f"User KB root: {root}\n")
+    for kind, items in docs.items():
+        click.secho(f"{kind} ({len(items)})", fg="cyan", bold=True)
+        for name in items:
+            click.echo(f"  - {name}")
+        if not items:
+            click.echo("  (empty)")
+
+
+@kb.command(name="prefs")
+@click.option("--show/--edit", default=True,
+              help="Show current preferences (default) or open editor.")
+def kb_prefs(show: bool) -> None:
+    """Show (or edit) user tool preferences in ~/.chemaster/user_kb/prefs.yaml."""
+    from chemaster.agent import user_kb
+
+    if not show:
+        path = user_kb.user_kb_prefs_path()
+        user_kb.ensure_user_kb_layout()
+        if not path.exists():
+            path.write_text(
+                "# ChemMaster user preferences\n"
+                "# Lines below are categories → tool name.\n"
+                "# Recognised categories: " +
+                ", ".join(user_kb.KNOWN_PREF_CATEGORIES) + "\n\n"
+                "ground_state_dft: Gaussian\n"
+                "excited_state_tddft: Gaussian\n"
+                "soc: BDF\n"
+                "tvcf_rate: MOMAP\n"
+                "default_functional: B3LYP-D3(BJ)\n"
+                "default_basis: def2-TZVP\n"
+                "notes:\n"
+                "  - \"Replace these defaults with your own.\"\n",
+                encoding="utf-8")
+        editor = os.environ.get("EDITOR", "nano")
+        os.system(f"{editor} '{path}'")
+        return
+
+    prefs = user_kb.load_user_prefs()
+    if not prefs.raw:
+        click.echo(f"No preferences set. Run 'chemaster kb prefs --edit' "
+                    f"to create {user_kb.user_kb_prefs_path()}.")
+        return
+    click.secho("User preferences:", fg="cyan", bold=True)
+    for k, v in prefs.categories.items():
+        click.echo(f"  {k}: {v}")
+    if prefs.notes:
+        click.secho("\nNotes:", fg="cyan", bold=True)
+        for n in prefs.notes:
+            click.echo(f"  - {n}")
+
+
+@kb.command(name="remove")
+@click.argument("kind", type=click.Choice(["skill", "rules", "notes"]))
+@click.argument("name")
+def kb_remove(kind: str, name: str) -> None:
+    """Remove a user doc by kind and name."""
+    from chemaster.agent import user_kb
+
+    ok = user_kb.remove_user_doc(kind, name)
+    if ok:
+        click.secho(f"✓ Removed {kind}/{name}", fg="green")
+    else:
+        click.secho(f"Nothing found at {kind}/{name}", fg="yellow")
+        sys.exit(1)
 
 
 @main.group()

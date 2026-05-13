@@ -54,6 +54,37 @@ systems:
         spin: "singlet"
         vee_cc3: 6.81
 
+  # ---- Extension batch (advisor-feedback revision) ----
+  ethene:
+    formula: "C2H4"
+    geometry_method: "Standard planar (approximate, not CC3-optimized)"
+    excited_states:
+      - state: 1
+        symmetry: "1B3u"
+        character: "π -> π* (V state)"
+        spin: "singlet"
+        vee_cc3: 8.05
+      - state: 1
+        symmetry: "1B1u"
+        character: "π -> 3s (Rydberg)"
+        spin: "singlet"
+        vee_cc3: 7.43
+
+  butadiene:
+    formula: "C4H6"
+    geometry_method: "s-trans planar (approximate)"
+    excited_states:
+      - state: 1
+        symmetry: "1Bu"
+        character: "π -> π* (bright)"
+        spin: "singlet"
+        vee_cc3: 6.29
+      - state: 1
+        symmetry: "2Ag"
+        character: "π -> π* (dark, double excitation)"
+        spin: "singlet"
+        vee_cc3: 6.55
+
   pyrrole:
     formula: "C4H5N"
     geometry_method: "CC3/aug-cc-pVTZ optimized"

@@ -115,6 +115,12 @@ SPLIT_BY_SYSTEM = {
     "ethene_ethyne":   6,    # ethene 6 + ethyne 4
     "benzene_methane": 12,   # benzene 12 + methane 5
     "benzene_dimer_T": 12,   # 12 + 12
+    # Extension batch (advisor-feedback revision)
+    "ammonia_dimer":   4,    # 4 + 4
+    "water_methane":   3,    # H2O 3 + CH4 5
+    "hf_dimer":        2,    # 2 + 2
+    "methane_ammonia": 5,    # CH4 5 + NH3 4
+    "ethane_dimer":    8,    # 8 + 8
 }
 
 

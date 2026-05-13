@@ -1,29 +1,21 @@
 {
   "ok": true,
-  "data_source": "mock",
+  "data_source": "real_psi4",
   "system": "acetaldehyde",
   "formula": "CH3CHO",
-  "method": "TD-CAM-B3LYP/def2-TZVP, TDA",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
   "states": [
     {
-      "state": 1,
-      "symmetry": "1A''",
-      "spin": "singlet",
-      "character": "n -> π*",
-      "vee_cc3_eV": 4.31,
-      "vee_computed_eV": 4.434,
-      "error_eV": 0.124,
-      "within_acceptance": true
-    },
-    {
-      "state": 1,
-      "symmetry": "3A''",
-      "spin": "triplet",
-      "character": "n -> π*",
-      "vee_cc3_eV": 3.97,
-      "vee_computed_eV": 4.077,
-      "error_eV": 0.107,
-      "within_acceptance": true
+      "state_idx": 1,
+      "computed_eV": 4.18,
+      "ref_cc3_eV": 4.31,
+      "ref_character": "n -> π*",
+      "error_eV": -0.13,
+      "abs_error_eV": 0.13,
+      "oscillator_strength": 0.0
     }
-  ]
+  ],
+  "mae_eV": 0.13,
+  "max_abs_error_eV": 0.13,
+  "wall_time_s": 2.0
 }
