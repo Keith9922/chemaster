@@ -1,6 +1,6 @@
 {
   "data_source": "real_psi4",
-  "n_total": 21,
+  "n_total": 22,
   "method_under_test": {
     "functional": "B3LYP-D3(BJ)",
     "basis": "def2-TZVP",
@@ -8,10 +8,10 @@
     "geometry_source": "ase.collections.s22 (canonical Hobza 2006 coordinates)",
     "note": "Reference energies are CCSD(T)/CBS values shipped with ASE."
   },
-  "n_passed_within_0.5": 17,
-  "n_passed_within_1.0": 19,
-  "mae_kcal": 35.25,
-  "max_abs_error_kcal": 439.832,
+  "n_passed_within_0.5": 19,
+  "n_passed_within_1.0": 22,
+  "mae_kcal": 0.245,
+  "max_abs_error_kcal": 0.842,
   "results": [
     {
       "ok": true,
@@ -21,7 +21,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -3.407,
       "interaction_hartree": -0.005429,
-      "wall_time_s": 2.74,
+      "wall_time_s": 2.7,
       "reference_binding_energy_kcal": -3.171,
       "error_kcal": -0.236,
       "abs_error_kcal": 0.236
@@ -34,7 +34,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -5.552,
       "interaction_hartree": -0.008848,
-      "wall_time_s": 1.73,
+      "wall_time_s": 1.66,
       "reference_binding_energy_kcal": -5.02,
       "error_kcal": -0.532,
       "abs_error_kcal": 0.532
@@ -47,7 +47,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -19.641,
       "interaction_hartree": -0.0313,
-      "wall_time_s": 7.99,
+      "wall_time_s": 7.51,
       "reference_binding_energy_kcal": -18.799,
       "error_kcal": -0.842,
       "abs_error_kcal": 0.842
@@ -60,7 +60,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -16.452,
       "interaction_hartree": -0.026218,
-      "wall_time_s": 10.51,
+      "wall_time_s": 9.69,
       "reference_binding_energy_kcal": -16.119,
       "error_kcal": -0.333,
       "abs_error_kcal": 0.333
@@ -73,17 +73,23 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -21.118,
       "interaction_hartree": -0.033654,
-      "wall_time_s": 96.29,
+      "wall_time_s": 91.94,
       "reference_binding_energy_kcal": -20.69,
       "error_kcal": -0.428,
       "abs_error_kcal": 0.428
     },
     {
-      "ok": false,
+      "ok": true,
+      "data_source": "real_psi4",
       "system": "2-pyridoxine_2-aminopyridine_complex",
-      "phase": "psi4_geom_parse",
-      "error": "fragment parser failed: Inconsistent or unspecified chg/mult: sys chg: None, frag chg: [0.0, 0.0], sys mult: None, frag mult: [1, 1]",
-      "wall_s": 0.0
+      "short_name": "2_pyridoxine_2_aminopyridine_complex",
+      "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+      "computed_binding_energy_kcal": -17.719,
+      "interaction_hartree": -0.028237,
+      "wall_time_s": 89.5,
+      "reference_binding_energy_kcal": -17.0,
+      "error_kcal": -0.719,
+      "abs_error_kcal": 0.719
     },
     {
       "ok": true,
@@ -93,7 +99,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -17.024,
       "interaction_hartree": -0.02713,
-      "wall_time_s": 208.31,
+      "wall_time_s": 205.43,
       "reference_binding_energy_kcal": -16.74,
       "error_kcal": -0.284,
       "abs_error_kcal": 0.284
@@ -106,7 +112,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -0.481,
       "interaction_hartree": -0.000766,
-      "wall_time_s": 3.19,
+      "wall_time_s": 3.14,
       "reference_binding_energy_kcal": -0.53,
       "error_kcal": 0.049,
       "abs_error_kcal": 0.049
@@ -119,7 +125,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -1.494,
       "interaction_hartree": -0.00238,
-      "wall_time_s": 6.4,
+      "wall_time_s": 6.33,
       "reference_binding_energy_kcal": -1.499,
       "error_kcal": 0.005,
       "abs_error_kcal": 0.005
@@ -132,7 +138,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -1.432,
       "interaction_hartree": -0.002282,
-      "wall_time_s": 20.13,
+      "wall_time_s": 20.09,
       "reference_binding_energy_kcal": -1.45,
       "error_kcal": 0.018,
       "abs_error_kcal": 0.018
@@ -145,7 +151,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -2.936,
       "interaction_hartree": -0.004679,
-      "wall_time_s": 65.6,
+      "wall_time_s": 66.01,
       "reference_binding_energy_kcal": -2.62,
       "error_kcal": -0.316,
       "abs_error_kcal": 0.316
@@ -158,7 +164,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -4.293,
       "interaction_hartree": -0.006841,
-      "wall_time_s": 59.53,
+      "wall_time_s": 59.83,
       "reference_binding_energy_kcal": -4.199,
       "error_kcal": -0.094,
       "abs_error_kcal": 0.094
@@ -171,7 +177,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -10.182,
       "interaction_hartree": -0.016227,
-      "wall_time_s": 120.34,
+      "wall_time_s": 116.79,
       "reference_binding_energy_kcal": -9.741,
       "error_kcal": -0.441,
       "abs_error_kcal": 0.441
@@ -182,12 +188,12 @@
       "system": "Indole-benzene_complex_stack",
       "short_name": "indole_benzene_complex_stack",
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
-      "computed_binding_energy_kcal": -300.522,
-      "interaction_hartree": -0.478912,
-      "wall_time_s": 179.12,
+      "computed_binding_energy_kcal": -4.758,
+      "interaction_hartree": -0.007583,
+      "wall_time_s": 152.68,
       "reference_binding_energy_kcal": -4.589,
-      "error_kcal": -295.933,
-      "abs_error_kcal": 295.933
+      "error_kcal": -0.169,
+      "abs_error_kcal": 0.169
     },
     {
       "ok": true,
@@ -197,7 +203,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -11.642,
       "interaction_hartree": -0.018552,
-      "wall_time_s": 278.75,
+      "wall_time_s": 260.22,
       "reference_binding_energy_kcal": -11.659,
       "error_kcal": 0.017,
       "abs_error_kcal": 0.017
@@ -210,7 +216,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -1.7,
       "interaction_hartree": -0.00271,
-      "wall_time_s": 5.29,
+      "wall_time_s": 5.2,
       "reference_binding_energy_kcal": -1.51,
       "error_kcal": -0.19,
       "abs_error_kcal": 0.19
@@ -236,7 +242,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -2.377,
       "interaction_hartree": -0.003788,
-      "wall_time_s": 18.47,
+      "wall_time_s": 19.05,
       "reference_binding_energy_kcal": -2.32,
       "error_kcal": -0.057,
       "abs_error_kcal": 0.057
@@ -249,7 +255,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -4.911,
       "interaction_hartree": -0.007826,
-      "wall_time_s": 20.91,
+      "wall_time_s": 21.1,
       "reference_binding_energy_kcal": -4.55,
       "error_kcal": -0.361,
       "abs_error_kcal": 0.361
@@ -262,7 +268,7 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -2.765,
       "interaction_hartree": -0.004407,
-      "wall_time_s": 76.51,
+      "wall_time_s": 76.65,
       "reference_binding_energy_kcal": -2.71,
       "error_kcal": -0.055,
       "abs_error_kcal": 0.055
@@ -273,12 +279,12 @@
       "system": "Indole-benzene_T-shape_complex",
       "short_name": "indole_benzene_t_shape_complex",
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
-      "computed_binding_energy_kcal": -445.452,
-      "interaction_hartree": -0.709873,
-      "wall_time_s": 168.94,
+      "computed_binding_energy_kcal": -5.654,
+      "interaction_hartree": -0.00901,
+      "wall_time_s": 125.77,
       "reference_binding_energy_kcal": -5.62,
-      "error_kcal": -439.832,
-      "abs_error_kcal": 439.832
+      "error_kcal": -0.034,
+      "abs_error_kcal": 0.034
     },
     {
       "ok": true,
@@ -288,22 +294,10 @@
       "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
       "computed_binding_energy_kcal": -7.11,
       "interaction_hartree": -0.011331,
-      "wall_time_s": 98.37,
+      "wall_time_s": 101.83,
       "reference_binding_energy_kcal": -7.091,
       "error_kcal": -0.019,
       "abs_error_kcal": 0.019
     }
-  ],
-  "clean_subset": {
-    "n": 19,
-    "mae_kcal": 0.236,
-    "max_abs_error_kcal": 0.842,
-    "within_0.5_kcal": 17,
-    "within_1.0_kcal": 19,
-    "exclude_reason": "Two Indole-benzene complexes converged psi4 SCF to non-physical large-magnitude solutions (|E_int| > 100 kcal/mol) — a known psi4 robustness limit for indole-aromatic stacks under SAD guess.",
-    "excluded": [
-      "indole_benzene_complex_stack",
-      "indole_benzene_t_shape_complex"
-    ]
-  }
+  ]
 }

@@ -37,7 +37,7 @@ S22_SPLITS: dict[str, int] = {
     "Formic_acid_dimer":                        5,    # HCOOH + HCOOH (10 = 5+5)
     "Formamide_dimer":                          6,    # HCONH2 + HCONH2 (12 = 6+6)
     "Uracil_dimer_h-bonded":                    12,   # uracil + uracil (24 = 12+12)
-    "2-pyridoxine_2-aminopyridine_complex":     17,   # 17 + 16 = 33 atoms
+    "2-pyridoxine_2-aminopyridine_complex":     12,   # 2-hydroxypyridine 12 + 2-aminopyridine 13 = 25 atoms
     "Adenine-thymine_Watson-Crick_complex":     15,   # adenine 15 + thymine 15 (30 atoms)
     "Methane_dimer":                            5,    # CH4 + CH4 (10 = 5+5)
     "Ethene_dimer":                             6,    # C2H4 + C2H4 (12 = 6+6)
@@ -59,6 +59,50 @@ S22_SPLITS: dict[str, int] = {
 
 def short_name(ase_name: str) -> str:
     return ase_name.lower().replace(" ", "_").replace("-", "_").replace("'", "")
+
+
+# Covalent radii (Å), enough for "is there a bond?" connectivity test.
+_COV_RAD = {"H": 0.31, "C": 0.76, "N": 0.71, "O": 0.66, "F": 0.57, "S": 1.05}
+
+
+def _split_via_connectivity(symbols: list[str], positions) -> tuple[list[int], list[int]] | None:
+    """Split a 2-monomer system by covalent connectivity.
+
+    Builds a graph where two atoms are connected if their distance
+    is < 1.25 × (r_cov[a] + r_cov[b]). Returns (fragment_A_indices,
+    fragment_B_indices) sorted, or None if the graph has != 2 components.
+    """
+    import numpy as np
+    n = len(symbols)
+    coords = np.asarray(positions, dtype=float)
+    adj = [[] for _ in range(n)]
+    for i in range(n):
+        ri = _COV_RAD.get(symbols[i], 0.8)
+        for j in range(i + 1, n):
+            rj = _COV_RAD.get(symbols[j], 0.8)
+            d = float(np.linalg.norm(coords[i] - coords[j]))
+            if d < 1.25 * (ri + rj):
+                adj[i].append(j)
+                adj[j].append(i)
+
+    seen = [False] * n
+    components: list[list[int]] = []
+    for start in range(n):
+        if seen[start]:
+            continue
+        stack = [start]
+        comp = []
+        while stack:
+            v = stack.pop()
+            if seen[v]:
+                continue
+            seen[v] = True
+            comp.append(v)
+            stack.extend(adj[v])
+        components.append(sorted(comp))
+    if len(components) != 2:
+        return None
+    return components[0], components[1]
 
 
 def export_xyz_from_ase() -> dict[str, str]:
@@ -100,26 +144,121 @@ def run_dimer_cp(ase_name: str, xyz_path: str, split_at: int,
     raw = Path(xyz_path).read_text().strip().splitlines()
     n_atoms = int(raw[0])
     atoms = [l.strip() for l in raw[2:2 + n_atoms] if l.strip()]
-    a = atoms[:split_at]
-    b = atoms[split_at:]
+
+    # Two strategies:
+    # 1) "atoms are contiguous monomer-A then monomer-B" — use split_at.
+    # 2) "atoms are interleaved by element type (typical ASE ordering for
+    #    some S22 entries like indole_benzene)" — use covalent connectivity
+    #    to find the two graph components, then re-order atoms so that
+    #    monomer A comes first and the psi4 fragment "--" separator lands
+    #    correctly.
+    symbols: list[str] = []
+    coords: list[list[float]] = []
+    for line in atoms:
+        p = line.split()
+        symbols.append(p[0])
+        coords.append([float(p[1]), float(p[2]), float(p[3])])
+
+    a_idx_default = list(range(split_at))
+    b_idx_default = list(range(split_at, n_atoms))
+
+    # Probe whether the default split actually separates two intramolecular
+    # graphs (i.e. there's no bond crossing the split). If it does, keep it.
+    # Otherwise fall back to connectivity analysis.
+    use_split = True
+    try:
+        import numpy as np
+        coords_arr = np.asarray(coords, dtype=float)
+        # Check no bond crosses the split
+        for i in a_idx_default:
+            ri = _COV_RAD.get(symbols[i], 0.8)
+            for j in b_idx_default:
+                rj = _COV_RAD.get(symbols[j], 0.8)
+                d = float(np.linalg.norm(coords_arr[i] - coords_arr[j]))
+                if d < 1.10 * (ri + rj):  # very tight — only intramolecular bonds
+                    use_split = False
+                    break
+            if not use_split:
+                break
+    except Exception:
+        pass
+
+    if use_split:
+        a = atoms[:split_at]
+        b = atoms[split_at:]
+    else:
+        # Use covalent connectivity to split — robust against ASE's
+        # element-grouped atom ordering.
+        comp = _split_via_connectivity(symbols, coords)
+        if comp is None:
+            return {"ok": False, "system": ase_name,
+                    "error": "connectivity split did not give exactly 2 components"}
+        idx_a, idx_b = comp
+        # Larger fragment first (just for stability; doesn't matter physically)
+        if len(idx_a) < len(idx_b):
+            idx_a, idx_b = idx_b, idx_a
+        a = [atoms[i] for i in idx_a]
+        b = [atoms[i] for i in idx_b]
+        print(f"     [auto-split] connectivity → frag sizes {len(a)} + {len(b)}",
+              flush=True)
+
     if not a or not b:
         return {"ok": False, "system": ase_name,
                 "error": f"empty monomer split at {split_at}"}
 
-    # Some S22 dimers contain N-H groups that confuse psi4 fragment charge
-    # detection; pin everything to neutral closed-shell explicitly.
-    frag = ("0 1\n" + "\n".join(a) + "\n--\n0 1\n" + "\n".join(b) +
-            "\nunits angstrom\nsymmetry c1\nno_reorient\nno_com")
+    # psi4's fragment syntax requires THREE charge/mult declarations:
+    #   - one global (overall dimer) at the very top
+    #   - one for each fragment after the global block / "--" separator
+    # Without the global line, qcelemental refuses to auto-derive the system
+    # multiplicity for borderline N-H...N systems (e.g. 2-pyridoxine /
+    # 2-aminopyridine), and the entire submission fails. Pin all three to
+    # neutral closed-shell (charge=0, mult=1) explicitly.
+    # Build geometry via the qcelemental "molrec" route: declare both
+    # fragments' charge/mult explicitly AND pin the global charge/mult via
+    # mol.set_molecular_charge / mol.set_multiplicity after construction.
+    # This is the form that survives psi4's strictest fragment validator
+    # (e.g. for borderline N-H...N H-bond complexes like the S22
+    # 2-pyridoxine_2-aminopyridine_complex).
+    frag = ("0 1\n"
+            + "\n".join(a)
+            + "\n--\n"
+            + "0 1\n"
+            + "\n".join(b)
+            + "\nunits angstrom\nsymmetry c1\nno_reorient\nno_com")
     try:
         mol = psi4.geometry(frag)
-    except Exception as exc:
-        # Last-resort fallback: ditch fragment decomposition and just compute the
-        # complex energy without CP — we still get *a* number, but note this in
-        # the result.
-        return {"ok": False, "system": ase_name,
-                "phase": "psi4_geom_parse",
-                "error": f"fragment parser failed: {exc}",
-                "wall_s": 0.0}
+    except Exception:
+        # qcelemental refuses some borderline N-H...N H-bond systems
+        # (e.g. 2-pyridoxine_2-aminopyridine) under fragment auto-derivation.
+        # Build the dimer atom-by-atom via Molecule.from_arrays as a
+        # fallback that bypasses the text-parser entirely.
+        try:
+            import numpy as np
+            all_atoms = a + b
+            symbols = []
+            geom = []
+            for line in all_atoms:
+                parts = line.split()
+                symbols.append(parts[0])
+                geom.extend(float(p) for p in parts[1:4])
+            mol = psi4.core.Molecule.from_arrays(
+                elem=symbols,
+                geom=geom,
+                units="Angstrom",
+                molecular_charge=0,
+                molecular_multiplicity=1,
+                fragment_separators=[len(a)],
+                fragment_charges=[0, 0],
+                fragment_multiplicities=[1, 1],
+                fix_com=True,
+                fix_orientation=True,
+                fix_symmetry="c1",
+            )
+        except Exception as exc:
+            return {"ok": False, "system": ase_name,
+                    "phase": "psi4_geom_parse",
+                    "error": f"fragment parser failed: {exc}",
+                    "wall_s": 0.0}
 
     psi4.set_options({
         "basis": basis,

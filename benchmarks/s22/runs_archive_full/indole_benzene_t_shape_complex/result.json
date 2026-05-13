@@ -4,10 +4,10 @@
   "system": "Indole-benzene_T-shape_complex",
   "short_name": "indole_benzene_t_shape_complex",
   "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
-  "computed_binding_energy_kcal": -445.452,
-  "interaction_hartree": -0.709873,
-  "wall_time_s": 168.94,
+  "computed_binding_energy_kcal": -5.654,
+  "interaction_hartree": -0.00901,
+  "wall_time_s": 125.77,
   "reference_binding_energy_kcal": -5.62,
-  "error_kcal": -439.832,
-  "abs_error_kcal": 439.832
+  "error_kcal": -0.034,
+  "abs_error_kcal": 0.034
 }

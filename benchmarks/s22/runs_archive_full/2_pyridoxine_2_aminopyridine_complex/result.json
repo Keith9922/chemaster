@@ -1,7 +1,13 @@
 {
-  "ok": false,
+  "ok": true,
+  "data_source": "real_psi4",
   "system": "2-pyridoxine_2-aminopyridine_complex",
-  "phase": "psi4_geom_parse",
-  "error": "fragment parser failed: Inconsistent or unspecified chg/mult: sys chg: None, frag chg: [0.0, 0.0], sys mult: None, frag mult: [1, 1]",
-  "wall_s": 0.0
+  "short_name": "2_pyridoxine_2_aminopyridine_complex",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -17.719,
+  "interaction_hartree": -0.028237,
+  "wall_time_s": 89.5,
+  "reference_binding_energy_kcal": -17.0,
+  "error_kcal": -0.719,
+  "abs_error_kcal": 0.719
 }

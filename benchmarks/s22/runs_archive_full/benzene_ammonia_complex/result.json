@@ -6,7 +6,7 @@
   "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
   "computed_binding_energy_kcal": -2.377,
   "interaction_hartree": -0.003788,
-  "wall_time_s": 18.47,
+  "wall_time_s": 19.05,
   "reference_binding_energy_kcal": -2.32,
   "error_kcal": -0.057,
   "abs_error_kcal": 0.057
