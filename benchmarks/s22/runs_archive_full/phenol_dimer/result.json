@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Phenol_dimer",
+  "short_name": "phenol_dimer",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -7.11,
+  "interaction_hartree": -0.011331,
+  "wall_time_s": 98.37,
+  "reference_binding_energy_kcal": -7.091,
+  "error_kcal": -0.019,
+  "abs_error_kcal": 0.019
+}
