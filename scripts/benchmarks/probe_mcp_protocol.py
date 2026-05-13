@@ -85,9 +85,9 @@ async def amain() -> int:
             "module": "chemaster.mcp.const.server",
             "calls": [
                 {"name": "convert_unit",
-                 "args": {"value": 1.0, "from_unit": "Hartree",
+                 "args": {"value": 1.0, "from_unit": "hartree",
                            "to_unit": "eV"}},
-                {"name": "get_constant", "args": {"name": "h_planck"}},
+                {"name": "get_constant", "args": {"name": "planck"}},
             ],
         },
         {

@@ -9,6 +9,6 @@
   "abs_error_kcal": 0.036,
   "within_acceptance": true,
   "interaction_hartree": -0.002332,
-  "wall_time_s": 4.67,
+  "wall_time_s": 4.78,
   "geometry_note": "water_dimer uses the standard S22 hydrogen-bonded geometry; other dimers use approximate near-equilibrium geometries due to lack of canonical S22A coordinates in our local copy. Direct comparison to S22A reference values is therefore strongest for water_dimer; other systems reflect both method and geometry approximation errors."
 }

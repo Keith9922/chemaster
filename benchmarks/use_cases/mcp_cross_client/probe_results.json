@@ -17,19 +17,19 @@
           "name": "convert_unit",
           "args": {
             "value": 1.0,
-            "from_unit": "Hartree",
+            "from_unit": "hartree",
             "to_unit": "eV"
           },
           "ok": true,
-          "response_preview": "{\n  \"ok\": false,\n  \"error_code\": \"UNIT_PARSE_ERROR\",\n  \"details\": \"UndefinedUnitError: 'Hartree' is not defined in the unit registry\",\n  \"suggestion\": \"Use standard unit names (hartree, eV, angstrom, ...).\"\n}"
+          "response_preview": "{\n  \"ok\": true,\n  \"value\": 27.21138624598103,\n  \"unit\": \"eV\",\n  \"warnings\": []\n}"
         },
         {
           "name": "get_constant",
           "args": {
-            "name": "h_planck"
+            "name": "planck"
           },
           "ok": true,
-          "response_preview": "{\n  \"ok\": false,\n  \"error_code\": \"UNKNOWN_CONSTANT\",\n  \"details\": \"\\\"Unknown constant: 'h_planck'. Try one of: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J', 'e', 'eV_to_J', 'epsilon_0', 'hartree', 'hartree_to_cm_inv', 'hartree_to_eV', 'hartree_to_kJ_per_mol', 'hartree_to_kcal_per_mol', 'hbar', 'kb', 'm_e', 'm_p', 'mu_0', 'planck', 'rydberg']\\\"\",\n  \"suggestion\": \"Available constants: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J'"
+          "response_preview": "{\n  \"ok\": true,\n  \"value\": 6.62607015e-34,\n  \"unit\": \"J·s\",\n  \"source\": \"CODATA-2018 (scipy.constants)\",\n  \"warnings\": [],\n  \"meta\": {\n    \"name\": \"planck\",\n    \"aliases\": [\n      \"h\"\n    ]\n  }\n}"
         }
       ]
     },

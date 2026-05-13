@@ -9,6 +9,6 @@
   "abs_error_kcal": 0.532,
   "within_acceptance": false,
   "interaction_hartree": -0.008848,
-  "wall_time_s": 1.82,
+  "wall_time_s": 2.3,
   "geometry_note": "Standard S22 hydrogen-bonded geometry (Hobza 2006)."
 }

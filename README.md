@@ -81,6 +81,7 @@ chemaster web
 | **Gaussian** | MCP | 接口已实现 | 主线工具栈 — 基态优化、TDDFT、频率分析 |
 | **BDF** | MCP | 接口已实现 | 主线工具栈 — 自旋–轨道耦合（X2C-TDA） |
 | **MOMAP** | MCP | 接口已实现 | 主线工具栈 — TVCF 速率与振动分辨光谱 |
+| **PySCF** | MCP | **实测可用** | **BDF SOC 的开源 reference — 蒽 X2C-1e 三阶段相对论真跑通** |
 | psi4 | MCP | 实测可用 | 替代后端 — 在没有 Gaussian 许可时可完整跑 S22 / QUEST 验证 |
 | ORCA | MCP | 接口已实现 | 替代后端 |
 | xTB | MCP | 实测可用 | 半经验快速预筛 |
@@ -94,15 +95,16 @@ chemaster web
 |---|---|---|
 | **S22 弱相互作用集**（5 体系） | B3LYP-D3(BJ)/def2-TZVP + counterpoise，psi4 实跑 | MAE = **0.75 kcal/mol**；water_dimer 与 ethene_ethyne 误差 < 0.6 kcal/mol |
 | **QUEST 激发态参考集**（3 分子 8 状态） | TD-CAM-B3LYP/def2-SVP, TDA，psi4 实跑 | Valence 态 MAE < **0.2 eV**；Rydberg 态因 def2-SVP 缺 diffuse 函数偏大 |
-| 蒽（Gaussian + BDF + MOMAP） | — | **未在本工作中完成**（依赖 BDF 与 MOMAP 软件许可，留作未来工作）|
+| **蒽 X2C-1e SOC**（开源 reference） | RKS / RKS+X2C / GKS+X2C-1e B3LYP/def2-svp，**PySCF 实跑** | 标量相对论修正 **−5.28 eV**；SOC 修正 **−0.10 meV**（C/H 体系 SOC 极小，化学正确）|
+| 蒽完整 BDF + MOMAP TVCF 流水线 | — | **未在本工作中完成**（依赖 BDF 与 MOMAP 软件许可，留作未来工作）|
 
-详细数据：[`benchmarks/s22/summary.json`](benchmarks/s22/summary.json) 与 [`benchmarks/quest/summary.json`](benchmarks/quest/summary.json)。
+详细数据：[`benchmarks/s22/summary.json`](benchmarks/s22/summary.json)、[`benchmarks/quest/summary.json`](benchmarks/quest/summary.json)、[`benchmarks/anthracene/runs_archive/x2c_pyscf/result.json`](benchmarks/anthracene/runs_archive/x2c_pyscf/result.json)。
 
 ### 工程指标
 
 | 指标 | 结果 |
 |---|---|
-| 单元测试 | **228 passed, 1 skipped**（用 conda Python 加载完整依赖时） |
+| 单元测试 | **253 passed, 1 skipped**（用 conda Python 加载完整依赖时；含 calc_pyscf 12 项新测试） |
 | MCP 协议合规性独立探针 | 3/3 servers initialised；kb 与 const 通过完整 initialize → list_tools → call_tool 链路 |
 | 操作性故障自动恢复率 | **84%（21/25）**，达到设定的 80% 目标 |
 | 提交摩擦时间节省率（指标 5）| **未在本工作中完成**（需真人被试参与）|
@@ -192,7 +194,7 @@ chemaster/
 本项目站在多个优秀开源工作的肩膀之上。在协议与运行时层面，使用了 Anthropic 提出的 [MCP](https://modelcontextprotocol.io/) 协议规范及其 [Python SDK](https://github.com/modelcontextprotocol/python-sdk)。在 Agent 形态的设计上，本项目从 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 与 [DeepSeek TUI](https://github.com/Hmbown/DeepSeek-TUI) 的交互范式中受到启发；化学 Agent 的研究方向受 [ChemCrow](https://github.com/ur-whitelab/chemcrow-public) 与 [Coscientist](https://github.com/gomesgroup/coscientist) 等工作的启发；科学计算工作流的设计参考了 [ASE](https://wiki.fysik.dtu.dk/ase/)、[AiiDA](https://www.aiida.net/)、[Atomate](https://atomate.org/) 等系统。
 
 代码运行时直接依赖以下开源项目：
-量子化学与化学信息工具 [psi4](https://psicode.org)、[xTB](https://github.com/grimme-lab/xtb)、[ASE](https://wiki.fysik.dtu.dk/ase/)、[RDKit](https://www.rdkit.org)、[cclib](https://cclib.github.io)、[pint](https://pint.readthedocs.io)；
+量子化学与化学信息工具 [psi4](https://psicode.org)、[PySCF](https://pyscf.org)（用作 BDF X2C SOC 路径的开源 reference）、[xTB](https://github.com/grimme-lab/xtb)、[ASE](https://wiki.fysik.dtu.dk/ase/)、[RDKit](https://www.rdkit.org)、[cclib](https://cclib.github.io)、[pint](https://pint.readthedocs.io)；
 LLM Agent 与协议 [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python)、[MCP](https://modelcontextprotocol.io/)；
 用户界面与命令行 [click](https://click.palletsprojects.com)、[rich](https://rich.readthedocs.io)、[Textual](https://textual.textualize.io)；
 Web 后端与浏览器自动化 [FastAPI](https://fastapi.tiangolo.com)、[uvicorn](https://www.uvicorn.org)、[Playwright](https://playwright.dev)；
