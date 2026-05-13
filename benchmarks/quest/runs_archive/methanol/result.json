@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "methanol",
+  "formula": "CH3OH",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 7.252,
+      "ref_cc3_eV": 6.76,
+      "ref_character": "n -> 3s (Rydberg)",
+      "error_eV": 0.492,
+      "abs_error_eV": 0.492,
+      "oscillator_strength": 0.0065
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 8.929,
+      "ref_cc3_eV": 7.3,
+      "ref_character": "n -> π* / 3p",
+      "error_eV": 1.629,
+      "abs_error_eV": 1.629,
+      "oscillator_strength": 0.0085
+    }
+  ],
+  "mae_eV": 1.06,
+  "max_abs_error_eV": 1.629,
+  "wall_time_s": 1.3
+}

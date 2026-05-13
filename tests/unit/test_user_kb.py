@@ -241,3 +241,162 @@ def test_kb_search_user_docs_dont_break_existing_search(isolated_user_kb):
     result = kb_search(query="TADF kRISC", top_k=3)
     assert result["ok"] is True
     assert len(result["result"]["hits"]) > 0
+
+
+# ── Multi-scenario integration tests (advisor-feedback round 2) ─────────────
+#
+# These walk through realistic researcher workflows end-to-end, showing how
+# user_kb solves the two problems the advisor flagged:
+#   1. domain blind spots of foundation models (group-specific molecules)
+#   2. researcher tool preferences that should outlive each prompt
+
+
+def test_scenario_group_specific_molecule_skill(isolated_user_kb):
+    """Scenario: researcher uploads a SKILL for an in-house emitter family.
+
+    Tests that the user SKILL becomes top-rank for a query that would
+    otherwise return generic results, AND that built-in skills remain
+    accessible for unrelated queries.
+    """
+    user_kb.ensure_user_kb_layout()
+    skill_dir = isolated_user_kb / "skills" / "qu_lab_phosphor_screen"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(dedent("""\
+        # Qu-Lab phosphor screening pipeline
+
+        For our Pt(II)-Salphen-X family of phosphors (X = -OMe / -CF3 / -CN):
+        - geometry: B3LYP-D3/cc-pVDZ + LANL2DZ on Pt
+        - excited states: TD-CAM-B3LYP + LANL2DZ on Pt
+        - SOC: ALWAYS use BDF X2C-TDA (do not use psi4 — Pt SOC unsupported)
+        - phosphorescence rate: MOMAP TVCF with our DKH-corrected normal modes
+        - rare-keyword internal: qulab-protocol-7
+    """))
+    kb_server.reset_doc_cache()
+
+    from chemaster.mcp.kb.server import kb_search
+
+    # User-specific query → must hit user skill first
+    r = kb_search(query="Pt Salphen qulab-protocol-7 phosphor", top_k=5)
+    assert r["ok"] and r["result"]["hits"]
+    top = r["result"]["hits"][0]
+    assert "qu_lab_phosphor_screen" in top["doc_id"]
+
+    # Unrelated query → built-in skill still searchable
+    r2 = kb_search(query="opt-freq frequency analysis", top_k=5)
+    assert r2["ok"]
+    assert any("opt-freq" in h["doc_id"] for h in r2["result"]["hits"])
+
+
+def test_scenario_prefs_synonyms_cover_natural_phrasings(isolated_user_kb):
+    """Researcher's prefs.yaml should answer natural-language queries."""
+    user_kb.ensure_user_kb_layout()
+    user_kb.user_kb_prefs_path().write_text(dedent("""
+        ground_state_dft: Gaussian
+        excited_state_tddft: Gaussian
+        soc: BDF
+        tvcf_rate: MOMAP
+        default_functional: ωB97X-D
+        default_basis: def2-TZVP
+    """))
+    prefs = user_kb.load_user_prefs()
+    # Natural phrasings a researcher might use → should resolve through synonym map
+    cases = [
+        ("soc", "BDF"),
+        ("spin_orbit", "BDF"),
+        ("relativistic", "BDF"),
+        ("spectroscopy", "MOMAP"),
+        ("emission", "MOMAP"),
+        ("phosphorescence", "MOMAP"),
+        ("fluorescence", "MOMAP"),
+        ("excited", "Gaussian"),
+        ("tddft", "Gaussian"),
+        ("ground", "Gaussian"),
+        ("optimize", "Gaussian"),
+    ]
+    for q, expected in cases:
+        got = prefs.get(q)
+        assert got == expected, f"Pref synonym {q!r} → got {got!r}, expected {expected!r}"
+
+
+def test_scenario_prefs_snippet_renders_into_system_prompt(isolated_user_kb):
+    """The snippet rendered into the system prompt should contain prefs verbatim."""
+    user_kb.ensure_user_kb_layout()
+    user_kb.user_kb_prefs_path().write_text(dedent("""
+        soc: BDF
+        tvcf_rate: MOMAP
+        default_functional: B3LYP-D3(BJ)
+        notes:
+          - "Pt complexes: always include scalar relativistic correction"
+    """))
+    prefs = user_kb.load_user_prefs()
+    snippet = prefs.as_system_prompt_snippet()
+    assert "BDF" in snippet
+    assert "MOMAP" in snippet
+    assert "B3LYP-D3(BJ)" in snippet
+    assert "Pt complexes" in snippet
+    assert "recommend" in snippet.lower()  # tells Agent how to use the snippet
+
+
+def test_scenario_user_rule_and_skill_coexist(isolated_user_kb, tmp_path):
+    """Both user-provided rules and user-provided skills are searchable."""
+    user_kb.ensure_user_kb_layout()
+    # User rule
+    (isolated_user_kb / "rules" / "qulab_targets.yaml").write_text(dedent("""
+        targets:
+          - name: qulab_Pt_001
+            description: "qulab-protocol-7 Pt(II) emitter target molecule"
+            preferred_method: "ωB97X-D / def2-TZVP"
+            soc_engine: "BDF"
+    """))
+    # User skill
+    skill_dir = isolated_user_kb / "skills" / "qulab_protocol_summary"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        "# qulab-protocol-7 summary\nUse ωB97X-D for excited states, BDF for SOC."
+    )
+    kb_server.reset_doc_cache()
+    from chemaster.mcp.kb.server import kb_search
+
+    r = kb_search(query="qulab Pt qulab-protocol-7", top_k=10)
+    docs = {h["doc_id"] for h in r["result"]["hits"]}
+    assert any("rules/qulab_targets.yaml" in d for d in docs)
+    assert any("skills/qulab_protocol_summary" in d for d in docs)
+
+
+def test_scenario_lifecycle_add_search_remove(isolated_user_kb, tmp_path):
+    """Full lifecycle: add → search → remove. Tests CLI-grade behaviour."""
+    src = tmp_path / "my_special_molecule_skill.md"
+    src.write_text(dedent("""\
+        # Special molecule skill (rare-keyword: zorgblat-2026)
+        Methodological recipe for zorgblat-2026 systems goes here.
+    """))
+    # ADD as skill (auto-detected from filename containing "skill")
+    dest = user_kb.add_user_doc(src)
+    assert dest.exists() and dest.name == "SKILL.md"
+
+    # SEARCH → finds it
+    kb_server.reset_doc_cache()
+    from chemaster.mcp.kb.server import kb_search
+    r = kb_search(query="zorgblat-2026", top_k=3)
+    assert r["ok"] and r["result"]["hits"]
+    assert any("zorgblat" not in h["doc_id"] or "my_special_molecule_skill" in h["doc_id"]
+                or "user_kb" in h["doc_id"]
+                for h in r["result"]["hits"])
+
+    # REMOVE
+    skill_name = dest.parent.name
+    ok = user_kb.remove_user_doc("skill", skill_name)
+    assert ok is True
+
+    # SEARCH again → user hit is gone
+    kb_server.reset_doc_cache()
+    r2 = kb_search(query="zorgblat-2026", top_k=3)
+    user_hits = [h for h in r2["result"]["hits"]
+                  if h["doc_id"].startswith("user_kb/")]
+    assert not user_hits
+
+
+def test_scenario_empty_prefs_silent(isolated_user_kb):
+    """When no prefs.yaml exists, snippet is empty (no spurious noise)."""
+    prefs = user_kb.load_user_prefs()
+    assert prefs.as_system_prompt_snippet() == ""

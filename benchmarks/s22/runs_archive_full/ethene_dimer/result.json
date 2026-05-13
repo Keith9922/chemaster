@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Ethene_dimer",
+  "short_name": "ethene_dimer",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -1.494,
+  "interaction_hartree": -0.00238,
+  "wall_time_s": 6.4,
+  "reference_binding_energy_kcal": -1.499,
+  "error_kcal": 0.005,
+  "abs_error_kcal": 0.005
+}

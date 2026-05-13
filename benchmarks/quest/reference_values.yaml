@@ -85,6 +85,61 @@ systems:
         spin: "singlet"
         vee_cc3: 6.55
 
+  methanol:
+    formula: "CH3OH"
+    geometry_method: "approximate equilibrium"
+    excited_states:
+      - state: 1
+        symmetry: "1A''"
+        character: "n -> 3s (Rydberg)"
+        spin: "singlet"
+        vee_cc3: 6.76
+      - state: 2
+        symmetry: "1A'"
+        character: "n -> π* / 3p"
+        spin: "singlet"
+        vee_cc3: 7.30
+
+  water:
+    formula: "H2O"
+    geometry_method: "Cs equilibrium"
+    excited_states:
+      - state: 1
+        symmetry: "1B1"
+        character: "n -> 3s (Rydberg)"
+        spin: "singlet"
+        vee_cc3: 7.62
+      - state: 1
+        symmetry: "1A2"
+        character: "n -> 3p (Rydberg)"
+        spin: "singlet"
+        vee_cc3: 9.41
+
+  ammonia:
+    formula: "NH3"
+    geometry_method: "C3v equilibrium"
+    excited_states:
+      - state: 1
+        symmetry: "1A2''"
+        character: "n -> 3s (Rydberg)"
+        spin: "singlet"
+        vee_cc3: 6.59
+
+  cyclopentadiene:
+    formula: "C5H6"
+    geometry_method: "C2v"
+    excited_states:
+      - state: 1
+        symmetry: "1B2"
+        character: "π -> π* (bright)"
+        spin: "singlet"
+        vee_cc3: 5.51
+      - state: 2
+        symmetry: "1A1"
+        character: "π -> π* (dark, double excitation)"
+        spin: "singlet"
+        vee_cc3: 6.31
+
   pyrrole:
     formula: "C4H5N"
     geometry_method: "CC3/aug-cc-pVTZ optimized"

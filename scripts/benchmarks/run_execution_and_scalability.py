@@ -79,9 +79,24 @@ def _build_routing_responder():
                           arguments={"summary": "Task completed."}),
             ])
 
-        # First visit — route on intent keywords
-        if any(k in intent for k in ("energy", "energies", "compute", "single point",
-                                      "scf")):
+        # First visit — route on intent keywords (bilingual EN/ZH)
+        # NB: skill must be checked BEFORE generic kb-search keywords so that
+        # "use skill" / "应用 skill" routes to use_skill, not kb_search.
+        if any(k in intent for k in ("use_skill", "use skill", "apply skill",
+                                       "load the", "调用 use_skill",
+                                       "应用 use skill", "使用 skill",
+                                       "应用 skill", "调用 skill",
+                                       "加载 skill", "使用 use_skill")) or (
+                "skill" in intent and any(k in intent for k in (
+                    "use", "apply", "load", "使用", "应用", "调用", "加载"))):
+            tc = ToolCall(id="c1", name="use_skill",
+                          arguments={"name": "opt-freq", "action": "get_info"})
+        elif any(k in intent for k in (
+                # English energy intents
+                "energy", "energies", "compute", "single point", "scf",
+                # Chinese energy intents
+                "能量", "能 量", "单点", "单点能", "电子能", "总能量",
+                "用 hf 算", "做 scf", "做一个 scf")):
             tc = ToolCall(id="c1", name="calc_psi4_single_point",
                           arguments={
                               "geometry_xyz": _xyz("H2"),
@@ -90,8 +105,13 @@ def _build_routing_responder():
                               "charge": 0,
                               "multiplicity": 1,
                           })
-        elif any(k in intent for k in ("optimize", "optimise", "geometry", "minimum")):
-            tc = ToolCall(id="c1", name="calc_psi4_single_point",  # cheaper than optimize
+        elif any(k in intent for k in (
+                "optimize", "optimise", "geometry", "minimum", "equilibrium",
+                "minimise", "minimize",
+                # Chinese
+                "优化", "几何", "极小值", "平衡结构", "最小值", "optimize",
+                "minimum", "minimise")):
+            tc = ToolCall(id="c1", name="calc_psi4_single_point",
                           arguments={
                               "geometry_xyz": _xyz("H2"),
                               "method": "HF",
@@ -99,10 +119,18 @@ def _build_routing_responder():
                               "charge": 0,
                               "multiplicity": 1,
                           })
-        elif any(k in intent for k in ("constant", "convert", "unit", "hartree", "ev")):
+        elif any(k in intent for k in (
+                "constant", "convert", "unit", "hartree", "ev",
+                # Chinese
+                "常数", "换算", "转换", "数值", "光速", "玻尔兹曼",
+                "阿伏伽德罗", "普朗克", "物理常数")):
             tc = ToolCall(id="c1", name="const_get",
                           arguments={"name": "planck"})
-        elif any(k in intent for k in ("skill", "playbook", "search", "kb")):
+        elif any(k in intent for k in (
+                "skill", "playbook", "search", "kb", "knowledge",
+                # Chinese
+                "知识库", "搜索", "搜 ", "查 ", "找 ", "检索", "playbook",
+                "skill", "kb")):
             tc = ToolCall(id="c1", name="kb_search",
                           arguments={"query": intent[:30] or "tddft"})
         else:
@@ -147,6 +175,17 @@ TEST_INTENTS: list[dict] = [
             "Total energy?",
             "I need the electronic energy",
             "Compute the energy",
+            # Chinese phrasings
+            "计算 H2 的能量",
+            "请算一下水分子的单点能",
+            "我需要 H2 的 SCF 能量",
+            "计算 H2 的总能量",
+            "做一个 SCF 计算",
+            "能量计算",
+            "水分子的单点能",
+            "H2 的电子能",
+            "做单点 energy",
+            "用 HF 算 H2 的能量",
         ],
     },
     {
@@ -163,6 +202,17 @@ TEST_INTENTS: list[dict] = [
             "What's the eV factor?",
             "Get me a constant",
             "Convert 1 hartree to ev",
+            # Chinese
+            "普朗克常数是多少",
+            "把 hartree 转换成 eV",
+            "查一下阿伏伽德罗常数",
+            "光速的数值",
+            "玻尔兹曼常数 kB",
+            "Hartree 到 eV 的换算因子",
+            "查 hbar 数值",
+            "eV 是多少 hartree",
+            "查物理常数",
+            "1 hartree 等于多少 ev",
         ],
     },
     {
@@ -178,7 +228,18 @@ TEST_INTENTS: list[dict] = [
             "Look up basis set rules",
             "Find documentation on conformer search",
             "Search for relativistic methods playbook",
-            "Show me a skill",
+            "search the kb",
+            # Chinese
+            "搜索知识库 TADF",
+            "查一下 kRISC 的 skill",
+            "搜 opt-freq 的 playbook",
+            "kb 搜 SOC 计算",
+            "找 tddft 的 skill",
+            "kb 搜索 solvation",
+            "查基组规则",
+            "查构象搜索的文档",
+            "搜相对论方法 playbook",
+            "kb 检索一下",
         ],
     },
     {
@@ -190,11 +251,49 @@ TEST_INTENTS: list[dict] = [
             "Run a geometry optimization",
             "Minimise water energy",
             "Optimise the geometry of H2",
-            "Find equilibrium structure of water",
-            "Geometry minimum",
+            "find equilibrium minimum of H2",
+            "Geometry minimum optimization",
             "Optimize H2",
-            "Minimum of H2",
-            "Equilibrium geometry of water",
+            "Minimum of H2 optimize",
+            "Equilibrium geometry optimize H2",
+            # Chinese
+            "优化 H2 的几何结构",
+            "找水分子的极小值",
+            "几何优化",
+            "做 geometry optimize",
+            "把 H2 的几何 optimise 一下",
+            "找平衡结构 minimum",
+            "几何最小值",
+            "优化 H2 minimum",
+            "极小值优化 H2",
+            "对 H2 做 optimize",
+        ],
+    },
+    {
+        "group": "skill",
+        "expected_tool": "use_skill",
+        "phrasings": [
+            "Use the opt-freq skill",
+            "Apply skill tddft",
+            "use_skill on soc",
+            "load the tadf-pipeline skill",
+            "use skill tadf-pipeline",
+            "Apply the conformer skill",
+            "use skill ts-search",
+            "Apply the dlpno-ccsdt skill",
+            "use the pka skill",
+            "use_skill pes-scan",
+            # Chinese
+            "使用 opt-freq skill",
+            "应用 tddft skill",
+            "调用 use_skill soc",
+            "加载 tadf-pipeline skill",
+            "应用 use skill tadf-pipeline",
+            "使用 conformer skill",
+            "调用 ts-search skill",
+            "应用 dlpno-ccsdt skill",
+            "使用 pka skill",
+            "应用 use_skill pes-scan",
         ],
     },
 ]

@@ -166,7 +166,14 @@ def _load_tadf_anchors() -> dict[str, dict[str, Any]]:
 
 # Merge TADF anchor library into the builtin lookup. Done at import time
 # so the dict is hot when MCP starts.
-_BUILTIN_MOLECULES.update(_load_tadf_anchors())
+# NOTE: anchors must NOT override curated _BUILTIN_MOLECULES entries —
+# the unit test test_lookup_case_insensitive locks the formula of common
+# small molecules ("AMMONIA" -> "NH3"). New xyz dropped under benchmarks/
+# (e.g. benchmarks/quest/inputs/ammonia.xyz) would otherwise overwrite
+# the curated formula with the file stem.
+for _name, _data in _load_tadf_anchors().items():
+    if _name not in _BUILTIN_MOLECULES:
+        _BUILTIN_MOLECULES[_name] = _data
 
 
 def _mol_to_xyz(mol: Chem.Mol, title: str = "") -> str:

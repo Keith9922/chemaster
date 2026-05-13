@@ -109,7 +109,7 @@
       ],
       "mae_eV": 0.846,
       "max_abs_error_eV": 1.383,
-      "wall_time_s": 1.3
+      "wall_time_s": 1.1
     },
     {
       "ok": true,
@@ -139,7 +139,118 @@
       ],
       "mae_eV": 0.512,
       "max_abs_error_eV": 0.843,
-      "wall_time_s": 5.2
+      "wall_time_s": 4.3
+    },
+    {
+      "ok": true,
+      "data_source": "real_psi4",
+      "system": "methanol",
+      "formula": "CH3OH",
+      "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+      "states": [
+        {
+          "state_idx": 1,
+          "computed_eV": 7.252,
+          "ref_cc3_eV": 6.76,
+          "ref_character": "n -> 3s (Rydberg)",
+          "error_eV": 0.492,
+          "abs_error_eV": 0.492,
+          "oscillator_strength": 0.0065
+        },
+        {
+          "state_idx": 2,
+          "computed_eV": 8.929,
+          "ref_cc3_eV": 7.3,
+          "ref_character": "n -> π* / 3p",
+          "error_eV": 1.629,
+          "abs_error_eV": 1.629,
+          "oscillator_strength": 0.0085
+        }
+      ],
+      "mae_eV": 1.06,
+      "max_abs_error_eV": 1.629,
+      "wall_time_s": 1.3
+    },
+    {
+      "ok": true,
+      "data_source": "real_psi4",
+      "system": "water",
+      "formula": "H2O",
+      "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+      "states": [
+        {
+          "state_idx": 1,
+          "computed_eV": 7.714,
+          "ref_cc3_eV": 7.62,
+          "ref_character": "n -> 3s (Rydberg)",
+          "error_eV": 0.094,
+          "abs_error_eV": 0.094,
+          "oscillator_strength": 0.0179
+        },
+        {
+          "state_idx": 2,
+          "computed_eV": 9.669,
+          "ref_cc3_eV": 9.41,
+          "ref_character": "n -> 3p (Rydberg)",
+          "error_eV": 0.259,
+          "abs_error_eV": 0.259,
+          "oscillator_strength": 0.0
+        }
+      ],
+      "mae_eV": 0.176,
+      "max_abs_error_eV": 0.259,
+      "wall_time_s": 0.4
+    },
+    {
+      "ok": true,
+      "data_source": "real_psi4",
+      "system": "ammonia",
+      "formula": "NH3",
+      "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+      "states": [
+        {
+          "state_idx": 1,
+          "computed_eV": 7.033,
+          "ref_cc3_eV": 6.59,
+          "ref_character": "n -> 3s (Rydberg)",
+          "error_eV": 0.443,
+          "abs_error_eV": 0.443,
+          "oscillator_strength": 0.0311
+        }
+      ],
+      "mae_eV": 0.443,
+      "max_abs_error_eV": 0.443,
+      "wall_time_s": 0.7
+    },
+    {
+      "ok": true,
+      "data_source": "real_psi4",
+      "system": "cyclopentadiene",
+      "formula": "C5H6",
+      "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+      "states": [
+        {
+          "state_idx": 1,
+          "computed_eV": 6.142,
+          "ref_cc3_eV": 5.51,
+          "ref_character": "π -> π* (bright)",
+          "error_eV": 0.632,
+          "abs_error_eV": 0.632,
+          "oscillator_strength": 0.0
+        },
+        {
+          "state_idx": 2,
+          "computed_eV": 6.282,
+          "ref_cc3_eV": 6.31,
+          "ref_character": "π -> π* (dark, double excitation)",
+          "error_eV": -0.028,
+          "abs_error_eV": 0.028,
+          "oscillator_strength": 0.0
+        }
+      ],
+      "mae_eV": 0.33,
+      "max_abs_error_eV": 0.632,
+      "wall_time_s": 4.9
     },
     {
       "ok": true,
@@ -199,12 +310,12 @@
       ],
       "mae_eV": 0.13,
       "max_abs_error_eV": 0.13,
-      "wall_time_s": 2.0
+      "wall_time_s": 2.4
     }
   ],
-  "n_states_total": 13,
-  "mae_eV": 0.702,
-  "max_abs_error_eV": 1.548,
-  "n_passed": 6,
+  "n_states_total": 20,
+  "mae_eV": 0.635,
+  "max_abs_error_eV": 1.629,
+  "n_passed": 11,
   "pass_overall": false
 }

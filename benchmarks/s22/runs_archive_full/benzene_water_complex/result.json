@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Benzene-water_complex",
+  "short_name": "benzene_water_complex",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -3.491,
+  "interaction_hartree": -0.005563,
+  "wall_time_s": 16.81,
+  "reference_binding_energy_kcal": -3.291,
+  "error_kcal": -0.2,
+  "abs_error_kcal": 0.2
+}

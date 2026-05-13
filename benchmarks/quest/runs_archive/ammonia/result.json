@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "ammonia",
+  "formula": "NH3",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 7.033,
+      "ref_cc3_eV": 6.59,
+      "ref_character": "n -> 3s (Rydberg)",
+      "error_eV": 0.443,
+      "abs_error_eV": 0.443,
+      "oscillator_strength": 0.0311
+    }
+  ],
+  "mae_eV": 0.443,
+  "max_abs_error_eV": 0.443,
+  "wall_time_s": 0.7
+}

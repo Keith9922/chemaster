@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Uracil_dimer_stack",
+  "short_name": "uracil_dimer_stack",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -10.182,
+  "interaction_hartree": -0.016227,
+  "wall_time_s": 120.34,
+  "reference_binding_energy_kcal": -9.741,
+  "error_kcal": -0.441,
+  "abs_error_kcal": 0.441
+}

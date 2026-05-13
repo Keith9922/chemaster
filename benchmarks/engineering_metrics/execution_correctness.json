@@ -1,33 +1,39 @@
 {
   "data_source": "real_mock_agent_loop",
   "method": "Drive ChemAgent.run() with a MockLLM that routes on intent keywords; psi4 is the real backend for energy tasks. For each anchor intent we test 10 natural-language phrasings and count (a) agent did not crash, (b) the expected tool appears in the trajectory's non-builtin tool sequence.",
-  "n_total": 40,
+  "n_total": 100,
   "agent_ok_rate": 1.0,
-  "execution_correctness_rate": 0.95,
+  "execution_correctness_rate": 0.98,
   "by_group": {
     "energy": {
-      "n": 10,
-      "agent_ok": 10,
-      "correct": 10,
+      "n": 20,
+      "agent_ok": 20,
+      "correct": 20,
       "rate": 1.0
     },
     "constant": {
-      "n": 10,
-      "agent_ok": 10,
-      "correct": 10,
+      "n": 20,
+      "agent_ok": 20,
+      "correct": 20,
       "rate": 1.0
     },
     "kb": {
-      "n": 10,
-      "agent_ok": 10,
-      "correct": 9,
+      "n": 20,
+      "agent_ok": 20,
+      "correct": 18,
       "rate": 0.9
     },
     "optimize": {
-      "n": 10,
-      "agent_ok": 10,
-      "correct": 9,
-      "rate": 0.9
+      "n": 20,
+      "agent_ok": 20,
+      "correct": 20,
+      "rate": 1.0
+    },
+    "skill": {
+      "n": 20,
+      "agent_ok": 20,
+      "correct": 20,
+      "rate": 1.0
     }
   },
   "acceptance_target_pct": 90.0,
@@ -42,7 +48,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.442
+      "wall_s": 0.502
     },
     {
       "group": "energy",
@@ -53,7 +59,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.134
+      "wall_s": 0.157
     },
     {
       "group": "energy",
@@ -64,7 +70,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.13
+      "wall_s": 0.154
     },
     {
       "group": "energy",
@@ -75,7 +81,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.132
+      "wall_s": 0.152
     },
     {
       "group": "energy",
@@ -86,7 +92,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.136
+      "wall_s": 0.155
     },
     {
       "group": "energy",
@@ -97,7 +103,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.14
+      "wall_s": 0.15
     },
     {
       "group": "energy",
@@ -108,7 +114,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.151
+      "wall_s": 0.15
     },
     {
       "group": "energy",
@@ -119,7 +125,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.15
+      "wall_s": 0.152
     },
     {
       "group": "energy",
@@ -130,7 +136,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.131
+      "wall_s": 0.15
     },
     {
       "group": "energy",
@@ -141,7 +147,117 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.135
+      "wall_s": 0.146
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "计算 H2 的能量",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.145
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "请算一下水分子的单点能",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.142
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "我需要 H2 的 SCF 能量",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.147
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "计算 H2 的总能量",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.147
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "做一个 SCF 计算",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.147
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "能量计算",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.152
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "水分子的单点能",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.151
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "H2 的电子能",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.151
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "做单点 energy",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.148
+    },
+    {
+      "group": "energy",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "用 HF 算 H2 的能量",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.148
     },
     {
       "group": "constant",
@@ -152,7 +268,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "constant",
@@ -196,7 +312,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "constant",
@@ -254,6 +370,116 @@
       "wall_s": 0.002
     },
     {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "普朗克常数是多少",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "把 hartree 转换成 eV",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "查一下阿伏伽德罗常数",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "光速的数值",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "玻尔兹曼常数 kB",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "Hartree 到 eV 的换算因子",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "查 hbar 数值",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "eV 是多少 hartree",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "查物理常数",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "constant",
+      "expected_tool": "const_get",
+      "intent": "1 hartree 等于多少 ev",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
       "group": "kb",
       "expected_tool": "kb_search",
       "intent": "Search the knowledge base for TADF",
@@ -262,7 +488,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.021
+      "wall_s": 0.027
     },
     {
       "group": "kb",
@@ -295,7 +521,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -317,7 +543,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -328,7 +554,7 @@
         "const_get"
       ],
       "correct": false,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -339,7 +565,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -355,7 +581,117 @@
     {
       "group": "kb",
       "expected_tool": "kb_search",
-      "intent": "Show me a skill",
+      "intent": "search the kb",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "搜索知识库 TADF",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "查一下 kRISC 的 skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "搜 opt-freq 的 playbook",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.004
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "kb 搜 SOC 计算",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "找 tddft 的 skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "kb 搜索 solvation",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "查基组规则",
+      "agent_ok": true,
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": false,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "查构象搜索的文档",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "搜相对论方法 playbook",
+      "agent_ok": true,
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "kb",
+      "expected_tool": "kb_search",
+      "intent": "kb 检索一下",
       "agent_ok": true,
       "tool_sequence": [
         "kb_search"
@@ -372,7 +708,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.089
+      "wall_s": 0.092
     },
     {
       "group": "optimize",
@@ -383,7 +719,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.081
+      "wall_s": 0.09
     },
     {
       "group": "optimize",
@@ -394,7 +730,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.082
+      "wall_s": 0.089
     },
     {
       "group": "optimize",
@@ -405,7 +741,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.131
+      "wall_s": 0.146
     },
     {
       "group": "optimize",
@@ -416,29 +752,29 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.079
+      "wall_s": 0.09
     },
     {
       "group": "optimize",
       "expected_tool": "calc_psi4_single_point",
-      "intent": "Find equilibrium structure of water",
-      "agent_ok": true,
-      "tool_sequence": [
-        "const_get"
-      ],
-      "correct": false,
-      "wall_s": 0.002
-    },
-    {
-      "group": "optimize",
-      "expected_tool": "calc_psi4_single_point",
-      "intent": "Geometry minimum",
+      "intent": "find equilibrium minimum of H2",
       "agent_ok": true,
       "tool_sequence": [
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.093
+      "wall_s": 0.132
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "Geometry minimum optimization",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.09
     },
     {
       "group": "optimize",
@@ -449,29 +785,359 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.094
+      "wall_s": 0.09
     },
     {
       "group": "optimize",
       "expected_tool": "calc_psi4_single_point",
-      "intent": "Minimum of H2",
+      "intent": "Minimum of H2 optimize",
       "agent_ok": true,
       "tool_sequence": [
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.082
+      "wall_s": 0.156
     },
     {
       "group": "optimize",
       "expected_tool": "calc_psi4_single_point",
-      "intent": "Equilibrium geometry of water",
+      "intent": "Equilibrium geometry optimize H2",
       "agent_ok": true,
       "tool_sequence": [
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.078
+      "wall_s": 0.087
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "优化 H2 的几何结构",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.087
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "找水分子的极小值",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.086
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "几何优化",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.089
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "做 geometry optimize",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.088
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "把 H2 的几何 optimise 一下",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.091
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "找平衡结构 minimum",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.093
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "几何最小值",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.091
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "优化 H2 minimum",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.093
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "极小值优化 H2",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.1
+    },
+    {
+      "group": "optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "intent": "对 H2 做 optimize",
+      "agent_ok": true,
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "wall_s": 0.101
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "Use the opt-freq skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "Apply skill tddft",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "use_skill on soc",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "load the tadf-pipeline skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "use skill tadf-pipeline",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "Apply the conformer skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "use skill ts-search",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "Apply the dlpno-ccsdt skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "use the pka skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "use_skill pes-scan",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "使用 opt-freq skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "应用 tddft skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "调用 use_skill soc",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "加载 tadf-pipeline skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "应用 use skill tadf-pipeline",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "使用 conformer skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "调用 ts-search skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "应用 dlpno-ccsdt skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "使用 pka skill",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.003
+    },
+    {
+      "group": "skill",
+      "expected_tool": "use_skill",
+      "intent": "应用 use_skill pes-scan",
+      "agent_ok": true,
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "wall_s": 0.002
     }
   ]
 }

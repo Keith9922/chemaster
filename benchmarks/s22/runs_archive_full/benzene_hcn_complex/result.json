@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Benzene-HCN_complex",
+  "short_name": "benzene_hcn_complex",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -4.911,
+  "interaction_hartree": -0.007826,
+  "wall_time_s": 20.91,
+  "reference_binding_energy_kcal": -4.55,
+  "error_kcal": -0.361,
+  "abs_error_kcal": 0.361
+}
