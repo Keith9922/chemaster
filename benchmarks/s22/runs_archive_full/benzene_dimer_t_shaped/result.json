@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Benzene_dimer_T-shaped",
+  "short_name": "benzene_dimer_t_shaped",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -2.765,
+  "interaction_hartree": -0.004407,
+  "wall_time_s": 76.51,
+  "reference_binding_energy_kcal": -2.71,
+  "error_kcal": -0.055,
+  "abs_error_kcal": 0.055
+}
