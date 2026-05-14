@@ -558,7 +558,7 @@ ChemMaster 调度 psi4 完成 TD-CAM-B3LYP/def2-SVP TDA 计算（Gaussian 在测
 
 *表 4.2 — QUEST 子集（10 分子 20 状态）垂直激发能对比（TD-CAM-B3LYP/def2-SVP, TDA, psi4 1.10 实跑结果）*
 
-20 个激发态的总体平均绝对误差为 0.64 eV，其中 valence 态（n→π* 与低能 π→π*）的误差明显较小：HCHO、pyridine、acetaldehyde 的最低 n→π* 状态误差均小于 0.15 eV；butadiene 与 cyclopentadiene 的最低 π→π* 亮态误差分别为 0.18 与 0.63 eV（cyclopentadiene 的双激发暗态误差仅 0.03 eV）；水的两个 Rydberg 态误差均小于 0.26 eV——这些都在 TD-CAM-B3LYP/def2-SVP 的常规精度范围。误差较大的体系仍集中于 Rydberg 态（HCHO / pyrrole / ethene / methanol 的 n→3s 与 π→3s 跃迁，约 1.4–1.6 eV），原因是 def2-SVP 基组缺乏 diffuse 函数——Rydberg 态电子分布弥散，需要包含 diffuse 函数的基组（如 aug-cc-pVDZ 或 def2-TZVPD）才能得到合理描述。本工作选用 def2-SVP 主要出于计算时间考虑（每个分子的 TDDFT 计算在数秒内完成）；该误差属于方法学层面的已知问题，**与本系统对 TDDFT 任务的驱动能力无关**——只要切换到含 diffuse 函数的基组（在系统中只需修改一个参数），预期 MAE 可降至 0.3–0.4 eV，符合 TD-CAM-B3LYP 在 QUEST valence 态上的常规精度。详细对比图见图 4.2。
+20 个激发态的总体平均绝对误差为 0.64 eV，其中 valence 态（n→π* 与低能 π→π*）的误差明显较小：HCHO、pyridine、acetaldehyde 的最低 n→π* 状态误差均小于 0.15 eV；butadiene 与 cyclopentadiene 的最低 π→π* 亮态误差分别为 0.18 与 0.63 eV（cyclopentadiene 的双激发暗态误差仅 0.03 eV）；水的两个 Rydberg 态误差均小于 0.26 eV——这些都在 TD-CAM-B3LYP/def2-SVP 的常规精度范围。误差较大的体系仍集中于 Rydberg 态（HCHO / pyrrole / ethene 的 n→3s / π→3s 跃迁以及 methanol 的 n→π*/3p 混合态，约 1.4–1.6 eV；methanol 的 n→3s 单组分跃迁本身误差仅 0.49 eV），原因是 def2-SVP 基组缺乏 diffuse 函数——Rydberg 态电子分布弥散，需要包含 diffuse 函数的基组（如 aug-cc-pVDZ 或 def2-TZVPD）才能得到合理描述。本工作选用 def2-SVP 主要出于计算时间考虑（每个分子的 TDDFT 计算在数秒内完成）；该误差属于方法学层面的已知问题，**与本系统对 TDDFT 任务的驱动能力无关**——只要切换到含 diffuse 函数的基组（在系统中只需修改一个参数），预期 MAE 可降至 0.3–0.4 eV，符合 TD-CAM-B3LYP 在 QUEST valence 态上的常规精度。详细对比图见图 4.2。
 
 ![QUEST benchmark](figures/fig_quest.png)
 
