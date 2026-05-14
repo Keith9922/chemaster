@@ -1,0 +1,665 @@
+{
+  "task_id": "task-5cf5c4ba",
+  "status": "completed",
+  "started_at": "2026-05-08T07:58:23.486661+00:00",
+  "finished_at": "2026-05-08T07:59:58.518001+00:00",
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-05-08T07:58:32.106231+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_1o56fyavez9o_1",
+            "name": "calc_psi4_single_point",
+            "arguments": {
+              "basis": "def2-SVP",
+              "charge": "0",
+              "geometry_xyz": "6\ndimer\nO  0.000  0.000  0.000\nH  0.757  0.586  0.000\nH -0.757  0.586  0.000\nO  0.000 -2.850  0.000\nH  0.000 -1.900  0.000\nH -0.757 -3.360  0.000",
+              "method": "B3LYP-D3BJ",
+              "multiplicity": "1"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 9901,
+            "output_tokens": 428
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_1o56fyavez9o_1",
+          "name": "calc_psi4_single_point",
+          "content": "[OK] calc_psi4_single_point\n{\n  \"energy\": {\n    \"value\": -152.71900581,\n    \"unit\": \"Hartree\"\n  },\n  \"n_basis_functions\": null,\n  \"n_iterations\": null,\n  \"homo_lumo_gap\": null,\n  \"dipole\": null\n}",
+          "is_error": false,
+          "meta": {
+            "decision_authority": "user-binary",
+            "data": {
+              "ok": true,
+              "result": {
+                "energy": {
+                  "value": -152.71900581,
+                  "unit": "Hartree"
+                },
+                "n_basis_functions": null,
+                "n_iterations": null,
+                "homo_lumo_gap": null,
+                "dipole": null
+              },
+              "warnings": [],
+              "meta": {
+                "psi4_version": "1.10",
+                "wall_time_s": 1.34,
+                "output_path": "single_point_output.log"
+              }
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-05-08T07:58:36.706164+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_z73vr8n2u4ju_1",
+            "name": "calc_psi4_single_point",
+            "arguments": {
+              "basis": "def2-SVP",
+              "charge": "0",
+              "geometry_xyz": "3\nmonomer_A\nO  0.000  0.000  0.000\nH  0.757  0.586  0.000\nH -0.757  0.586  0.000",
+              "method": "B3LYP-D3BJ",
+              "multiplicity": "1"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 278,
+            "output_tokens": 147
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_z73vr8n2u4ju_1",
+          "name": "calc_psi4_single_point",
+          "content": "[OK] calc_psi4_single_point\n{\n  \"energy\": {\n    \"value\": -76.35870917,\n    \"unit\": \"Hartree\"\n  },\n  \"n_basis_functions\": null,\n  \"n_iterations\": null,\n  \"homo_lumo_gap\": null,\n  \"dipole\": null\n}",
+          "is_error": false,
+          "meta": {
+            "decision_authority": "user-binary",
+            "data": {
+              "ok": true,
+              "result": {
+                "energy": {
+                  "value": -76.35870917,
+                  "unit": "Hartree"
+                },
+                "n_basis_functions": null,
+                "n_iterations": null,
+                "homo_lumo_gap": null,
+                "dipole": null
+              },
+              "warnings": [],
+              "meta": {
+                "psi4_version": "1.10",
+                "wall_time_s": 0.4,
+                "output_path": "single_point_output.log"
+              }
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-05-08T07:58:41.763499+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_g3woxdufos3x_1",
+            "name": "calc_psi4_single_point",
+            "arguments": {
+              "basis": "def2-SVP",
+              "charge": "0",
+              "geometry_xyz": "3\nmonomer_B\nO  0.000 -2.850  0.000\nH  0.000 -1.900  0.000\nH -0.757 -3.360  0.000",
+              "method": "B3LYP-D3BJ",
+              "multiplicity": "1"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 137
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_g3woxdufos3x_1",
+          "name": "calc_psi4_single_point",
+          "content": "[OK] calc_psi4_single_point\n{\n  \"energy\": {\n    \"value\": -76.34777529,\n    \"unit\": \"Hartree\"\n  },\n  \"n_basis_functions\": null,\n  \"n_iterations\": null,\n  \"homo_lumo_gap\": null,\n  \"dipole\": null\n}",
+          "is_error": false,
+          "meta": {
+            "decision_authority": "user-binary",
+            "data": {
+              "ok": true,
+              "result": {
+                "energy": {
+                  "value": -76.34777529,
+                  "unit": "Hartree"
+                },
+                "n_basis_functions": null,
+                "n_iterations": null,
+                "homo_lumo_gap": null,
+                "dipole": null
+              },
+              "warnings": [],
+              "meta": {
+                "psi4_version": "1.10",
+                "wall_time_s": 0.4,
+                "output_path": "single_point_output.log"
+              }
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2026-05-08T07:58:47.650089+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_g2jl853bmmhj_1",
+            "name": "const_convert",
+            "arguments": {
+              "from_unit": "Hartree",
+              "to_unit": "kcal/mol",
+              "value": "-0.01252135"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 227
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_g2jl853bmmhj_1",
+          "name": "const_convert",
+          "content": "[UNIT_PARSE_ERROR]\nDetails: UndefinedUnitError: 'Hartree' is not defined in the unit registry\nSuggestion: Use standard unit names (hartree, eV, angstrom, ...).",
+          "is_error": true,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": false,
+              "error_code": "UNIT_PARSE_ERROR",
+              "details": "UndefinedUnitError: 'Hartree' is not defined in the unit registry",
+              "suggestion": "Use standard unit names (hartree, eV, angstrom, ...)."
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2026-05-08T07:58:51.729695+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_l1ehyga2dyt9_1",
+            "name": "const_convert",
+            "arguments": {
+              "from_unit": "hartree",
+              "to_unit": "kcal/mol",
+              "value": "-0.01252135"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 118,
+            "output_tokens": 64
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_l1ehyga2dyt9_1",
+          "name": "const_convert",
+          "content": "[UNIT_MISMATCH]\nDetails: Cannot convert from 'hartree' ([mass] * [length] ** 2 / [time] ** 2) to 'kilocalorie / mole' ([mass] * [length] ** 2 / [time] ** 2 / [substance])\nSuggestion: Check that source and target units have the same dimensionality.",
+          "is_error": true,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": false,
+              "error_code": "UNIT_MISMATCH",
+              "details": "Cannot convert from 'hartree' ([mass] * [length] ** 2 / [time] ** 2) to 'kilocalorie / mole' ([mass] * [length] ** 2 / [time] ** 2 / [substance])",
+              "suggestion": "Check that source and target units have the same dimensionality."
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2026-05-08T07:58:54.416207+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_zy3a6v0eee1z_1",
+            "name": "const_convert",
+            "arguments": {
+              "from_unit": "hartree",
+              "to_unit": "eV",
+              "value": "-0.01252135"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 164,
+            "output_tokens": 88
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_zy3a6v0eee1z_1",
+          "name": "const_convert",
+          "content": "[OK] const_convert\n{\n  \"value\": -0.34072329117111455,\n  \"unit\": \"eV\",\n  \"warnings\": []\n}",
+          "is_error": false,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": true,
+              "value": -0.34072329117111455,
+              "unit": "eV",
+              "warnings": []
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2026-05-08T07:58:58.203660+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_yjbetsmu04e6_1",
+            "name": "const_convert",
+            "arguments": {
+              "from_unit": "eV",
+              "to_unit": "kcal/mol",
+              "value": "-0.34072329117111455"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 105,
+            "output_tokens": 166
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_yjbetsmu04e6_1",
+          "name": "const_convert",
+          "content": "[UNIT_MISMATCH]\nDetails: Cannot convert from 'electron_volt' ([mass] * [length] ** 2 / [time] ** 2) to 'kilocalorie / mole' ([mass] * [length] ** 2 / [time] ** 2 / [substance])\nSuggestion: Check that source and target units have the same dimensionality.",
+          "is_error": true,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": false,
+              "error_code": "UNIT_MISMATCH",
+              "details": "Cannot convert from 'electron_volt' ([mass] * [length] ** 2 / [time] ** 2) to 'kilocalorie / mole' ([mass] * [length] ** 2 / [time] ** 2 / [substance])",
+              "suggestion": "Check that source and target units have the same dimensionality."
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 8,
+      "timestamp": "2026-05-08T07:59:03.966394+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_x9h9c9r4yzmr_1",
+            "name": "const_get",
+            "arguments": {
+              "name": "hartree to kcal/mol"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 155,
+            "output_tokens": 294
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_x9h9c9r4yzmr_1",
+          "name": "const_get",
+          "content": "[UNKNOWN_CONSTANT]\nDetails: \"Unknown constant: 'hartree to kcal/mol'. Try one of: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J', 'e', 'eV_to_J', 'epsilon_0', 'hartree', 'hartree_to_cm_inv', 'hartree_to_eV', 'hartree_to_kJ_per_mol', 'hartree_to_kcal_per_mol', 'hbar', 'kb', 'm_e', 'm_p', 'mu_0', 'planck', 'rydberg']\"\nSuggestion: Available constants: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J', 'e', 'eV_to_J', 'epsilon_0']…  Use list_constants() for full list.",
+          "is_error": true,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": false,
+              "error_code": "UNKNOWN_CONSTANT",
+              "details": "\"Unknown constant: 'hartree to kcal/mol'. Try one of: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J', 'e', 'eV_to_J', 'epsilon_0', 'hartree', 'hartree_to_cm_inv', 'hartree_to_eV', 'hartree_to_kJ_per_mol', 'hartree_to_kcal_per_mol', 'hbar', 'kb', 'm_e', 'm_p', 'mu_0', 'planck', 'rydberg']\"",
+              "suggestion": "Available constants: ['NA', 'R', 'atomic_unit_to_debye', 'bohr', 'bohr_to_angstrom', 'c', 'cal_to_J', 'e', 'eV_to_J', 'epsilon_0']…  Use list_constants() for full list."
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 9,
+      "timestamp": "2026-05-08T07:59:11.902345+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_08xjyb7ny31b_1",
+            "name": "const_get",
+            "arguments": {
+              "name": "hartree_to_kcal_per_mol"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 266,
+            "output_tokens": 55
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_08xjyb7ny31b_1",
+          "name": "const_get",
+          "content": "[OK] const_get\n{\n  \"value\": 627.5094740631,\n  \"unit\": \"kcal/(mol·Hartree)\",\n  \"source\": \"CODATA-2018 (scipy.constants)\",\n  \"warnings\": [],\n  \"meta\": {\n    \"name\": \"hartree_to_kcal_per_mol\",\n    \"aliases\": []\n  }\n}",
+          "is_error": false,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": true,
+              "value": 627.5094740631,
+              "unit": "kcal/(mol·Hartree)",
+              "source": "CODATA-2018 (scipy.constants)",
+              "warnings": [],
+              "meta": {
+                "name": "hartree_to_kcal_per_mol",
+                "aliases": []
+              }
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 10,
+      "timestamp": "2026-05-08T07:59:28.103902+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_y0e362qgl3vz_1",
+            "name": "const_convert",
+            "arguments": {
+              "from_unit": "Hartree",
+              "to_unit": "kcal/mol",
+              "value": "-0.01252135"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 132,
+            "output_tokens": 95
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_y0e362qgl3vz_1",
+          "name": "const_convert",
+          "content": "[UNIT_PARSE_ERROR]\nDetails: UndefinedUnitError: 'Hartree' is not defined in the unit registry\nSuggestion: Use standard unit names (hartree, eV, angstrom, ...).",
+          "is_error": true,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": false,
+              "error_code": "UNIT_PARSE_ERROR",
+              "details": "UndefinedUnitError: 'Hartree' is not defined in the unit registry",
+              "suggestion": "Use standard unit names (hartree, eV, angstrom, ...)."
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 11,
+      "timestamp": "2026-05-08T07:59:37.483925+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_2tr4928fq60e_1",
+            "name": "const_convert",
+            "arguments": {
+              "from_unit": "hartree",
+              "to_unit": "kcal/mol",
+              "value": "-0.01252135"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 113,
+            "output_tokens": 76
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_2tr4928fq60e_1",
+          "name": "const_convert",
+          "content": "[UNIT_MISMATCH]\nDetails: Cannot convert from 'hartree' ([mass] * [length] ** 2 / [time] ** 2) to 'kilocalorie / mole' ([mass] * [length] ** 2 / [time] ** 2 / [substance])\nSuggestion: Check that source and target units have the same dimensionality.",
+          "is_error": true,
+          "meta": {
+            "decision_authority": "agent",
+            "data": {
+              "ok": false,
+              "error_code": "UNIT_MISMATCH",
+              "details": "Cannot convert from 'hartree' ([mass] * [length] ** 2 / [time] ** 2) to 'kilocalorie / mole' ([mass] * [length] ** 2 / [time] ** 2 / [substance])",
+              "suggestion": "Check that source and target units have the same dimensionality."
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 12,
+      "timestamp": "2026-05-08T07:59:58.517625+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_function_0n99958g5fnq_1",
+            "name": "finish",
+            "arguments": {
+              "key_results": {
+                "E_dimer_hartree": -152.71900581,
+                "E_monomer_A_hartree": -76.35870917,
+                "E_monomer_B_hartree": -76.34777529,
+                "delta_E_hartree": -0.01252135,
+                "delta_E_kcal_per_mol": -7.855,
+                "method": "psi4 B3LYP-D3(BJ)/def2-SVP",
+                "reference_value_kcal_per_mol": -5.02
+              },
+              "summary": "用 psi4 在 B3LYP-D3(BJ)/def2-SVP 水平上计算了水二聚体的结合能。\n\n**计算结果（单位：Hartree）**\n- Dimer: E = −152.71900581 Hartree\n- Monomer A (水分子 1): E = −76.35870917 Hartree\n- Monomer B (水分子 2): E = −76.34777529 Hartree\n- ΔE = E(dimer) − E(A) − E(B) = −0.01252135 Hartree\n\n**结合能（换算 kcal/mol）**\n换算系数 627.5094740631 kcal/(mol·Hartree)（CODATA-2018）：\nΔE = −0.01252135 × 627.5094740631 = **−7.85 kcal/mol**\n\n**与文献对比**\n文献参考值（CCSD(T)/CBS 极限值）≈ −5.02 kcal/mol。本次计算值 −7.85 kcal/mol 偏负约 2.8 kcal/mol，这是可以预期的，因为：\n1. **基组 incompleteness**：def2-SVP 相比完全基组极限（CBS）少弥散函数，对氢键描述不完整；\n2. **没有 BSSE 校正**：未做 counterpoise 基组重叠误差校正，BSSE 通常高估结合能（使 ΔE 更负）；\n3. **几何非最优**：输入几何为估算的近似结构，并非真正的平衡几何；\n4. **方法差异**：B3LYP-D3(BJ) 本身对氢键的色散描述不如 CCSD(T) 完整。\n\n如需更接近文献值的结果，建议：(a) 使用含弥散函数的 def2-TZVPPD 或 aug-cc-pVTZ 基组，(b) 加入 counterpoise BSSE 校正，(c) 对输入几何做振动校正（BSSE + ZPE + CP）。"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "MiniMax-M2.7",
+          "usage": {
+            "input_tokens": 159,
+            "output_tokens": 580
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "call_function_0n99958g5fnq_1",
+          "name": "finish",
+          "content": "[finished]",
+          "is_error": false,
+          "meta": {
+            "finish_payload": {
+              "key_results": {
+                "E_dimer_hartree": -152.71900581,
+                "E_monomer_A_hartree": -76.35870917,
+                "E_monomer_B_hartree": -76.34777529,
+                "delta_E_hartree": -0.01252135,
+                "delta_E_kcal_per_mol": -7.855,
+                "method": "psi4 B3LYP-D3(BJ)/def2-SVP",
+                "reference_value_kcal_per_mol": -5.02
+              },
+              "summary": "用 psi4 在 B3LYP-D3(BJ)/def2-SVP 水平上计算了水二聚体的结合能。\n\n**计算结果（单位：Hartree）**\n- Dimer: E = −152.71900581 Hartree\n- Monomer A (水分子 1): E = −76.35870917 Hartree\n- Monomer B (水分子 2): E = −76.34777529 Hartree\n- ΔE = E(dimer) − E(A) − E(B) = −0.01252135 Hartree\n\n**结合能（换算 kcal/mol）**\n换算系数 627.5094740631 kcal/(mol·Hartree)（CODATA-2018）：\nΔE = −0.01252135 × 627.5094740631 = **−7.85 kcal/mol**\n\n**与文献对比**\n文献参考值（CCSD(T)/CBS 极限值）≈ −5.02 kcal/mol。本次计算值 −7.85 kcal/mol 偏负约 2.8 kcal/mol，这是可以预期的，因为：\n1. **基组 incompleteness**：def2-SVP 相比完全基组极限（CBS）少弥散函数，对氢键描述不完整；\n2. **没有 BSSE 校正**：未做 counterpoise 基组重叠误差校正，BSSE 通常高估结合能（使 ΔE 更负）；\n3. **几何非最优**：输入几何为估算的近似结构，并非真正的平衡几何；\n4. **方法差异**：B3LYP-D3(BJ) 本身对氢键的色散描述不如 CCSD(T) 完整。\n\n如需更接近文献值的结果，建议：(a) 使用含弥散函数的 def2-TZVPPD 或 aug-cc-pVTZ 基组，(b) 加入 counterpoise BSSE 校正，(c) 对输入几何做振动校正（BSSE + ZPE + CP）。"
+            }
+          }
+        }
+      ],
+      "meta": {}
+    }
+  ],
+  "finish_payload": null,
+  "meta": {
+    "agent_version": "0.2.0",
+    "task_type": "chemistry",
+    "confirmations": {
+      "approved": 3,
+      "declined": 0,
+      "log": [
+        {
+          "tool": "calc_psi4_single_point",
+          "args": {
+            "basis": "def2-SVP",
+            "charge": "0",
+            "geometry_xyz": "6\ndimer\nO  0.000  0.000  0.000\nH  0.757  0.586  0.000\nH -0.757  0.586  0.000\nO  0.000 -2.850  0.000\nH  0.000 -1.900  0.000\nH -0.757 -3.360  0.000",
+            "method": "B3LYP-D3BJ",
+            "multiplicity": "1"
+          },
+          "reason": "long-running (>30 s expected)",
+          "approved": true
+        },
+        {
+          "tool": "calc_psi4_single_point",
+          "args": {
+            "basis": "def2-SVP",
+            "charge": "0",
+            "geometry_xyz": "3\nmonomer_A\nO  0.000  0.000  0.000\nH  0.757  0.586  0.000\nH -0.757  0.586  0.000",
+            "method": "B3LYP-D3BJ",
+            "multiplicity": "1"
+          },
+          "reason": "long-running (>30 s expected)",
+          "approved": true
+        },
+        {
+          "tool": "calc_psi4_single_point",
+          "args": {
+            "basis": "def2-SVP",
+            "charge": "0",
+            "geometry_xyz": "3\nmonomer_B\nO  0.000 -2.850  0.000\nH  0.000 -1.900  0.000\nH -0.757 -3.360  0.000",
+            "method": "B3LYP-D3BJ",
+            "multiplicity": "1"
+          },
+          "reason": "long-running (>30 s expected)",
+          "approved": true
+        }
+      ]
+    }
+  }
+}
