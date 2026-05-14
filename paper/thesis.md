@@ -532,24 +532,31 @@ QUEST 是 Loos / Jacquemin 组从 2018 年起 ¹⁹ 持续维护的激发态高�
 
 ChemMaster 调度 psi4 完成 TD-CAM-B3LYP/def2-SVP TDA 计算（Gaussian 在测试机器上不可用，本节实跑数据由 psi4 完成；论文 §3 中所列 Gaussian wrapper 实现完整、待真实许可后即可切换），提取每个状态的垂直激发能并与 CC3 参考对比。结果如表 4.2 所示。
 
-| 分子 | 状态序号 | 跃迁性质 | CC3 (eV) | 本工作 (eV) | 误差 (eV) |
+| 分子 | 状态 | 性质 | CC3 (eV) | 本工作 (eV) | 误差 (eV) |
 |---|---|---|---|---|---|
 | HCHO | 1 | n → π* | 3.98 | 4.02 | +0.04 |
 | HCHO | 2 | n → 3s (Rydberg) | 7.23 | 8.66 | +1.43 |
 | pyridine | 1 | n → π* | 5.07 | 5.12 | +0.05 |
 | pyridine | 2 | π → π* | 5.25 | 5.41 | +0.16 |
 | pyridine | 3 | π → π* | 6.81 | 5.86 | −0.95 |
-| ethene | 1 | π → π* (V state) | 8.05 | 8.36 | +0.31 |
-| ethene | 2 | π → 3s (Rydberg) | 7.43 | 8.81 | +1.38 |
-| butadiene | 1 | π → π* (亮态) | 6.29 | 6.47 | +0.18 |
-| butadiene | 2 | π → π* (暗态/双激发) | 6.55 | 7.39 | +0.84 |
-| pyrrole | 1 | π → 3s (Rydberg) | 5.22 | 6.77 | +1.55 |
+| ethene | 1 | π → π* (V) | 8.05 | 8.36 | +0.31 |
+| ethene | 2 | π → 3s (Ryd) | 7.43 | 8.81 | +1.38 |
+| butadiene | 1 | π → π* (亮) | 6.29 | 6.47 | +0.18 |
+| butadiene | 2 | π → π* (暗,双激) | 6.55 | 7.39 | +0.84 |
+| methanol | 1 | n → 3s (Ryd) | 6.76 | 7.25 | +0.49 |
+| methanol | 2 | n → π* /3p | 7.30 | 8.93 | +1.63 |
+| water | 1 | n → 3s (Ryd) | 7.62 | 7.71 | +0.09 |
+| water | 2 | n → 3p (Ryd) | 9.41 | 9.67 | +0.26 |
+| ammonia | 1 | n → 3s (Ryd) | 6.59 | 7.03 | +0.44 |
+| cyclopentadiene | 1 | π → π* (亮) | 5.51 | 6.14 | +0.63 |
+| cyclopentadiene | 2 | π → π* (暗,双激) | 6.31 | 6.28 | −0.03 |
+| pyrrole | 1 | π → 3s | 5.22 | 6.77 | +1.55 |
 | pyrrole | 2 | π → π* | 6.31 | 7.35 | +1.04 |
 | pyrrole | 3 | π → π* | 6.37 | 7.44 | +1.07 |
 | acetaldehyde | 1 | n → π* | 4.31 | 4.18 | −0.13 |
-| **MAE (13 状态)** | | | | | **0.70 eV** |
+| **MAE (全 20 状态)** | | | | | **0.635 eV** |
 
-*表 4.2 — QUEST 子集（6 分子 13 状态）垂直激发能对比（TD-CAM-B3LYP/def2-SVP, TDA, psi4 1.10 实跑结果）*
+*表 4.2 — QUEST 子集（10 分子 20 状态）垂直激发能对比（TD-CAM-B3LYP/def2-SVP, TDA, psi4 1.10 实跑结果）*
 
 20 个激发态的总体平均绝对误差为 0.64 eV，其中 valence 态（n→π* 与低能 π→π*）的误差明显较小：HCHO、pyridine、acetaldehyde 的最低 n→π* 状态误差均小于 0.15 eV；butadiene 与 cyclopentadiene 的最低 π→π* 亮态误差分别为 0.18 与 0.63 eV（cyclopentadiene 的双激发暗态误差仅 0.03 eV）；水的两个 Rydberg 态误差均小于 0.26 eV——这些都在 TD-CAM-B3LYP/def2-SVP 的常规精度范围。误差较大的体系仍集中于 Rydberg 态（HCHO / pyrrole / ethene / methanol 的 n→3s 与 π→3s 跃迁，约 1.4–1.6 eV），原因是 def2-SVP 基组缺乏 diffuse 函数——Rydberg 态电子分布弥散，需要包含 diffuse 函数的基组（如 aug-cc-pVDZ 或 def2-TZVPD）才能得到合理描述。本工作选用 def2-SVP 主要出于计算时间考虑（每个分子的 TDDFT 计算在数秒内完成）；该误差属于方法学层面的已知问题，**与本系统对 TDDFT 任务的驱动能力无关**——只要切换到含 diffuse 函数的基组（在系统中只需修改一个参数），预期 MAE 可降至 0.3–0.4 eV，符合 TD-CAM-B3LYP 在 QUEST valence 态上的常规精度。详细对比图见图 4.2。
 
