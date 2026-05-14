@@ -48,7 +48,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.502
+      "wall_s": 0.462
     },
     {
       "group": "energy",
@@ -59,7 +59,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.157
+      "wall_s": 0.135
     },
     {
       "group": "energy",
@@ -70,7 +70,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.154
+      "wall_s": 0.128
     },
     {
       "group": "energy",
@@ -81,7 +81,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.152
+      "wall_s": 0.132
     },
     {
       "group": "energy",
@@ -92,7 +92,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.155
+      "wall_s": 0.133
     },
     {
       "group": "energy",
@@ -103,7 +103,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.15
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -114,7 +114,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.15
+      "wall_s": 0.134
     },
     {
       "group": "energy",
@@ -125,7 +125,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.152
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -136,7 +136,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.15
+      "wall_s": 0.132
     },
     {
       "group": "energy",
@@ -147,7 +147,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.146
+      "wall_s": 0.132
     },
     {
       "group": "energy",
@@ -158,7 +158,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.145
+      "wall_s": 0.133
     },
     {
       "group": "energy",
@@ -169,7 +169,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.142
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -180,7 +180,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.147
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -191,7 +191,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.147
+      "wall_s": 0.131
     },
     {
       "group": "energy",
@@ -202,7 +202,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.147
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -213,7 +213,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.152
+      "wall_s": 0.132
     },
     {
       "group": "energy",
@@ -224,7 +224,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.151
+      "wall_s": 0.131
     },
     {
       "group": "energy",
@@ -235,7 +235,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.151
+      "wall_s": 0.134
     },
     {
       "group": "energy",
@@ -246,7 +246,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.148
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -257,7 +257,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.148
+      "wall_s": 0.13
     },
     {
       "group": "constant",
@@ -268,7 +268,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "constant",
@@ -312,7 +312,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "constant",
@@ -389,7 +389,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "constant",
@@ -400,7 +400,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "constant",
@@ -422,7 +422,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "constant",
@@ -466,7 +466,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "constant",
@@ -488,7 +488,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.027
+      "wall_s": 0.022
     },
     {
       "group": "kb",
@@ -532,7 +532,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -543,7 +543,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -554,7 +554,7 @@
         "const_get"
       ],
       "correct": false,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -565,7 +565,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -620,7 +620,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.004
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -642,7 +642,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -664,7 +664,7 @@
         "const_get"
       ],
       "correct": false,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -675,7 +675,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -686,7 +686,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -697,7 +697,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "optimize",
@@ -708,7 +708,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.092
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -719,7 +719,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.09
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -730,7 +730,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.089
+      "wall_s": 0.075
     },
     {
       "group": "optimize",
@@ -741,7 +741,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.146
+      "wall_s": 0.131
     },
     {
       "group": "optimize",
@@ -752,7 +752,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.09
+      "wall_s": 0.075
     },
     {
       "group": "optimize",
@@ -763,7 +763,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.132
+      "wall_s": 0.075
     },
     {
       "group": "optimize",
@@ -774,7 +774,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.09
+      "wall_s": 0.079
     },
     {
       "group": "optimize",
@@ -785,7 +785,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.09
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -796,7 +796,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.156
+      "wall_s": 0.131
     },
     {
       "group": "optimize",
@@ -807,7 +807,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.087
+      "wall_s": 0.076
     },
     {
       "group": "optimize",
@@ -818,7 +818,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.087
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -829,7 +829,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.086
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -840,7 +840,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.089
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -851,7 +851,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.088
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -862,7 +862,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.091
+      "wall_s": 0.076
     },
     {
       "group": "optimize",
@@ -873,7 +873,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.093
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -884,7 +884,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.091
+      "wall_s": 0.076
     },
     {
       "group": "optimize",
@@ -895,7 +895,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.093
+      "wall_s": 0.076
     },
     {
       "group": "optimize",
@@ -906,7 +906,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.1
+      "wall_s": 0.076
     },
     {
       "group": "optimize",
@@ -917,7 +917,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.101
+      "wall_s": 0.078
     },
     {
       "group": "skill",
@@ -950,7 +950,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -994,7 +994,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1005,7 +1005,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1027,7 +1027,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1060,7 +1060,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1071,7 +1071,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1093,7 +1093,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.001
     },
     {
       "group": "skill",
@@ -1104,7 +1104,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.001
     },
     {
       "group": "skill",
@@ -1115,7 +1115,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1126,7 +1126,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "skill",

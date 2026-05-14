@@ -447,6 +447,10 @@ def indicator_scalability(n: int = 100) -> dict:
             "min": round(min(times), 4) if times else None,
             "max": round(max(times), 4) if times else None,
         },
+        # Per-iteration wall times so post-hoc figures (histogram, time-series)
+        # can be drawn from the actual data. Stored in milliseconds with 1
+        # decimal place for compact JSON.
+        "wall_times_ms": [round(t * 1000, 1) for t in times],
         "acceptance_targets": {
             "success_rate_min": 0.99,
             "unique_sequences_max": 1,
