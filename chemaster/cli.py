@@ -253,6 +253,37 @@ def run(
     _print_summary(traj, agent_cfg.runs_dir)
     _write_markdown_report(traj, agent_cfg.runs_dir)
 
+    # Desktop notification on task completion (no-op when CHEMASTER_NO_NOTIFY=1
+    # or when the host platform has no notification mechanism). Wrapped so a
+    # broken notifier never breaks a successful CLI run.
+    try:
+        from chemaster.notify import notify_task_done
+        from datetime import datetime
+
+        elapsed_s = None
+        if traj.started_at and traj.finished_at:
+            try:
+                t0 = datetime.fromisoformat(traj.started_at)
+                t1 = datetime.fromisoformat(traj.finished_at)
+                elapsed_s = (t1 - t0).total_seconds()
+            except (ValueError, TypeError):
+                pass
+        summary = ""
+        if traj.finish_payload:
+            summary = str(
+                traj.finish_payload.get("summary")
+                or traj.finish_payload.get("message")
+                or ""
+            )
+        notify_task_done(
+            task_id=traj.task_id,
+            status=traj.status,  # type: ignore[arg-type]
+            summary=summary,
+            elapsed_s=elapsed_s,
+        )
+    except Exception:  # pragma: no cover - defensive only
+        pass
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Skills / KB / MCPs / tools commands
@@ -955,6 +986,46 @@ def _print_summary(traj, runs_dir: Path) -> None:
 # Register the v3.0 multi-frontend subcommands.
 main.add_command(tui_cmd)
 main.add_command(web_cmd)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# `mcp-serve` — expose the agent kernel itself via MCP
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@click.command(name="mcp-serve")
+def mcp_serve_cmd() -> None:
+    """Run ChemMaster as an MCP server (stdio transport).
+
+    Other MCP-compatible clients (Claude Code, Cursor, OpenAI Codex CLI)
+    can mount ChemMaster by adding this command to their mcp.json:
+
+    \b
+    {
+      "mcpServers": {
+        "chemmaster": {
+          "command": "chemaster",
+          "args": ["mcp-serve"]
+        }
+      }
+    }
+
+    \b
+    Exposes four tools to the calling agent:
+      - chemaster_run         — run a full chemistry task end-to-end
+      - chemaster_list_skills — list available skills
+      - chemaster_list_tools  — list every tool the kernel can dispatch
+      - chemaster_list_engines — detect psi4 / Gaussian / xtb / ORCA on PATH
+
+    Defaults to a deterministic mock LLM (no API key required) suitable
+    for protocol-compliance demos. Pass ``provider="anthropic"`` (etc.)
+    in the call to use a real LLM.
+    """
+    from chemaster.mcp.agent.server import main as serve_main
+    serve_main()
+
+
+main.add_command(mcp_serve_cmd)
 
 
 if __name__ == "__main__":

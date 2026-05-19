@@ -51,99 +51,12 @@ OUT_DIR = ROOT / "benchmarks" / "engineering_metrics"
 def _build_routing_responder():
     """Construct a MockLLM responder that picks a tool call from intent keywords.
 
-    Returns a callable suitable for ``MockLLM(responder=...)``.
-
-    The Agent dialog will look like:
-        SystemMessage(prompt)
-        UserMessage(intent)
-        AssistantMessage(tool_calls=[<tool>])  ← we emit this
-        ToolMessage(result of tool)
-        AssistantMessage(tool_calls=[finish])  ← then this
+    Delegates to :func:`chemaster.agent.mock_routing.build_routing_responder`
+    so the same router can be reused by ``chemaster.mcp.agent.server``
+    (and any future test that needs a deterministic agent loop).
     """
-    from chemaster.agent.types import AssistantMessage, ToolCall
-
-    state = {"step": 0}
-
-    def responder(dialog):
-        last_user = None
-        for m in dialog.messages:
-            if m.role == "user":
-                last_user = m
-        intent = (last_user.content or "").lower() if last_user else ""
-
-        state["step"] += 1
-        # Second visit → always finish
-        if state["step"] >= 2:
-            return AssistantMessage(content="", tool_calls=[
-                ToolCall(id=f"c{state['step']}", name="finish",
-                          arguments={"summary": "Task completed."}),
-            ])
-
-        # First visit — route on intent keywords (bilingual EN/ZH)
-        # NB: skill must be checked BEFORE generic kb-search keywords so that
-        # "use skill" / "应用 skill" routes to use_skill, not kb_search.
-        if any(k in intent for k in ("use_skill", "use skill", "apply skill",
-                                       "load the", "调用 use_skill",
-                                       "应用 use skill", "使用 skill",
-                                       "应用 skill", "调用 skill",
-                                       "加载 skill", "使用 use_skill")) or (
-                "skill" in intent and any(k in intent for k in (
-                    "use", "apply", "load", "使用", "应用", "调用", "加载"))):
-            tc = ToolCall(id="c1", name="use_skill",
-                          arguments={"name": "opt-freq", "action": "get_info"})
-        elif any(k in intent for k in (
-                # English energy intents
-                "energy", "energies", "compute", "single point", "scf",
-                # Chinese energy intents
-                "能量", "能 量", "单点", "单点能", "电子能", "总能量",
-                "用 hf 算", "做 scf", "做一个 scf")):
-            tc = ToolCall(id="c1", name="calc_psi4_single_point",
-                          arguments={
-                              "geometry_xyz": _xyz("H2"),
-                              "method": "B3LYP-D3BJ",
-                              "basis": "sto-3g",
-                              "charge": 0,
-                              "multiplicity": 1,
-                          })
-        elif any(k in intent for k in (
-                "optimize", "optimise", "geometry", "minimum", "equilibrium",
-                "minimise", "minimize",
-                # Chinese
-                "优化", "几何", "极小值", "平衡结构", "最小值", "optimize",
-                "minimum", "minimise")):
-            tc = ToolCall(id="c1", name="calc_psi4_single_point",
-                          arguments={
-                              "geometry_xyz": _xyz("H2"),
-                              "method": "HF",
-                              "basis": "sto-3g",
-                              "charge": 0,
-                              "multiplicity": 1,
-                          })
-        elif any(k in intent for k in (
-                "constant", "convert", "unit", "hartree", "ev",
-                # Chinese
-                "常数", "换算", "转换", "数值", "光速", "玻尔兹曼",
-                "阿伏伽德罗", "普朗克", "物理常数")):
-            tc = ToolCall(id="c1", name="const_get",
-                          arguments={"name": "planck"})
-        elif any(k in intent for k in (
-                "skill", "playbook", "search", "kb", "knowledge",
-                # Chinese
-                "知识库", "搜索", "搜 ", "查 ", "找 ", "检索", "playbook",
-                "skill", "kb")):
-            tc = ToolCall(id="c1", name="kb_search",
-                          arguments={"query": intent[:30] or "tddft"})
-        else:
-            # Fallback to a safe read-only call
-            tc = ToolCall(id="c1", name="const_get",
-                          arguments={"name": "planck"})
-        return AssistantMessage(content="", tool_calls=[tc])
-
-    # Reset between agent runs by resetting state["step"] on each run.
-    def reset():
-        state["step"] = 0
-    responder.reset = reset
-    return responder
+    from chemaster.agent.mock_routing import build_routing_responder
+    return build_routing_responder()
 
 
 def _xyz(name: str) -> str:

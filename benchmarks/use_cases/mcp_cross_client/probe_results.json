@@ -1,8 +1,8 @@
 {
   "data_source": "real_protocol_probe",
   "method": "Standard MCP stdio client (anthropic mcp python lib) connecting to ChemMaster MCP servers as separate subprocesses, exactly the same protocol used by Claude Code, Cursor, and other MCP-aware LLM clients. A successful probe demonstrates protocol-level compliance and therefore cross-client reusability.",
-  "n_servers_probed": 3,
-  "n_servers_ok": 3,
+  "n_servers_probed": 4,
+  "n_servers_ok": 4,
   "results": [
     {
       "server": "chemaster.mcp.const.server",
@@ -68,6 +68,40 @@
         "tddft"
       ],
       "calls": []
+    },
+    {
+      "server": "chemaster.mcp.agent.server",
+      "ok": true,
+      "tools": [
+        "chemaster_run",
+        "chemaster_list_skills",
+        "chemaster_list_tools",
+        "chemaster_list_engines"
+      ],
+      "calls": [
+        {
+          "name": "chemaster_list_engines",
+          "args": {},
+          "ok": true,
+          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"psi4\": {\n      \"available\": true,\n      \"path\": \"/opt/miniconda3/bin/psi4\"\n    },\n    \"xtb\": {\n      \"available\": true,\n      \"path\": \"/opt/miniconda3/bin/xtb\"\n    },\n    \"gaussian\": {\n      \"available\": false,\n      \"path\": null\n    },\n    \"orca\": {\n      \"available\": false,\n      \"path\": null\n    },\n    \"bdf\": {\n      \"available\": false,\n      \"path\": null\n    },\n    \"momap\": {\n      \"available\": false,\n      \"path\": null\n    }\n  },\n  \"warnings\": [],\n  \"meta\""
+        },
+        {
+          "name": "chemaster_list_tools",
+          "args": {},
+          "ok": true,
+          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"n_tools\": 45,\n    \"tools\": [\n      {\n        \"name\": \"finish\",\n        \"summary\": \"Signal that the task is complete. Provide a short summary of what was accomplished and the headline numbers (e.g. final energy in Hartree, ZPE, dominant frequencies). Always call this once the user's \"\n      },\n      {\n        \"name\": \"ask_user\",\n        \"summary\": \"Pause execution and ask the user a clarifying question. Use when the task description is genuinely ambiguous (e.g. "
+        },
+        {
+          "name": "chemaster_run",
+          "args": {
+            "intent": "look up the planck constant",
+            "provider": "mock",
+            "max_turns": 5
+          },
+          "ok": true,
+          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"task_id\": \"task-d7f3d43e\",\n    \"status\": \"completed\",\n    \"n_steps\": 2,\n    \"tool_calls\": [\n      {\n        \"step\": 1,\n        \"name\": \"const_get\"\n      },\n      {\n        \"step\": 2,\n        \"name\": \"finish\"\n      }\n    ],\n    \"finish_payload\": {\n      \"summary\": \"Task completed.\"\n    },\n    \"elapsed_s\": 0.001738,\n    \"started_at\": \"2026-05-19T16:59:30.664212+00:00\",\n    \"finished_at\": \"2026-05-19T16:59:30.665950+00:00\",\n    \"trajectory_path\": \"/tmp/chemaster_m"
+        }
+      ]
     }
   ],
   "interpretation": "All servers that initialised and answered list_tools / call_tool via the standard MCP protocol can in principle be used by any MCP-compatible client. Claude Code or Cursor users can configure ChemMaster MCP servers in their respective mcp config files and obtain the same tool surface."
