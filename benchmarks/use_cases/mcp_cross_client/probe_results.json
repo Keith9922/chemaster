@@ -99,7 +99,7 @@
             "max_turns": 5
           },
           "ok": true,
-          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"task_id\": \"task-d7f3d43e\",\n    \"status\": \"completed\",\n    \"n_steps\": 2,\n    \"tool_calls\": [\n      {\n        \"step\": 1,\n        \"name\": \"const_get\"\n      },\n      {\n        \"step\": 2,\n        \"name\": \"finish\"\n      }\n    ],\n    \"finish_payload\": {\n      \"summary\": \"Task completed.\"\n    },\n    \"elapsed_s\": 0.001738,\n    \"started_at\": \"2026-05-19T16:59:30.664212+00:00\",\n    \"finished_at\": \"2026-05-19T16:59:30.665950+00:00\",\n    \"trajectory_path\": \"/tmp/chemaster_m"
+          "response_preview": "{\n  \"ok\": true,\n  \"result\": {\n    \"task_id\": \"task-1110f7dd\",\n    \"status\": \"completed\",\n    \"n_steps\": 2,\n    \"tool_calls\": [\n      {\n        \"step\": 1,\n        \"name\": \"const_get\"\n      },\n      {\n        \"step\": 2,\n        \"name\": \"finish\"\n      }\n    ],\n    \"finish_payload\": {\n      \"summary\": \"Task completed.\"\n    },\n    \"elapsed_s\": 0.002207,\n    \"started_at\": \"2026-05-19T17:55:35.067830+00:00\",\n    \"finished_at\": \"2026-05-19T17:55:35.070037+00:00\",\n    \"trajectory_path\": \"/tmp/chemaster_m"
         }
       ]
     }

@@ -1,0 +1,165 @@
+# method_selection.yaml — declarative "what method for what task" rules.
+#
+# These rules drive the L2 RECOMMEND cards the agent emits when picking a
+# method/basis/backend for a chemistry task. Built-in defaults are below;
+# users can override or extend them via:
+#
+#     ~/.chemaster/user_kb/rules/method_selection.yaml
+#
+# That file uses the SAME schema. Conflicts resolve by ``id`` — a user
+# rule with the same id wins. The agent surfaces "rule_id" and
+# "data_source" in every recommend card so the chemist sees which rule
+# fired and where it came from (default vs custom).
+#
+# Schema (per rule):
+#   id              — unique slug; matches between user/default for overrides
+#   priority        — higher = checked first when multiple rules match
+#   when            — conditions (all must hold for the rule to match)
+#       task_type           — pipe-separated set: single_point|optimize|frequency|tddft|...
+#       molecule_class      — small_organic | transition_metal | radical | charged | any
+#       contains_element    — comma-separated list of atomic symbols ("any" matches all)
+#       size                — very_small | small | medium | large | any
+#   recommend       — what to suggest
+#       method     — DFT functional or post-HF method name
+#       basis      — basis set
+#       backend    — psi4 | gaussian | bdf | momap | orca | xtb | pyscf
+#       (any other key passes through to the engine, e.g. counterpoise, tda)
+#   rationale       — one-line why; goes verbatim into the recommend card
+#
+# When you edit this file, run ``pytest tests/unit/test_method_selection.py``
+# to verify the schema. When you write a USER override, run
+# ``chemaster kb method-rules`` to confirm the merge.
+
+rules:
+
+  # ── Ground-state energy / geometry / frequency on small organic molecules ──
+  - id: small_org_ground_state
+    priority: 50
+    when:
+      task_type: single_point|optimize|frequency
+      molecule_class: small_organic
+      size: very_small|small|medium
+    recommend:
+      method: "B3LYP-D3(BJ)"
+      basis: def2-TZVP
+      backend: psi4
+      counterpoise: false
+    rationale: "Standard ChemMaster default for organic ground states (good cost/accuracy, well-validated on S22 and similar)."
+
+  # ── Vertical excitation energies (singlets) ────────────────────────────────
+  - id: tddft_singlet
+    priority: 60
+    when:
+      task_type: tddft|excited_state|vee
+      excitation_character: singlet|valence|any
+    recommend:
+      method: CAM-B3LYP
+      basis: def2-SVP
+      backend: psi4
+      tda: true
+    rationale: "TD-CAM-B3LYP/def2-SVP+TDA: solid valence accuracy on QUEST (overall MAE 0.64 eV; valence 0.45 eV) at modest cost."
+
+  # ── Rydberg states need diffuse functions ──────────────────────────────────
+  - id: tddft_rydberg
+    priority: 70   # higher than tddft_singlet so it wins for Rydberg-flagged tasks
+    when:
+      task_type: tddft|excited_state
+      excitation_character: rydberg
+    recommend:
+      method: CAM-B3LYP
+      basis: aug-cc-pVTZ
+      backend: psi4
+      tda: true
+    rationale: "Rydberg states require diffuse functions — aug-cc-pVTZ over def2-SVP is mandatory (the §4.2.2 QUEST 1.4-1.6 eV errors are entirely due to missing diffuse functions)."
+
+  # ── Spin-orbit coupling on TADF / phosphor systems ─────────────────────────
+  - id: soc_relativistic
+    priority: 80
+    when:
+      task_type: soc|spin_orbit|krisc|kisc
+    recommend:
+      backend: bdf
+      method: X2C-1e
+      basis: x2c-TZVPall-s
+    rationale: "BDF X2C-1e is the established choice for SOC matrix elements (best-in-class relativistic implementation, free for academic use)."
+
+  # ── Vibration-resolved emission rates (TADF, phosphorescence) ──────────────
+  - id: tvcf_emission_rate
+    priority: 80
+    when:
+      task_type: emission_rate|fluorescence_rate|phosphorescence_rate|tvcf
+    recommend:
+      backend: momap
+      method: TVCF
+    rationale: "MOMAP TVCF is the standard for vibration-resolved emission rates k_r / k_p / k_RISC."
+
+  # ── Open-shell radicals — must use UHF/ROHF ────────────────────────────────
+  - id: open_shell_radical
+    priority: 90   # higher than the small_org default for radicals
+    when:
+      molecule_class: radical
+      task_type: single_point|optimize|frequency
+    recommend:
+      method: "B3LYP-D3(BJ)"
+      basis: def2-TZVP
+      backend: psi4
+      reference: uhf
+    rationale: "Radicals (multiplicity > 1) need unrestricted reference; otherwise SCF collapses or gives a wrong root."
+
+  # ── Transition-metal complexes ─────────────────────────────────────────────
+  - id: transition_metal
+    priority: 80
+    when:
+      molecule_class: transition_metal
+    recommend:
+      method: "B3LYP-D3(BJ)"
+      basis: def2-TZVP
+      ecp: def2-ECP
+      backend: psi4
+    rationale: "B3LYP-D3 + def2-TZVP with def2-ECP on heavies — standard for first-row TM complexes; switch to ωB97X-D + ZORA for second-row."
+
+  # ── Counterpoise on weak-interaction (S22-style) dimers ────────────────────
+  - id: weak_interaction_dimer
+    priority: 70
+    when:
+      task_type: binding_energy|interaction_energy
+      molecule_class: dimer|complex
+    recommend:
+      method: "B3LYP-D3(BJ)"
+      basis: def2-TZVP
+      backend: psi4
+      counterpoise: true
+    rationale: "Counterpoise correction is mandatory for chemical-accuracy binding energies on S22-like systems (cf. §4.2.1 MAE = 0.245 kcal/mol)."
+
+  # ── Coupled-cluster gold standard (DLPNO-CCSD(T)) ──────────────────────────
+  - id: gold_standard_single_point
+    priority: 50
+    when:
+      task_type: single_point|reference_energy
+      accuracy_required: high|gold_standard
+    recommend:
+      method: "DLPNO-CCSD(T)"
+      basis: cc-pVTZ
+      backend: orca
+    rationale: "DLPNO-CCSD(T) is the reference energy method when chemical accuracy matters (typical MAE ≈ 0.5 kcal/mol vs benchmark CCSD(T)/CBS)."
+
+  # ── Fast pre-screen / conformer search ─────────────────────────────────────
+  - id: cheap_prescreen
+    priority: 30
+    when:
+      task_type: prescreen|conformer_search|quick_check
+    recommend:
+      method: GFN2-xTB
+      backend: xtb
+    rationale: "xTB GFN2 is 100× faster than DFT; use for conformer scans / initial-guess geometries before promoting to a DFT method."
+
+  # ── Tight default fallback when no other rule matches ──────────────────────
+  - id: fallback_any
+    priority: 1
+    when:
+      task_type: any
+    recommend:
+      method: "B3LYP-D3(BJ)"
+      basis: def2-TZVP
+      backend: psi4
+    rationale: "When no more-specific rule matches, fall back to the small-organic default; users can override via ~/.chemaster/user_kb/rules/method_selection.yaml."

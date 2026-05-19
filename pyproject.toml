@@ -38,7 +38,6 @@ dependencies = [
     # Agent / LLM
     "anthropic>=0.39",
     "openai>=1.30",              # OpenAI-compat (Qwen / DeepSeek / vLLM)
-    "claude-agent-sdk>=0.1",     # 占位；按实际包名调整
     "mcp>=1.0",
 
     # TUI
@@ -91,10 +90,10 @@ pdf = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/chemaster"
-Documentation = "https://your-username.github.io/chemaster"
-Repository = "https://github.com/your-username/chemaster"
-Issues = "https://github.com/your-username/chemaster/issues"
+Homepage = "https://github.com/Keith9922/chemaster"
+Documentation = "https://Keith9922.github.io/chemaster"
+Repository = "https://github.com/Keith9922/chemaster"
+Issues = "https://github.com/Keith9922/chemaster/issues"
 
 [project.scripts]
 chemaster = "chemaster.cli:main"

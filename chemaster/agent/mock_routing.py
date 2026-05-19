@@ -76,9 +76,11 @@ def build_routing_responder(
 
         if any(k in intent for k in (
                 "optimize", "optimise", "geometry", "minimum", "equilibrium",
-                "minimise", "minimize",
-                # Chinese
-                "优化", "几何", "极小值", "平衡结构", "最小值")):
+                "minimise", "minimize", "equilibrium structure",
+                # Chinese — multiple common phrasings for geometry optimization
+                "优化", "几何", "极小值", "最小值",
+                "平衡结构", "平衡构型", "平衡几何",
+                "结构优化", "构型优化")):
             return ToolCall(id="c1", name="calc_psi4_single_point",
                             arguments={
                                 "geometry_xyz": h2_xyz,

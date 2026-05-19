@@ -15,7 +15,6 @@ open-source; download from https://orcaforum.kofo.mpg.de/ .
 from __future__ import annotations
 
 import logging
-import os
 import re
 import shutil
 import subprocess

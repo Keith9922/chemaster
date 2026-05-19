@@ -475,6 +475,70 @@ def kb_remove(kind: str, name: str) -> None:
         sys.exit(1)
 
 
+@kb.command(name="method-rules")
+@click.option("--task-type", default=None,
+              help="filter rules whose 'when.task_type' matches this token "
+                   "(e.g. optimize / tddft / soc).")
+@click.option("--full", is_flag=True,
+              help="show the entire 'when' + 'recommend' block per rule.")
+def kb_method_rules(task_type: str | None, full: bool) -> None:
+    """List the merged method-selection ruleset (built-in + user overrides).
+
+    The rules drive the L2 RECOMMEND cards the agent shows when picking
+    method/basis/backend for a chemistry task.  User overrides live in
+    ``~/.chemaster/user_kb/rules/method_selection.yaml`` and merge by
+    matching ``id`` (user wins on collision).
+
+    Examples:
+
+        chemaster kb method-rules
+        chemaster kb method-rules --task-type tddft --full
+    """
+    from chemaster.kb.method_selection import all_rules_for_listing
+
+    rules = all_rules_for_listing()
+    if task_type:
+        # Match the same way MethodRule.matches() does — pipe-separated
+        # alternation and the literal "any" wildcard both count as hits.
+        def _hit(r: dict) -> bool:
+            cond = r["when"].get("task_type", "any")
+            if cond == "any":
+                return True
+            return task_type in [x.strip() for x in cond.split("|")]
+        rules = [r for r in rules if _hit(r)]
+
+    if not rules:
+        click.secho("(no rules match)", fg="yellow")
+        return
+
+    table = Table(title="Method-selection rules (merged)", show_lines=False)
+    table.add_column("rule id", style="cyan")
+    table.add_column("prio", justify="right")
+    table.add_column("source")
+    table.add_column("recommend")
+    table.add_column("rationale")
+    for r in rules:
+        rec = r["recommend"]
+        rec_str = " ".join(f"{k}={v}" for k, v in rec.items())
+        if not full:
+            rec_str = rec_str[:50] + ("…" if len(rec_str) > 50 else "")
+            rat = (r["rationale"] or "")[:60] + ("…" if len(r["rationale"]) > 60 else "")
+        else:
+            rat = r["rationale"]
+        src_marker = "[bold yellow]user[/bold yellow]" if r["source"] == "user" else "[dim]builtin[/dim]"
+        table.add_row(r["id"], str(r["priority"]), src_marker, rec_str, rat)
+    console.print(table)
+    if full:
+        console.print()
+        for r in rules:
+            console.print(f"  [cyan]{r['id']}[/cyan]  ({r['source']}, "
+                          f"priority={r['priority']})")
+            console.print(f"    [dim]when:[/dim] {r['when']}")
+            console.print(f"    [dim]recommend:[/dim] {r['recommend']}")
+            console.print(f"    [dim]rationale:[/dim] {r['rationale']}")
+            console.print()
+
+
 @main.group()
 def mcps() -> None:
     """MCP server management."""
@@ -564,8 +628,6 @@ def show(task_id: str, runs_dir: str) -> None:
     for i, step in enumerate(traj.get("steps", []), 1):
         ass = step.get("assistant_message") or {}
         tcs = ass.get("tool_calls") or []
-        for tc in tcs:
-            name = tc.get("name", "?")
         if not tcs:
             table.add_row(str(i), "(no tool call)", "—", "—")
             continue
@@ -692,6 +754,172 @@ def init() -> None:
 def eval_cmd(yaml_path: str) -> None:
     """Run a benchmark spec (legacy placeholder)."""
     click.echo(f"chemaster eval {yaml_path}: benchmark runner not yet wired into V2.")
+
+
+@main.command(name="doctor")
+@click.option("--quiet", is_flag=True, help="suppress hints, only print status lines")
+def doctor_cmd(quiet: bool) -> None:
+    """One-shot environment audit (inspired by `codex doctor`).
+
+    Checks everything a chemistry researcher needs to actually run a task:
+
+      - Python version, pipx/uv presence
+      - All registered chemistry engines (psi4, Gaussian, xtb, ORCA, BDF, MOMAP)
+      - All registered MCP servers (importable + protocol-compliant)
+      - LLM API keys (Anthropic / MiniMax / Qwen / DeepSeek)
+      - HPC connectivity (SLURM via `sinfo`, when configured)
+      - User config layout (~/.chemaster/)
+
+    Designed to be the first command a new user runs.  Non-zero exit code
+    means at least one check failed in a way that blocks ``chemaster run``.
+    """
+    import importlib
+    import platform as _platform
+    import shutil
+
+    console.print(Panel(
+        f"ChemMaster {__version__} — environment audit",
+        border_style="cyan", title="chemaster doctor",
+    ))
+
+    n_fail = 0
+    n_warn = 0
+
+    def _row(table: Table, label: str, status: str, detail: str = "", hint: str = ""):
+        nonlocal n_fail, n_warn
+        if status == "ok":
+            mark = "[green]✓[/green]"
+        elif status == "warn":
+            mark = "[yellow]⚠[/yellow]"
+            n_warn += 1
+        else:
+            mark = "[red]✗[/red]"
+            n_fail += 1
+        table.add_row(mark, label, detail, (hint if not quiet else ""))
+
+    # ── 1. Python / package manager ──────────────────────────────────────
+    t1 = Table(title="Runtime", show_lines=False)
+    t1.add_column("", width=2); t1.add_column("check", style="cyan")
+    t1.add_column("detail"); t1.add_column("hint", style="dim")
+    py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    _row(t1, "python", "ok" if sys.version_info >= (3, 11) else "fail",
+         py_ver, "Need Python ≥ 3.11")
+    _row(t1, "platform", "ok", f"{_platform.system()} {_platform.machine()}")
+    _row(t1, "pipx", "ok" if shutil.which("pipx") else "warn",
+         shutil.which("pipx") or "(missing)",
+         "pip install --user pipx  (optional, for cleaner CLI install)")
+    _row(t1, "uv", "ok" if shutil.which("uv") else "warn",
+         shutil.which("uv") or "(missing)",
+         "curl -LsSf https://astral.sh/uv/install.sh | sh  (optional)")
+    console.print(t1)
+
+    # ── 2. Chemistry engines ────────────────────────────────────────────
+    t2 = Table(title="Chemistry engines", show_lines=False)
+    t2.add_column("", width=2); t2.add_column("engine", style="cyan")
+    t2.add_column("path"); t2.add_column("how to install", style="dim")
+    install_hints = {
+        "psi4":     "mamba install -c psi4 psi4",
+        "xtb":      "mamba install -c conda-forge xtb",
+        "orca":     "vendor binary; ensure on $PATH (free for academic)",
+        "g16":      "Gaussian commercial; ensure g16 on $PATH",
+        "bdf":      "free for academic; ensure bdf on $PATH",
+        "momap":    "commercial; ensure momap on $PATH",
+    }
+    have_any = False
+    for engine in ("psi4", "xtb", "orca", "g16", "bdf", "momap"):
+        p = shutil.which(engine)
+        _row(t2, engine, "ok" if p else "warn",
+             p or "(not on $PATH)",
+             install_hints[engine] if not p else "")
+        if p:
+            have_any = True
+    # pyscf is a Python lib, check differently
+    try:
+        importlib.import_module("pyscf")
+        pyscf_ver = importlib.import_module("pyscf").__version__
+        _row(t2, "pyscf", "ok", f"v{pyscf_ver}",
+             "")
+        have_any = True
+    except ImportError:
+        _row(t2, "pyscf", "warn", "(not installed)",
+             "pip install pyscf")
+    if not have_any:
+        # Promote to a hard fail: agent cannot do any real chemistry.
+        n_fail += 1
+    console.print(t2)
+
+    # ── 3. LLM API keys (auto-detect from env) ──────────────────────────
+    t3 = Table(title="LLM API keys", show_lines=False)
+    t3.add_column("", width=2); t3.add_column("key", style="cyan"); t3.add_column("detail")
+    api_keys = {
+        "ANTHROPIC_API_KEY": "Anthropic Claude",
+        "MINIMAX_API_KEY":   "MiniMax",
+        "DASHSCOPE_API_KEY": "Qwen (DashScope)",
+        "QWEN_API_KEY":      "Qwen (alt name)",
+        "DEEPSEEK_API_KEY":  "DeepSeek",
+        "OPENAI_API_KEY":    "OpenAI / openai_compat",
+    }
+    any_key = False
+    for var, vendor in api_keys.items():
+        val = os.environ.get(var)
+        if val:
+            any_key = True
+            masked = val[:8] + "…" + val[-4:] if len(val) > 16 else "(set)"
+            _row(t3, var, "ok", f"{vendor}: {masked}")
+    if not any_key:
+        _row(t3, "(none set)", "warn", "MockLLM-only mode",
+             "Export at least one of: " + ", ".join(api_keys.keys()))
+    console.print(t3)
+
+    # ── 4. User config layout ────────────────────────────────────────────
+    t4 = Table(title="User config", show_lines=False)
+    t4.add_column("", width=2); t4.add_column("path", style="cyan")
+    t4.add_column("status")
+    try:
+        from chemaster.agent.user_kb import user_kb_root
+        root = user_kb_root()
+        _row(t4, str(root), "ok" if root.exists() else "warn",
+             "exists" if root.exists() else "(will be created on first use)")
+        if root.exists():
+            for sub in ("rules", "skills", "notes"):
+                p = root / sub
+                _row(t4, str(p), "ok" if p.exists() else "warn",
+                     "exists" if p.exists() else "(empty)")
+            prefs = root / "prefs.yaml"
+            _row(t4, str(prefs), "ok" if prefs.exists() else "warn",
+                 "exists" if prefs.exists() else "(none)")
+    except Exception as exc:
+        _row(t4, "user_kb", "warn", f"could not probe: {exc}")
+    console.print(t4)
+
+    # ── 5. SLURM (optional) ──────────────────────────────────────────────
+    sinfo = shutil.which("sinfo")
+    if sinfo:
+        t5 = Table(title="HPC (SLURM)", show_lines=False)
+        t5.add_column("", width=2); t5.add_column("check", style="cyan"); t5.add_column("detail")
+        _row(t5, "sinfo", "ok", sinfo)
+        console.print(t5)
+
+    # ── 6. Summary ───────────────────────────────────────────────────────
+    if n_fail:
+        console.print(Panel(
+            f"[red]✗ {n_fail} blocking issue(s)[/red], {n_warn} warning(s).\n"
+            "ChemMaster's agent loop still runs in mock mode, but real chemistry "
+            "needs at least one engine + one API key.",
+            border_style="red", title="Summary",
+        ))
+        sys.exit(1)
+    elif n_warn:
+        console.print(Panel(
+            f"[green]✓ no blocking issues[/green], {n_warn} optional item(s).\n"
+            "You can run real chemistry now.  Set up the warned items at your leisure.",
+            border_style="yellow", title="Summary",
+        ))
+    else:
+        console.print(Panel(
+            "[green]✓ all checks passed[/green]. ChemMaster is fully provisioned.",
+            border_style="green", title="Summary",
+        ))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -942,7 +1170,6 @@ def _write_markdown_report(traj, runs_dir: Path) -> None:
 
 def _print_summary(traj, runs_dir: Path) -> None:
     """Pretty-print the trajectory result + key numbers + report path."""
-    from chemaster.agent.types import ToolMessage
 
     task_dir = runs_dir / traj.task_id
     style = {
