@@ -1,6 +1,9 @@
 # SETUP — 开发环境搭建
 
-> 第一次接手项目读这个。预期 30-45 分钟搭好。
+> 第一次接手项目（**作为贡献者**）读这个。预期 30-45 分钟搭好。
+>
+> 只是想**使用** ChemMaster 的研究者请读 [`INSTALL.md`](INSTALL.md) ——
+> 一行 pipx 安装即可，不用 git clone。
 
 ---
 
@@ -297,7 +300,7 @@ hpc:
 - [ ] `chemaster --check-engines` 至少 psi4 + xTB ✓
 - [ ] `pytest tests/unit` 全绿
 - [ ] 读 [`CLAUDE.md`](../CLAUDE.md) 一遍
-- [ ] 读 [`docs/ROADMAP.md`](ROADMAP.md) §4 当前阶段
+- [ ] 读 [`CLAUDE.md`](../CLAUDE.md) §11 当前状态快照（历史 ROADMAP 已归档到 [`archive/ROADMAP.md`](archive/ROADMAP.md)）
 - [ ] 读 [`docs/PITFALLS.md`](PITFALLS.md) 一遍（头脑里建立"踩坑预警"）
 - [ ] 读 [`docs/MCP_GUIDE.md`](MCP_GUIDE.md) 或 [`docs/SKILLS_GUIDE.md`](SKILLS_GUIDE.md)（取决于要写哪类）
 - [ ] 在 `chemaster/` 找到要写的目录
