@@ -3,7 +3,104 @@
 所有面向用户可见的变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased] — Streaming agent loop (foundation for `chemaster web`)
+## [0.2.0a2] — Round-2 robustness + Codex-inspired upgrades + thesis sync (2026-05-20)
+
+### Added — ChemMaster-as-MCP-server (`chemaster.mcp.agent.server`)
+
+整个 Agent 内核现在以 MCP server 形态对外开放。任何兼容 MCP 的客户端
+（Claude Code、Cursor、OpenAI Codex CLI）都可以挂载 ChemMaster 并通过
+`chemaster_run("…")` 调用整套化学工作流，**而不只是单个工具**。这是
+§1.3 "MCP-as-open-protocol" 主张的最强证据：协议合规性从"3 个工具
+server"升级到"整个 agent 内核"。
+
+四个工具：
+- `chemaster_run(intent)`         —— 完整 agent 循环端到端
+- `chemaster_list_skills()`       —— KB 中可用的 skill 目录
+- `chemaster_list_tools()`        —— 内核能调度的全部 45 个工具
+- `chemaster_list_engines()`      —— 检测 PATH 上的化学引擎
+
+新 CLI：`chemaster mcp-serve`。
+
+### Added — `chemaster doctor`（来自 Codex 借鉴 §1.3）
+一行环境审计：Python / pipx / uv 版本，所有化学引擎在 PATH 上的存在，
+所有 LLM API key（值会被遮蔽），用户配置目录，SLURM 连通性。退出码非
+零只在影响实际计算时才发生。
+
+### Added — `chemaster.notify` 跨平台桌面通知
+任务完成时弹一条系统通知（macOS osascript / Linux notify-send / WSL2
+和 Windows PowerShell）。化学场景下 Gaussian 单点动辄数小时，让研究
+者不必盯着终端。可通过 `CHEMASTER_NO_NOTIFY=1` 关闭。
+
+### Added — 方法选择规则引擎（`chemaster.kb.method_selection`）
+"什么任务用什么方法"从隐式 if 分支变成声明式 YAML：
+
+- `chemaster/kb/rules/method_selection.yaml` 11 条内置规则
+- `~/.chemaster/user_kb/rules/method_selection.yaml` 用户可覆盖
+- 按 id 合并，按 priority 排序；用户规则永远赢
+- L2 recommend 卡片显式回显命中规则的 id + rationale + source
+
+新 CLI：`chemaster kb method-rules [--task-type tddft] [--full]`。
+
+### Added — 一行安装路径
+- `scripts/install.sh` —— pipx/uvx-aware 引导，自动检测引擎，含
+  `CHEMASTER_RELEASE_BASE_URL` 国内镜像支持
+- `docs/INSTALL.md` —— pipx / uvx / conda 三条安装路径的完整矩阵
+- `pyproject.toml` 清理：移除幽灵依赖 `claude-agent-sdk`，URL 修正
+
+### Added — 系统层指标扩展
+- **压力测试**（`scripts/benchmarks/run_stress_test.py`）—— 10 分子 ×
+  ~33 phrasing = **334 测试，路由 100% / agent_ok 100%**，mean 99 ms，
+  p99 = 140 ms（输出：`benchmarks/engineering_metrics/stress_test.json`
+  + `paper/figures/fig_stress_test.png`）
+- **硬例子真跑**（`scripts/benchmarks/run_hard_cases.py`）—— 重元素
+  / 开壳层 / 较大分子 / 带电species 共 11 case，HF/sto-3g 和
+  B3LYP-D3(BJ)/def2-SVP 各 **11/11 全过**
+
+### Added — `AGENTS.md` 软链
+指向 `CLAUDE.md` 的 git-tracked symlink，让 OpenAI Codex / Cursor /
+Claude Code 等客户端读到同一份项目级指令而无需重复维护。
+
+### Added — `docs/COMPETITIVE_SCAN.md`
+Codex 0.128-0.131、DeepSeek-TUI v0.8.34-v0.8.39、Claude Code 文档的
+1.4k 字借鉴分析，含 Top-5 优先级排序。
+
+### Changed — 共享的确定性路由模块
+`chemaster.agent.mock_routing` 把双语关键词路由器从
+`scripts/benchmarks/run_execution_and_scalability.py` 中抽出，benchmark
+脚本和 MCP server 共用一份。新增 4 个 phrasing 类别支持
+`平衡构型 / 结构优化 / 构型优化 / 平衡几何`（修复 §4.4.2 之前 10/120
+optimize 误路由到 kb_search 的真实 bug）。
+
+### Changed — 文档结构整理
+历史文档移到 `docs/archive/`（KICKOFF、V2_RELEASE_NOTES、MINIMAX_PROMPTS、
+REFACTOR_PLAN、PACKAGING、GITHUB_SETUP、ROADMAP）。`docs/` 只留
+authoritative reference docs。
+
+### Fixed — 代码 lint
+ruff `--fix` 清理 20 个 unused-import / unused-var 问题；手动处理 7 个
+F841 stragglers（保留 psi4 风格的 side-effect 调用）。最终 **0 ruff
+F-finding**。
+
+### Fixed — 论文真值审计（9 轮自主审计）
+- §4.4.3 N=1000/N=5000 → 真实 N=2000 / mean 131 ms / std 4.9 ms
+- §4.4.4 user_kb LOC 200 / 19 tests → 真实 348 / 25
+- §4.4.2 失败 phrasing 例子从虚构的 "kb 检索一下" → 真实失败的
+  "Look up basis set rules" / "查基组规则"
+- §5.1 conclusion 14 servers / 6000 行 → 真实 15 / 6549
+- 英文 abstract "valence MAE < 0.2 eV" → 真实 0.45 eV（分 valence /
+  Rydberg 拆开报告）
+- §4.5.3 端到端 demo 引用的 `benchmarks/use_cases/end_to_end_demo/`
+  目录之前不在 feat 分支上，从 main 的 f9cd856 恢复（12 个文件，含
+  trajectory.json / 5 张截图 / report.md）
+
+### Tests
+- **336 passed, 2 skipped** （增 +25 method-selection, +4 doctor,
+  +30 notify, +15 mcp-agent-server）
+- 4/4 MCP cross-client probe（含 agent server 真跑 `chemaster_run`）
+- 334/334 stress test 全过
+- 11/11 hard cases 全过（两种方法×基组）
+
+## [Unreleased-prior] — Streaming agent loop (foundation for `chemaster web`)
 
 ### Added — `chemaster.agent.types` AgentEvent protocol
 - 8 dataclasses describing every state transition of the Agent loop:
