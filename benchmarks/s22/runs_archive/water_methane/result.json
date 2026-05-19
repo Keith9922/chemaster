@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "water_methane",
+  "method": "B3LYP-D3(BJ)/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -0.111,
+  "reference_binding_energy_kcal": -0.66,
+  "error_kcal": 0.549,
+  "abs_error_kcal": 0.549,
+  "within_acceptance": false,
+  "interaction_hartree": -0.000177,
+  "wall_time_s": 2.67,
+  "geometry_note": "water_dimer uses the standard S22 hydrogen-bonded geometry; other dimers use approximate near-equilibrium geometries due to lack of canonical S22A coordinates in our local copy. Direct comparison to S22A reference values is therefore strongest for water_dimer; other systems reflect both method and geometry approximation errors."
+}

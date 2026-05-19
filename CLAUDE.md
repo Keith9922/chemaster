@@ -364,3 +364,17 @@ V2 架构已落地，v3.0 哲学修正进行中：
 ---
 
 *文档版本：v3.0 (2026-05-05)。每次重大架构调整后更新本文档的 §0、§2、§3、§5、§7、§8、§9、§11。*
+
+---
+
+## 附录 A：跨 Agent 客户端兼容性约定
+
+仓库根目录同时提供 `CLAUDE.md`（本文件）与 `AGENTS.md`，二者**内容完全一致**（`AGENTS.md` 是指向 `CLAUDE.md` 的 git-tracked symlink）。
+
+| Agent 客户端 | 读取的文件 | 备注 |
+|---|---|---|
+| Claude Code | `CLAUDE.md` | 本仓库主路径 |
+| OpenAI Codex CLI | `AGENTS.md` | 同一份内容，无需重复维护 |
+| Cursor / Windsurf | 两个都查 | 双 schema 自动兼容 |
+
+新增 / 修订项目级 agent 指令时**只编辑 `CLAUDE.md`**，`AGENTS.md` 会自动同步。Windows 用户如 symlink 解析异常，请执行 `git config core.symlinks true`。

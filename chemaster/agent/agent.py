@@ -43,7 +43,6 @@ from chemaster.agent.llm_client import (
 )
 from chemaster.agent.tool_registry import BaseTool, ToolRegistry, ToolResult
 from chemaster.agent.types import (
-    AssistantMessage,
     AssistantMessageEvent,
     ConfirmationRequiredEvent,
     Dialog,

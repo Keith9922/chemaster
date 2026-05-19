@@ -126,12 +126,113 @@ def _load_docs() -> list[_Doc]:
                 meta={"frontmatter": front, "skill_dir": str(sk_dir)},
             ))
 
+    # User-provided KB (~/.chemaster/user_kb/) — merged with the built-in corpus
+    # so the Agent can `kb_search` over both transparently.
+    docs.extend(_load_user_docs())
+
     _DOC_CACHE = docs
-    logger.info("KB loaded: %d docs (%d skills, %d rule entries)",
+    logger.info("KB loaded: %d docs (%d skills, %d rule entries, %d user-provided)",
                 len(docs),
                 sum(1 for d in docs if d.kind == "skill"),
-                sum(1 for d in docs if d.kind == "rule"))
+                sum(1 for d in docs if d.kind == "rule"),
+                sum(1 for d in docs if d.meta.get("user_provided")))
     return docs
+
+
+def _load_user_docs() -> list[_Doc]:
+    """Load user-provided docs from ``~/.chemaster/user_kb/``.
+
+    Returns an empty list if the user KB is absent.
+    """
+    try:
+        from chemaster.agent.user_kb import user_kb_root
+    except ImportError:
+        return []
+
+    root = user_kb_root()
+    if not root.exists():
+        return []
+
+    docs: list[_Doc] = []
+
+    # User rules: same structure as built-in rules (top-level mapping of lists)
+    user_rules = root / "rules"
+    if user_rules.exists():
+        for yfile in sorted(user_rules.glob("*.y*ml")):
+            try:
+                content = yaml.safe_load(yfile.read_text(encoding="utf-8")) or {}
+            except yaml.YAMLError as exc:
+                logger.warning("skipping user rules %s: %s", yfile.name, exc)
+                continue
+            relpath = f"user_kb/rules/{yfile.name}"
+            for top_key, items in (content or {}).items():
+                if isinstance(items, list):
+                    for it in items:
+                        if not isinstance(it, dict):
+                            continue
+                        item_name = it.get("name") or it.get("title") or ""
+                        docs.append(_Doc(
+                            doc_id=f"{relpath}#{item_name}" if item_name else relpath,
+                            source=relpath,
+                            kind="rule",
+                            title=f"{top_key}: {item_name}".strip(": "),
+                            text=_yaml_item_to_text(it),
+                            meta={"top_key": top_key, "user_provided": True, **it},
+                        ))
+                else:
+                    docs.append(_Doc(
+                        doc_id=relpath,
+                        source=relpath,
+                        kind="rule",
+                        title=top_key,
+                        text=str(items),
+                        meta={"top_key": top_key, "value": items,
+                              "user_provided": True},
+                    ))
+
+    # User skills: <name>/SKILL.md, same as built-in.
+    user_skills = root / "skills"
+    if user_skills.exists():
+        for sk_dir in sorted(p for p in user_skills.iterdir() if p.is_dir()):
+            skill_md = sk_dir / "SKILL.md"
+            if not skill_md.exists():
+                continue
+            text = skill_md.read_text(encoding="utf-8")
+            front, body = _split_frontmatter(text)
+            docs.append(_Doc(
+                doc_id=f"user_kb/skills/{sk_dir.name}",
+                source=f"user_kb/skills/{sk_dir.name}/SKILL.md",
+                kind="skill",
+                title=front.get("name", sk_dir.name),
+                text=body,
+                meta={"frontmatter": front, "skill_dir": str(sk_dir),
+                      "user_provided": True},
+            ))
+
+    # User notes: flat *.md files — indexed as skill-like documents.
+    user_notes = root / "notes"
+    if user_notes.exists():
+        for md in sorted(user_notes.glob("*.md")):
+            text = md.read_text(encoding="utf-8")
+            docs.append(_Doc(
+                doc_id=f"user_kb/notes/{md.stem}",
+                source=f"user_kb/notes/{md.name}",
+                kind="skill",          # treat as searchable doc
+                title=md.stem,
+                text=text,
+                meta={"user_provided": True, "doc_type": "note"},
+            ))
+
+    return docs
+
+
+def reset_doc_cache() -> None:
+    """Force the next ``_load_docs`` call to re-read from disk.
+
+    Used by unit tests and the CLI's ``kb reload`` subcommand.
+    """
+    global _DOC_CACHE
+    _DOC_CACHE = None
 
 
 def _yaml_item_to_text(item: dict) -> str:

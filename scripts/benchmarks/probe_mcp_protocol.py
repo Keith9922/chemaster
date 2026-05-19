@@ -85,9 +85,9 @@ async def amain() -> int:
             "module": "chemaster.mcp.const.server",
             "calls": [
                 {"name": "convert_unit",
-                 "args": {"value": 1.0, "from_unit": "Hartree",
+                 "args": {"value": 1.0, "from_unit": "hartree",
                            "to_unit": "eV"}},
-                {"name": "get_constant", "args": {"name": "h_planck"}},
+                {"name": "get_constant", "args": {"name": "planck"}},
             ],
         },
         {
@@ -102,6 +102,24 @@ async def amain() -> int:
             "calls": [
                 # Not invoking psi4 here (would take wall time);
                 # only listing tools to confirm the server speaks MCP.
+            ],
+        },
+        {
+            # Headline cross-client claim: ChemMaster's **entire agent
+            # kernel** is itself MCP-exposed. An external client mounting
+            # this server gets `chemaster_run(intent)` as if ChemMaster were
+            # a single chemistry tool. Mirrors the Codex-style
+            # "agent-as-MCP-server" pattern.
+            "module": "chemaster.mcp.agent.server",
+            "calls": [
+                {"name": "chemaster_list_engines", "args": {}},
+                {"name": "chemaster_list_tools", "args": {}},
+                # A short mock-LLM run proves the full agent loop is
+                # reachable through the protocol. The intent routes to a
+                # cheap constant lookup, then `finish`.
+                {"name": "chemaster_run",
+                 "args": {"intent": "look up the planck constant",
+                          "provider": "mock", "max_turns": 5}},
             ],
         },
     ]

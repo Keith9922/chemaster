@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Formamide_dimer",
+  "short_name": "formamide_dimer",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -16.452,
+  "interaction_hartree": -0.026218,
+  "wall_time_s": 9.69,
+  "reference_binding_energy_kcal": -16.119,
+  "error_kcal": -0.333,
+  "abs_error_kcal": 0.333
+}

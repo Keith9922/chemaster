@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "butadiene",
+  "formula": "C4H6",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 6.471,
+      "ref_cc3_eV": 6.29,
+      "ref_character": "π -> π* (bright)",
+      "error_eV": 0.181,
+      "abs_error_eV": 0.181,
+      "oscillator_strength": 1.0896
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 7.393,
+      "ref_cc3_eV": 6.55,
+      "ref_character": "π -> π* (dark, double excitation)",
+      "error_eV": 0.843,
+      "abs_error_eV": 0.843,
+      "oscillator_strength": 0.0001
+    }
+  ],
+  "mae_eV": 0.512,
+  "max_abs_error_eV": 0.843,
+  "wall_time_s": 4.3
+}

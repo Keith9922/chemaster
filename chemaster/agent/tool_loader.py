@@ -30,6 +30,7 @@ class _ToolDecl:
     is_read_only: bool = False
     is_destructive: bool = False
     is_long_running: bool = False
+    is_chemistry_decision: bool = False
 
 
 # Tool exposure naming convention for the LLM:
@@ -392,6 +393,37 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         ),
     ),
 
+    # calc_pyscf (open-source X2C SOC reference for the BDF wrapper) ──────
+    _ToolDecl(
+        exposed_name="calc_pyscf_single_point",
+        module="chemaster.mcp.calc_pyscf.server",
+        function="single_point",
+        description=(
+            "Single-point energy with PySCF. Supports HF/DFT and three "
+            "relativistic levels: 'none' / 'scalar' (X2C-1e via decorator) / "
+            "'soc' (two-component GKS+X2C-1e, includes spin-orbit coupling). "
+            "Open-source pip-installable, runs natively on macOS arm64. Use "
+            "as the open-source reference path for SOC tasks when BDF is "
+            "unavailable."
+        ),
+        is_read_only=False,
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_pyscf_x2c_soc",
+        module="chemaster.mcp.calc_pyscf.server",
+        function="x2c_soc",
+        description=(
+            "Three-stage relativistic analysis (non-rel / scalar X2C / "
+            "two-component X2C+SOC) on the same geometry, reporting scalar "
+            "and SOC corrections in meV. Open-source reference for the BDF "
+            "X2C-TDA SOC pathway."
+        ),
+        is_read_only=False,
+        is_long_running=True,
+        is_chemistry_decision=True,
+    ),
+
     # parse_cclib ──────────────────────────────────────────────────────────
     _ToolDecl(
         exposed_name="parse_output",
@@ -459,6 +491,7 @@ def build_default_registry(extras: list[_ToolDecl] | None = None) -> ToolRegistr
             is_read_only=decl.is_read_only,
             is_destructive=decl.is_destructive,
             is_long_running=decl.is_long_running,
+            is_chemistry_decision=decl.is_chemistry_decision,
         )
         registry.register(adapter)
 

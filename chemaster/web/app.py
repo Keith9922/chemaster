@@ -27,7 +27,6 @@ Launch:
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import shutil
@@ -89,8 +88,8 @@ def create_app(agent_factory: Any | None = None):
             or None for display-only mode.
     """
     try:
-        from fastapi import FastAPI, HTTPException, Request
-        from fastapi.responses import HTMLResponse, JSONResponse
+        from fastapi import FastAPI, HTTPException
+        from fastapi.responses import HTMLResponse
         from fastapi.staticfiles import StaticFiles
     except ImportError:
         raise RuntimeError(

@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "Ammonia_dimer",
+  "short_name": "ammonia_dimer",
+  "method": "B3LYP-D3BJ/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -3.407,
+  "interaction_hartree": -0.005429,
+  "wall_time_s": 2.7,
+  "reference_binding_energy_kcal": -3.171,
+  "error_kcal": -0.236,
+  "abs_error_kcal": 0.236
+}

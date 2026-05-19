@@ -61,7 +61,7 @@ def _electron_count(xyz: str, charge: int) -> int:
             "H": 1, "He": 2, "Li": 3, "Be": 4, "B": 5, "C": 6, "N": 7,
             "O": 8, "F": 9, "Ne": 10, "Na": 11, "Mg": 12, "Al": 13,
             "Si": 14, "P": 15, "S": 16, "Cl": 17, "Ar": 18, "K": 19,
-            "Ca": 20, "Fe": 26, "Zn": 30, "Cu": 29, "Mg": 12,
+            "Ca": 20, "Fe": 26, "Zn": 30, "Cu": 29,
         }.get(element.capitalize(), 0)
         total += Z
     return total - charge
@@ -245,7 +245,9 @@ def single_point(
 
     # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
     geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    mol = psi4.geometry(geom_block)
+    # psi4.geometry() mutates the global active molecule as a side effect;
+    # the returned handle is unused here, so we discard it explicitly.
+    psi4.geometry(geom_block)
 
     reference = "uhf" if multiplicity != 1 else "rhf"
     psi4.set_options({
@@ -484,7 +486,8 @@ def optimize(
 
     # ── 5. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
     geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    mol = psi4.geometry(geom_block)
+    # `mol` is needed downstream by psi4.optimize() and mol.save_string_xyz().
+    mol = psi4.geometry(geom_block)  # noqa: F841 — used in psi4.optimize() and .save_string_xyz()
 
     reference = "uhf" if multiplicity != 1 else "rhf"
     psi4.set_options({
@@ -723,7 +726,8 @@ def frequency(
 
     # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
     geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    mol = psi4.geometry(geom_block)
+    # `mol` is needed downstream as the `molecule=` arg of psi4.frequencies().
+    mol = psi4.geometry(geom_block)  # noqa: F841 — passed to psi4.frequencies() below
 
     reference = "uhf" if multiplicity != 1 else "rhf"
     psi4.set_options({
@@ -742,10 +746,12 @@ def frequency(
         # 不使用 return_wfn=True：rdkit 先导入会导致 psi4 SCF 迭代 segfault
         # 但若 mock 测试返回 (energy, wfn) 元组，按需解包，便于单元测试。
         raw = psi4.frequencies(method, basis=basis, molecule=mol)
+        # `energy_hartree` is captured for symmetry only — the wfn already
+        # carries it. Real callers should use wfn.energy().
         if isinstance(raw, tuple) and len(raw) == 2:
-            energy_hartree, wfn_from_call = raw
+            _, wfn_from_call = raw
         else:
-            energy_hartree, wfn_from_call = raw, None
+            wfn_from_call = None
 
         # 尝试从 wavefunction 获取频率（rdkit 先导入时不可用）
         # fallback：直接从输出文件解析
@@ -846,7 +852,6 @@ def _parse_frequencies_from_output(log_path: str) -> list[float]:
     也兼容旧格式（每行一个 Frequency 关键字）。
     若解析失败返回空 list。
     """
-    import re
     try:
         text = Path(log_path).read_text()
     except Exception:
@@ -910,7 +915,6 @@ def _parse_thermal_from_output(log_path: str) -> dict[str, Any]:
         Correction E    15.335 [kcal/mol] ... 0.02443866 [Eh]
         Total E, Thermal (internal) energy at  298.15 [K] ... -76.33376930 [Eh]
     """
-    import re
     out = {
         "h_corr": None,            # H_corr (Hartree, includes ZPE + thermal H)
         "g_corr": None,            # G_corr
@@ -1058,7 +1062,9 @@ def tddft(
     psi4.core.set_output_file(output_path, False)
 
     geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    mol = psi4.geometry(geom_block)
+    # psi4.geometry() mutates the global active molecule as a side effect;
+    # the returned handle is unused here, so we discard it explicitly.
+    psi4.geometry(geom_block)
 
     reference = "uhf" if multiplicity != 1 else "rhf"
     psi4.set_options({
@@ -1173,7 +1179,6 @@ def _parse_tdscf_from_output(
                               spin#  excitation  wavelength  oscillator
     where spin# == 1 → singlet, 3 → triplet.
     """
-    import re
     try:
         text = Path(output_path).read_text(errors="replace")
     except Exception:

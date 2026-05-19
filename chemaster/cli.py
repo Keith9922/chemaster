@@ -18,6 +18,7 @@ Sub-commands:
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -252,6 +253,37 @@ def run(
     _print_summary(traj, agent_cfg.runs_dir)
     _write_markdown_report(traj, agent_cfg.runs_dir)
 
+    # Desktop notification on task completion (no-op when CHEMASTER_NO_NOTIFY=1
+    # or when the host platform has no notification mechanism). Wrapped so a
+    # broken notifier never breaks a successful CLI run.
+    try:
+        from chemaster.notify import notify_task_done
+        from datetime import datetime
+
+        elapsed_s = None
+        if traj.started_at and traj.finished_at:
+            try:
+                t0 = datetime.fromisoformat(traj.started_at)
+                t1 = datetime.fromisoformat(traj.finished_at)
+                elapsed_s = (t1 - t0).total_seconds()
+            except (ValueError, TypeError):
+                pass
+        summary = ""
+        if traj.finish_payload:
+            summary = str(
+                traj.finish_payload.get("summary")
+                or traj.finish_payload.get("message")
+                or ""
+            )
+        notify_task_done(
+            task_id=traj.task_id,
+            status=traj.status,  # type: ignore[arg-type]
+            summary=summary,
+            elapsed_s=elapsed_s,
+        )
+    except Exception:  # pragma: no cover - defensive only
+        pass
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Skills / KB / MCPs / tools commands
@@ -335,6 +367,176 @@ def kb_list() -> None:
     for child in sorted(base.iterdir()):
         if child.is_file():
             click.echo(child.name)
+
+
+# ── User KB sub-commands (advisor-feedback revision) ────────────────────────
+
+
+@kb.command(name="add")
+@click.argument("source", type=click.Path(exists=True, dir_okay=False))
+@click.option("--kind", type=click.Choice(["auto", "skill", "rules", "notes"]),
+              default="auto", show_default=True,
+              help="What kind of user doc this is.")
+@click.option("--name", default=None,
+              help="Override destination name (default: source stem).")
+def kb_add(source: str, kind: str, name: str | None) -> None:
+    """Import a user file into ~/.chemaster/user_kb/.
+
+    Examples:
+
+      chemaster kb add my_emitters.yaml                # auto → rules
+      chemaster kb add my_pipeline_SKILL.md            # auto → skills/my_pipeline
+      chemaster kb add notes.md --kind notes
+      chemaster kb add custom.yaml --kind rules --name oled_emitters
+    """
+    from chemaster.agent import user_kb
+
+    dest = user_kb.add_user_doc(Path(source), kind=kind, dest_name=name)
+    click.secho(f"✓ Added → {dest}", fg="green")
+    click.echo("(restart any running agent / CLI to pick up the new doc; "
+                "or call kb.server.reset_doc_cache() in-process.)")
+
+
+@kb.command(name="user-list")
+def kb_user_list() -> None:
+    """List user-provided rules / skills / notes under ~/.chemaster/user_kb/."""
+    from chemaster.agent import user_kb
+
+    docs = user_kb.list_user_docs()
+    root = user_kb.user_kb_root()
+    if not any(docs.values()):
+        click.echo(f"No user docs found under {root}")
+        click.echo("Use 'chemaster kb add <file>' to add one.")
+        return
+    click.echo(f"User KB root: {root}\n")
+    for kind, items in docs.items():
+        click.secho(f"{kind} ({len(items)})", fg="cyan", bold=True)
+        for name in items:
+            click.echo(f"  - {name}")
+        if not items:
+            click.echo("  (empty)")
+
+
+@kb.command(name="prefs")
+@click.option("--show/--edit", default=True,
+              help="Show current preferences (default) or open editor.")
+def kb_prefs(show: bool) -> None:
+    """Show (or edit) user tool preferences in ~/.chemaster/user_kb/prefs.yaml."""
+    from chemaster.agent import user_kb
+
+    if not show:
+        path = user_kb.user_kb_prefs_path()
+        user_kb.ensure_user_kb_layout()
+        if not path.exists():
+            path.write_text(
+                "# ChemMaster user preferences\n"
+                "# Lines below are categories → tool name.\n"
+                "# Recognised categories: " +
+                ", ".join(user_kb.KNOWN_PREF_CATEGORIES) + "\n\n"
+                "ground_state_dft: Gaussian\n"
+                "excited_state_tddft: Gaussian\n"
+                "soc: BDF\n"
+                "tvcf_rate: MOMAP\n"
+                "default_functional: B3LYP-D3(BJ)\n"
+                "default_basis: def2-TZVP\n"
+                "notes:\n"
+                "  - \"Replace these defaults with your own.\"\n",
+                encoding="utf-8")
+        editor = os.environ.get("EDITOR", "nano")
+        os.system(f"{editor} '{path}'")
+        return
+
+    prefs = user_kb.load_user_prefs()
+    if not prefs.raw:
+        click.echo(f"No preferences set. Run 'chemaster kb prefs --edit' "
+                    f"to create {user_kb.user_kb_prefs_path()}.")
+        return
+    click.secho("User preferences:", fg="cyan", bold=True)
+    for k, v in prefs.categories.items():
+        click.echo(f"  {k}: {v}")
+    if prefs.notes:
+        click.secho("\nNotes:", fg="cyan", bold=True)
+        for n in prefs.notes:
+            click.echo(f"  - {n}")
+
+
+@kb.command(name="remove")
+@click.argument("kind", type=click.Choice(["skill", "rules", "notes"]))
+@click.argument("name")
+def kb_remove(kind: str, name: str) -> None:
+    """Remove a user doc by kind and name."""
+    from chemaster.agent import user_kb
+
+    ok = user_kb.remove_user_doc(kind, name)
+    if ok:
+        click.secho(f"✓ Removed {kind}/{name}", fg="green")
+    else:
+        click.secho(f"Nothing found at {kind}/{name}", fg="yellow")
+        sys.exit(1)
+
+
+@kb.command(name="method-rules")
+@click.option("--task-type", default=None,
+              help="filter rules whose 'when.task_type' matches this token "
+                   "(e.g. optimize / tddft / soc).")
+@click.option("--full", is_flag=True,
+              help="show the entire 'when' + 'recommend' block per rule.")
+def kb_method_rules(task_type: str | None, full: bool) -> None:
+    """List the merged method-selection ruleset (built-in + user overrides).
+
+    The rules drive the L2 RECOMMEND cards the agent shows when picking
+    method/basis/backend for a chemistry task.  User overrides live in
+    ``~/.chemaster/user_kb/rules/method_selection.yaml`` and merge by
+    matching ``id`` (user wins on collision).
+
+    Examples:
+
+        chemaster kb method-rules
+        chemaster kb method-rules --task-type tddft --full
+    """
+    from chemaster.kb.method_selection import all_rules_for_listing
+
+    rules = all_rules_for_listing()
+    if task_type:
+        # Match the same way MethodRule.matches() does — pipe-separated
+        # alternation and the literal "any" wildcard both count as hits.
+        def _hit(r: dict) -> bool:
+            cond = r["when"].get("task_type", "any")
+            if cond == "any":
+                return True
+            return task_type in [x.strip() for x in cond.split("|")]
+        rules = [r for r in rules if _hit(r)]
+
+    if not rules:
+        click.secho("(no rules match)", fg="yellow")
+        return
+
+    table = Table(title="Method-selection rules (merged)", show_lines=False)
+    table.add_column("rule id", style="cyan")
+    table.add_column("prio", justify="right")
+    table.add_column("source")
+    table.add_column("recommend")
+    table.add_column("rationale")
+    for r in rules:
+        rec = r["recommend"]
+        rec_str = " ".join(f"{k}={v}" for k, v in rec.items())
+        if not full:
+            rec_str = rec_str[:50] + ("…" if len(rec_str) > 50 else "")
+            rat = (r["rationale"] or "")[:60] + ("…" if len(r["rationale"]) > 60 else "")
+        else:
+            rat = r["rationale"]
+        src_marker = "[bold yellow]user[/bold yellow]" if r["source"] == "user" else "[dim]builtin[/dim]"
+        table.add_row(r["id"], str(r["priority"]), src_marker, rec_str, rat)
+    console.print(table)
+    if full:
+        console.print()
+        for r in rules:
+            console.print(f"  [cyan]{r['id']}[/cyan]  ({r['source']}, "
+                          f"priority={r['priority']})")
+            console.print(f"    [dim]when:[/dim] {r['when']}")
+            console.print(f"    [dim]recommend:[/dim] {r['recommend']}")
+            console.print(f"    [dim]rationale:[/dim] {r['rationale']}")
+            console.print()
 
 
 @main.group()
@@ -426,8 +628,6 @@ def show(task_id: str, runs_dir: str) -> None:
     for i, step in enumerate(traj.get("steps", []), 1):
         ass = step.get("assistant_message") or {}
         tcs = ass.get("tool_calls") or []
-        for tc in tcs:
-            name = tc.get("name", "?")
         if not tcs:
             table.add_row(str(i), "(no tool call)", "—", "—")
             continue
@@ -554,6 +754,172 @@ def init() -> None:
 def eval_cmd(yaml_path: str) -> None:
     """Run a benchmark spec (legacy placeholder)."""
     click.echo(f"chemaster eval {yaml_path}: benchmark runner not yet wired into V2.")
+
+
+@main.command(name="doctor")
+@click.option("--quiet", is_flag=True, help="suppress hints, only print status lines")
+def doctor_cmd(quiet: bool) -> None:
+    """One-shot environment audit (inspired by `codex doctor`).
+
+    Checks everything a chemistry researcher needs to actually run a task:
+
+      - Python version, pipx/uv presence
+      - All registered chemistry engines (psi4, Gaussian, xtb, ORCA, BDF, MOMAP)
+      - All registered MCP servers (importable + protocol-compliant)
+      - LLM API keys (Anthropic / MiniMax / Qwen / DeepSeek)
+      - HPC connectivity (SLURM via `sinfo`, when configured)
+      - User config layout (~/.chemaster/)
+
+    Designed to be the first command a new user runs.  Non-zero exit code
+    means at least one check failed in a way that blocks ``chemaster run``.
+    """
+    import importlib
+    import platform as _platform
+    import shutil
+
+    console.print(Panel(
+        f"ChemMaster {__version__} — environment audit",
+        border_style="cyan", title="chemaster doctor",
+    ))
+
+    n_fail = 0
+    n_warn = 0
+
+    def _row(table: Table, label: str, status: str, detail: str = "", hint: str = ""):
+        nonlocal n_fail, n_warn
+        if status == "ok":
+            mark = "[green]✓[/green]"
+        elif status == "warn":
+            mark = "[yellow]⚠[/yellow]"
+            n_warn += 1
+        else:
+            mark = "[red]✗[/red]"
+            n_fail += 1
+        table.add_row(mark, label, detail, (hint if not quiet else ""))
+
+    # ── 1. Python / package manager ──────────────────────────────────────
+    t1 = Table(title="Runtime", show_lines=False)
+    t1.add_column("", width=2); t1.add_column("check", style="cyan")
+    t1.add_column("detail"); t1.add_column("hint", style="dim")
+    py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    _row(t1, "python", "ok" if sys.version_info >= (3, 11) else "fail",
+         py_ver, "Need Python ≥ 3.11")
+    _row(t1, "platform", "ok", f"{_platform.system()} {_platform.machine()}")
+    _row(t1, "pipx", "ok" if shutil.which("pipx") else "warn",
+         shutil.which("pipx") or "(missing)",
+         "pip install --user pipx  (optional, for cleaner CLI install)")
+    _row(t1, "uv", "ok" if shutil.which("uv") else "warn",
+         shutil.which("uv") or "(missing)",
+         "curl -LsSf https://astral.sh/uv/install.sh | sh  (optional)")
+    console.print(t1)
+
+    # ── 2. Chemistry engines ────────────────────────────────────────────
+    t2 = Table(title="Chemistry engines", show_lines=False)
+    t2.add_column("", width=2); t2.add_column("engine", style="cyan")
+    t2.add_column("path"); t2.add_column("how to install", style="dim")
+    install_hints = {
+        "psi4":     "mamba install -c psi4 psi4",
+        "xtb":      "mamba install -c conda-forge xtb",
+        "orca":     "vendor binary; ensure on $PATH (free for academic)",
+        "g16":      "Gaussian commercial; ensure g16 on $PATH",
+        "bdf":      "free for academic; ensure bdf on $PATH",
+        "momap":    "commercial; ensure momap on $PATH",
+    }
+    have_any = False
+    for engine in ("psi4", "xtb", "orca", "g16", "bdf", "momap"):
+        p = shutil.which(engine)
+        _row(t2, engine, "ok" if p else "warn",
+             p or "(not on $PATH)",
+             install_hints[engine] if not p else "")
+        if p:
+            have_any = True
+    # pyscf is a Python lib, check differently
+    try:
+        importlib.import_module("pyscf")
+        pyscf_ver = importlib.import_module("pyscf").__version__
+        _row(t2, "pyscf", "ok", f"v{pyscf_ver}",
+             "")
+        have_any = True
+    except ImportError:
+        _row(t2, "pyscf", "warn", "(not installed)",
+             "pip install pyscf")
+    if not have_any:
+        # Promote to a hard fail: agent cannot do any real chemistry.
+        n_fail += 1
+    console.print(t2)
+
+    # ── 3. LLM API keys (auto-detect from env) ──────────────────────────
+    t3 = Table(title="LLM API keys", show_lines=False)
+    t3.add_column("", width=2); t3.add_column("key", style="cyan"); t3.add_column("detail")
+    api_keys = {
+        "ANTHROPIC_API_KEY": "Anthropic Claude",
+        "MINIMAX_API_KEY":   "MiniMax",
+        "DASHSCOPE_API_KEY": "Qwen (DashScope)",
+        "QWEN_API_KEY":      "Qwen (alt name)",
+        "DEEPSEEK_API_KEY":  "DeepSeek",
+        "OPENAI_API_KEY":    "OpenAI / openai_compat",
+    }
+    any_key = False
+    for var, vendor in api_keys.items():
+        val = os.environ.get(var)
+        if val:
+            any_key = True
+            masked = val[:8] + "…" + val[-4:] if len(val) > 16 else "(set)"
+            _row(t3, var, "ok", f"{vendor}: {masked}")
+    if not any_key:
+        _row(t3, "(none set)", "warn", "MockLLM-only mode",
+             "Export at least one of: " + ", ".join(api_keys.keys()))
+    console.print(t3)
+
+    # ── 4. User config layout ────────────────────────────────────────────
+    t4 = Table(title="User config", show_lines=False)
+    t4.add_column("", width=2); t4.add_column("path", style="cyan")
+    t4.add_column("status")
+    try:
+        from chemaster.agent.user_kb import user_kb_root
+        root = user_kb_root()
+        _row(t4, str(root), "ok" if root.exists() else "warn",
+             "exists" if root.exists() else "(will be created on first use)")
+        if root.exists():
+            for sub in ("rules", "skills", "notes"):
+                p = root / sub
+                _row(t4, str(p), "ok" if p.exists() else "warn",
+                     "exists" if p.exists() else "(empty)")
+            prefs = root / "prefs.yaml"
+            _row(t4, str(prefs), "ok" if prefs.exists() else "warn",
+                 "exists" if prefs.exists() else "(none)")
+    except Exception as exc:
+        _row(t4, "user_kb", "warn", f"could not probe: {exc}")
+    console.print(t4)
+
+    # ── 5. SLURM (optional) ──────────────────────────────────────────────
+    sinfo = shutil.which("sinfo")
+    if sinfo:
+        t5 = Table(title="HPC (SLURM)", show_lines=False)
+        t5.add_column("", width=2); t5.add_column("check", style="cyan"); t5.add_column("detail")
+        _row(t5, "sinfo", "ok", sinfo)
+        console.print(t5)
+
+    # ── 6. Summary ───────────────────────────────────────────────────────
+    if n_fail:
+        console.print(Panel(
+            f"[red]✗ {n_fail} blocking issue(s)[/red], {n_warn} warning(s).\n"
+            "ChemMaster's agent loop still runs in mock mode, but real chemistry "
+            "needs at least one engine + one API key.",
+            border_style="red", title="Summary",
+        ))
+        sys.exit(1)
+    elif n_warn:
+        console.print(Panel(
+            f"[green]✓ no blocking issues[/green], {n_warn} optional item(s).\n"
+            "You can run real chemistry now.  Set up the warned items at your leisure.",
+            border_style="yellow", title="Summary",
+        ))
+    else:
+        console.print(Panel(
+            "[green]✓ all checks passed[/green]. ChemMaster is fully provisioned.",
+            border_style="green", title="Summary",
+        ))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -804,7 +1170,6 @@ def _write_markdown_report(traj, runs_dir: Path) -> None:
 
 def _print_summary(traj, runs_dir: Path) -> None:
     """Pretty-print the trajectory result + key numbers + report path."""
-    from chemaster.agent.types import ToolMessage
 
     task_dir = runs_dir / traj.task_id
     style = {
@@ -848,6 +1213,46 @@ def _print_summary(traj, runs_dir: Path) -> None:
 # Register the v3.0 multi-frontend subcommands.
 main.add_command(tui_cmd)
 main.add_command(web_cmd)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# `mcp-serve` — expose the agent kernel itself via MCP
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@click.command(name="mcp-serve")
+def mcp_serve_cmd() -> None:
+    """Run ChemMaster as an MCP server (stdio transport).
+
+    Other MCP-compatible clients (Claude Code, Cursor, OpenAI Codex CLI)
+    can mount ChemMaster by adding this command to their mcp.json:
+
+    \b
+    {
+      "mcpServers": {
+        "chemmaster": {
+          "command": "chemaster",
+          "args": ["mcp-serve"]
+        }
+      }
+    }
+
+    \b
+    Exposes four tools to the calling agent:
+      - chemaster_run         — run a full chemistry task end-to-end
+      - chemaster_list_skills — list available skills
+      - chemaster_list_tools  — list every tool the kernel can dispatch
+      - chemaster_list_engines — detect psi4 / Gaussian / xtb / ORCA on PATH
+
+    Defaults to a deterministic mock LLM (no API key required) suitable
+    for protocol-compliance demos. Pass ``provider="anthropic"`` (etc.)
+    in the call to use a real LLM.
+    """
+    from chemaster.mcp.agent.server import main as serve_main
+    serve_main()
+
+
+main.add_command(mcp_serve_cmd)
 
 
 if __name__ == "__main__":

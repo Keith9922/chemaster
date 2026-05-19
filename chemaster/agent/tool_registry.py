@@ -121,6 +121,7 @@ class MCPToolAdapter(BaseTool):
         is_read_only: bool = False,
         is_destructive: bool = False,
         is_long_running: bool = False,
+        is_chemistry_decision: bool = False,
     ) -> None:
         self._fn = fn
         self.name = name
@@ -129,6 +130,7 @@ class MCPToolAdapter(BaseTool):
         self.is_read_only = is_read_only
         self.is_destructive = is_destructive
         self.is_long_running = is_long_running
+        self.is_chemistry_decision = is_chemistry_decision
         # Cache the parameter types for runtime coercion. Use typing.get_type_hints
         # to resolve `from __future__ import annotations` string forms
         # ("int", "float", "bool") back to the actual types.

@@ -1,0 +1,147 @@
+{
+  "data_source": "real_psi4",
+  "method": "Real psi4 single_point invocations on hand-picked hard cases (heavier elements, open-shell, larger molecules, charged species).",
+  "n_cases": 11,
+  "n_ok": 11,
+  "by_category": {
+    "heavy_element": {
+      "ok": 4,
+      "total": 4
+    },
+    "open_shell": {
+      "ok": 1,
+      "total": 1
+    },
+    "larger_molecule": {
+      "ok": 4,
+      "total": 4
+    },
+    "charged": {
+      "ok": 2,
+      "total": 2
+    }
+  },
+  "rows": [
+    {
+      "id": "HCl_sto3g",
+      "ok": true,
+      "energy_Ha": -460.6705326,
+      "wall_s": 1.1430680751800537,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "heavy_element",
+      "molecule": "HCl"
+    },
+    {
+      "id": "H2S_sto3g",
+      "ok": true,
+      "energy_Ha": -399.27926707,
+      "wall_s": 0.3714640140533447,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "heavy_element",
+      "molecule": "H2S"
+    },
+    {
+      "id": "HF_sto3g",
+      "ok": true,
+      "energy_Ha": -100.35334748,
+      "wall_s": 0.25391101837158203,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "heavy_element",
+      "molecule": "HF"
+    },
+    {
+      "id": "CH3Cl_sto3g",
+      "ok": true,
+      "energy_Ha": -499.95028115,
+      "wall_s": 0.823225736618042,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "heavy_element",
+      "molecule": "CH3Cl"
+    },
+    {
+      "id": "O2_triplet_sto3g",
+      "ok": true,
+      "energy_Ha": -150.20514476,
+      "wall_s": 0.32049012184143066,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "open_shell",
+      "molecule": "O2"
+    },
+    {
+      "id": "C2H4_sto3g",
+      "ok": true,
+      "energy_Ha": -78.53550581,
+      "wall_s": 0.9042649269104004,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "larger_molecule",
+      "molecule": "C2H4"
+    },
+    {
+      "id": "C3H8_sto3g",
+      "ok": true,
+      "energy_Ha": -119.0668094,
+      "wall_s": 2.9313809871673584,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "larger_molecule",
+      "molecule": "C3H8"
+    },
+    {
+      "id": "CH3CH2OH_sto3g",
+      "ok": true,
+      "energy_Ha": -154.92920075,
+      "wall_s": 2.29264497756958,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "larger_molecule",
+      "molecule": "ethanol"
+    },
+    {
+      "id": "C6H6_sto3g",
+      "ok": true,
+      "energy_Ha": -232.10329752,
+      "wall_s": 4.338136911392212,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "larger_molecule",
+      "molecule": "benzene"
+    },
+    {
+      "id": "OH_minus_sto3g",
+      "ok": true,
+      "energy_Ha": -75.66157707,
+      "wall_s": 0.2856578826904297,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "charged",
+      "molecule": "OH-"
+    },
+    {
+      "id": "NH4_plus_sto3g",
+      "ok": true,
+      "energy_Ha": -56.85730631,
+      "wall_s": 0.6066677570343018,
+      "method": "B3LYP-D3(BJ)",
+      "basis": "def2-SVP",
+      "n_warnings": 0,
+      "category": "charged",
+      "molecule": "NH4+"
+    }
+  ]
+}
