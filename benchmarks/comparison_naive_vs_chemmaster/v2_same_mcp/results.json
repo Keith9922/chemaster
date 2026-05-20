@@ -1,0 +1,70 @@
+[
+  {
+    "task": {
+      "id": "T1_H2_bond",
+      "ref_value": 0.7414,
+      "unit": "Å"
+    },
+    "result": {
+      "label": "naive",
+      "task_id": "T1_H2_bond",
+      "reported_value": 0.742636,
+      "chosen_method": "CCSD(T)",
+      "chosen_basis": "cc-pVTZ",
+      "abs_error": 0.0012360000000000149,
+      "n_tool_calls": 2,
+      "status": "completed"
+    }
+  },
+  {
+    "task": {
+      "id": "T1_H2_bond",
+      "ref_value": 0.7414,
+      "unit": "Å"
+    },
+    "result": {
+      "label": "chemmaster",
+      "task_id": "T1_H2_bond",
+      "reported_value": 0.7426349355,
+      "chosen_method": "CCSD(T)",
+      "chosen_basis": "cc-pVTZ",
+      "abs_error": 0.0012349355000000894,
+      "n_tool_calls": 6,
+      "status": "completed"
+    }
+  },
+  {
+    "task": {
+      "id": "T2_H2O_OH_bond",
+      "ref_value": 0.9587,
+      "unit": "Å"
+    },
+    "result": {
+      "label": "naive",
+      "task_id": "T2_H2O_OH_bond",
+      "reported_value": 0.9627,
+      "chosen_method": "B3LYP-D3BJ",
+      "chosen_basis": "def2-TZVP",
+      "abs_error": 0.0040000000000000036,
+      "n_tool_calls": 3,
+      "status": "completed"
+    }
+  },
+  {
+    "task": {
+      "id": "T2_H2O_OH_bond",
+      "ref_value": 0.9587,
+      "unit": "Å"
+    },
+    "result": {
+      "label": "chemmaster",
+      "task_id": "T2_H2O_OH_bond",
+      "reported_value": 0.9627,
+      "chosen_method": "B3LYP-D3(BJ)",
+      "chosen_basis": "def2-TZVP",
+      "abs_error": 0.0040000000000000036,
+      "n_tool_calls": 5,
+      "status": "completed"
+    }
+  }
+]

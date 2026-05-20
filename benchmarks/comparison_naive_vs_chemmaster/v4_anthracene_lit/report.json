@@ -1,0 +1,54 @@
+{
+  "experiment": "anthracene S1->S0 radiative rate via Strickler-Berg",
+  "inputs": {
+    "E_S1_eV": 3.43,
+    "oscillator_strength": 0.1,
+    "refractive_index": 1.0,
+    "molecule": "anthracene (C14H10)"
+  },
+  "published_references": {
+    "Berlman_1971_experimental": {
+      "k_r_s_inv": 45000000.0,
+      "citation": "Berlman, I.B. Handbook of Fluorescence Spectra of Aromatic Molecules, 2nd ed., 1971",
+      "method": "experimental, 1/lifetime (~22 ns)"
+    },
+    "Niu_Shuai_2008_computed": {
+      "k_r_s_inv": 52000000.0,
+      "citation": "Niu, Y.; Peng, Q.; Shuai, Z. Sci. China B Chem. 2008, 51, 1153",
+      "method": "B3LYP TVCF computed"
+    }
+  },
+  "results": {
+    "chemmaster": {
+      "data_source": "real_run_v4",
+      "reported_k_r_s_inv": 51800000.0,
+      "tool_used": "formula_kf_strickler_berg via MCP",
+      "n_tool_calls": 2,
+      "wall_s": 17.66,
+      "vs_Berlman_pct": 15.11,
+      "vs_NiuShuai_pct": -0.38
+    },
+    "naive_analytical_prediction": {
+      "data_source": "analytical_given_observed_formula_choice",
+      "predicted_k_r_s_inv": 51048000.0,
+      "note": "v3 trajectories (DMAC-TRZ-X compound) confirmed naive LLM uses simplified Strickler-Berg form k_F ≈ 0.667·f·ν̃². Applied to anthracene inputs (E=3.43 eV → ν̃=27,664 cm⁻¹, f=0.10): 0.667 × (27664)² × 0.10 = 5.105e7 s⁻¹. This is what naive WOULD report; relay rate limit prevented a fresh live trial.",
+      "vs_Berlman_pct": 13.440697912211741,
+      "vs_NiuShuai_pct": -1.8301652682782943
+    }
+  },
+  "reproducibility_evidence_from_v3": {
+    "task": "DMAC-TRZ-X τ_r computation (v3 experiment)",
+    "naive_runs": [
+      {
+        "run": 1,
+        "tau_r_ns": 273.0
+      },
+      {
+        "run": 2,
+        "tau_r_ns": 273.4
+      }
+    ],
+    "drift_ns": 0.4,
+    "note": "Two independent naive runs give DIFFERENT τ_r — LLM is stochastic. ChemMaster's formula MCP path is deterministic Python → bit-identical every run."
+  }
+}

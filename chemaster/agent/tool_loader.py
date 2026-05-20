@@ -70,6 +70,75 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_read_only=True,
     ),
 
+    # formulas ─────────────────────────────────────────────────────────────
+    # Deterministic chemistry formulas. CLAUDE.md §5.1: LLM does not do
+    # floating-point math. These tools wrap chemaster.kb.formulas.* so the
+    # agent gets exact numerical results instead of LLM arithmetic.
+    _ToolDecl(
+        exposed_name="formula_krisc_marcus",
+        module="chemaster.mcp.formulas.server",
+        function="compute_krisc_marcus",
+        description=(
+            "RISC (reverse intersystem crossing) rate constant k_RISC via Marcus "
+            "high-T limit. Inputs: ΔE_ST (eV), SOC (cm⁻¹), reorganization energy "
+            "λ (eV), T (K). Use whenever you have these four quantities — never "
+            "hand-compute the exponential/sqrt."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_kf_strickler_berg",
+        module="chemaster.mcp.formulas.server",
+        function="compute_kf_strickler_berg",
+        description=(
+            "Radiative rate constant k_F via Strickler-Berg. Inputs: emission "
+            "energy E (eV), oscillator strength f. Returns k_F (s⁻¹) and "
+            "radiative lifetime (ns)."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_kisc_marcus",
+        module="chemaster.mcp.formulas.server",
+        function="compute_kisc_marcus",
+        description="ISC (S→T) rate via Marcus high-T limit. Same input shape as k_RISC.",
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_plqy",
+        module="chemaster.mcp.formulas.server",
+        function="compute_plqy",
+        description="Photoluminescence quantum yield Φ_F = k_F / (k_F + k_NR + k_ISC).",
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_boltzmann",
+        module="chemaster.mcp.formulas.server",
+        function="compute_boltzmann_weights",
+        description=(
+            "Boltzmann conformer populations from relative energies (kcal/mol). "
+            "Always use for multi-conformer averaging — DO NOT take arithmetic mean."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_eyring",
+        module="chemaster.mcp.formulas.server",
+        function="compute_eyring",
+        description=(
+            "Eyring rate constant k = κ·(kBT/h)·exp(-ΔG‡/RT). Inputs: ΔG‡ in "
+            "kJ/mol, T in K. Use for any TST rate from activation free energy."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_arrhenius",
+        module="chemaster.mcp.formulas.server",
+        function="compute_arrhenius",
+        description="Arrhenius rate k = A·exp(-Ea/RT). Use when you have A and Ea.",
+        is_read_only=True,
+    ),
+
     # io_ase ────────────────────────────────────────────────────────────────
     _ToolDecl(
         exposed_name="io_smiles_to_xyz",

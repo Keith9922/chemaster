@@ -100,8 +100,9 @@ def build_routing_responder(
 
         if any(k in intent for k in (
                 "skill", "playbook", "search", "kb", "knowledge",
+                "basis set", "rule", "rules",
                 # Chinese
-                "知识库", "搜索", "搜 ", "查 ", "找 ", "检索", "playbook")):
+                "知识库", "搜索", "搜 ", "查", "找 ", "检索", "规则", "playbook")):
             return ToolCall(id="c1", name="kb_search",
                             arguments={"query": intent[:30] or "tddft"})
 
