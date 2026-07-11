@@ -7,6 +7,24 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolated_user_kb(tmp_path_factory, monkeypatch):
+    """与开发者机器上的真实 ~/.chemaster/user_kb 隔离。
+
+    kb MCP 会把 user_kb 文档并入语料；不隔离的话，单测结果取决于
+    开发者个人的用户知识库内容（曾导致 test_list_skills 在有
+    user_kb/notes 的机器上失败）。
+    """
+    monkeypatch.setenv(
+        "CHEMASTER_USER_KB_DIR", str(tmp_path_factory.mktemp("user_kb"))
+    )
+    from chemaster.mcp.kb.server import reset_doc_cache
+
+    reset_doc_cache()
+    yield
+    reset_doc_cache()
+
+
 @pytest.fixture
 def fixtures_dir() -> Path:
     """返回 tests/fixtures/ 路径。"""
