@@ -9,14 +9,19 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolated_user_kb(tmp_path_factory, monkeypatch):
-    """与开发者机器上的真实 ~/.chemaster/user_kb 隔离。
+    """与开发者机器上的真实 ~/.chemaster 隔离。
 
-    kb MCP 会把 user_kb 文档并入语料；不隔离的话，单测结果取决于
-    开发者个人的用户知识库内容（曾导致 test_list_skills 在有
-    user_kb/notes 的机器上失败）。
+    - kb MCP 会把 user_kb 文档并入语料；不隔离的话，单测结果取决于
+      开发者个人的用户知识库内容（曾导致 test_list_skills 在有
+      user_kb/notes 的机器上失败）。
+    - agent 的权限分级会 lazy-load ~/.chemaster/policy.yaml（不存在时
+      还会写入默认文件）；单测不应读写真实主目录。
     """
     monkeypatch.setenv(
         "CHEMASTER_USER_KB_DIR", str(tmp_path_factory.mktemp("user_kb"))
+    )
+    monkeypatch.setenv(
+        "CHEMASTER_HOME", str(tmp_path_factory.mktemp("chemaster_home"))
     )
     from chemaster.mcp.kb.server import reset_doc_cache
 

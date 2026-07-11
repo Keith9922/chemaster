@@ -35,6 +35,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable
 
 from chemaster.agent.builtins import register_builtins
 from chemaster.agent.context import ContextConfig, ContextManager
+from chemaster.agent.policy import Policy, load_policy
 from chemaster.agent.llm_client import (
     BaseLLM,
     ContextOverflowError,
@@ -106,6 +107,7 @@ class AgentConfig:
     confirm_callback: ConfirmCallback | None = None   # None = auto-approve
     async_confirm_callback: AsyncConfirmCallback | None = None  # used by run_streaming
     recommend_callback: "RecommendCallback | None" = None  # v3.0: recommend mode handler
+    policy: Policy | None = None   # None = lazy-load ~/.chemaster/policy.yaml
     max_tool_observation_chars: int = 30_000
     finish_on_no_tool_calls: bool = False        # treat plain text as completion?
 
@@ -147,6 +149,7 @@ class BaseAgent:
         self._step_count = 0
         self._pending_ask_user: dict | None = None
         self._finish_payload: dict | None = None
+        self._policy: Policy | None = self.config.policy
 
     # ------------------------------------------------------------------
     # Public
@@ -359,7 +362,7 @@ class BaseAgent:
                     observation=tool_msg.content,
                     data=dict(tool_msg.meta or {}),
                 )
-                if status == "cancel":
+                if status in ("cancel", "escalated"):
                     should_finish = True
                     break
                 continue
@@ -509,8 +512,11 @@ class BaseAgent:
                 # v3.0 recommend mode: surface chemistry decision to the user.
                 tool_msg = self._handle_recommend(tc)
                 self._append_tool_message(step, tool_msg)
-                # If the user cancelled, treat as task termination.
-                if tool_msg.meta and tool_msg.meta.get("recommend_status") == "cancel":
+                # cancel → task termination; escalated (L3, no channel) →
+                # pause via pending ask_user set by _handle_recommend.
+                if tool_msg.meta and tool_msg.meta.get("recommend_status") in (
+                    "cancel", "escalated",
+                ):
                     should_finish = True
                     break
                 continue
@@ -686,16 +692,31 @@ class BaseAgent:
     # Recommend mode (v3.0)
     # ------------------------------------------------------------------
 
+    def _get_policy(self) -> Policy:
+        """Resolve the permission policy (lazy: ~/.chemaster/policy.yaml)."""
+        if self._policy is None:
+            self._policy = load_policy()
+        return self._policy
+
     def _handle_recommend(self, tc: ToolCall) -> ToolMessage:
         """Process a `recommend` tool call by routing through the user.
 
-        The recommend_callback receives the recommendation payload and returns:
+        v3.0 权限分级（~/.chemaster/policy.yaml）在这里落地执行：
+
+        - **L1**（用户已把该 decision_class 降级为自主）→ 不打扰用户，
+          静默接受推荐；trajectory / confirmations.jsonl 照记，
+          decision_authority 记为 ``agent``。
+        - **L2**（默认）→ recommend_callback 呈卡片，用户
+          accept / modify / cancel；无 callback（脚本模式）时自动接受。
+        - **L3** → 必须用户决断：有 callback 时同样走卡片（由用户拍板）；
+          **无 callback 时不允许自动接受** —— 升级为 pending ask_user，
+          任务转为 waiting_for_input 等待用户。
+
+        The recommend_callback receives the recommendation payload (incl. the
+        resolved ``level``) and returns:
             {"status": "accept" | "modify" | "cancel",
              "modified_value": "<user override>",   # iff status == "modify"
              "user_note": "<free-form note>"}        # optional
-
-        If no callback is configured (script / test mode), default to accepting
-        the agent's recommendation so the loop progresses.
         """
         payload = {
             "decision": tc.arguments.get("decision", ""),
@@ -705,11 +726,57 @@ class BaseAgent:
             "tradeoffs": tc.arguments.get("tradeoffs", ""),
             "decision_class": tc.arguments.get("decision_class", "other"),
         }
+        level = self._get_policy().level_for_decision(payload["decision_class"])
+        payload["level"] = level
 
         cb = self.config.recommend_callback
-        if cb is None:
-            # Auto-accept fallback so scripted tasks don't deadlock. The
-            # trajectory still records this as a chemistry decision point.
+        authority = "user-chemistry"
+
+        if level == "L1":
+            # Policy demoted this class to autonomous — suppress the prompt,
+            # keep the full audit trail.
+            decision_payload = {
+                "status": "accept",
+                "modified_value": "",
+                "user_note": (
+                    f"(auto-accepted: decision_class "
+                    f"'{payload['decision_class']}' demoted to L1 by policy)"
+                ),
+            }
+            authority = "agent"
+        elif cb is None:
+            if level == "L3":
+                # L3 without an interactive channel: never assume — escalate
+                # to ask_user and pause the task.
+                self._pending_ask_user = {
+                    "questions": [
+                        f"[L3 decision: {payload['decision_class']}] "
+                        f"{payload['decision']} — agent recommends: "
+                        f"{payload['recommendation']}. Approve or override?"
+                    ],
+                    "context": payload["reasoning"],
+                }
+                decision_payload = {"status": "escalated", "user_note": ""}
+                self._record_recommend(tc, payload, decision_payload)
+                return ToolMessage(
+                    content=(
+                        "[recommend:escalated] decision_class "
+                        f"'{payload['decision_class']}' is L3 (must ask user) "
+                        "and no recommend channel is available — escalating "
+                        "to ask_user."
+                    ),
+                    tool_call_id=tc.id,
+                    name=tc.name,
+                    meta={
+                        "recommend_payload": payload,
+                        "recommend_decision": decision_payload,
+                        "recommend_status": "escalated",
+                        "decision_authority": "user-chemistry",
+                        "escalation": True,
+                    },
+                )
+            # L2 script mode: auto-accept so scripted tasks don't deadlock.
+            # The trajectory still records this as a chemistry decision point.
             decision_payload = {
                 "status": "accept",
                 "modified_value": "",
@@ -758,7 +825,7 @@ class BaseAgent:
                 "recommend_payload": payload,
                 "recommend_decision": decision_payload,
                 "recommend_status": status,
-                "decision_authority": "user-chemistry",
+                "decision_authority": authority,
             },
         )
 
@@ -774,7 +841,7 @@ class BaseAgent:
         meta = self.trajectory.meta
         meta.setdefault(
             "recommendations",
-            {"accepted": 0, "modified": 0, "cancelled": 0, "log": []},
+            {"accepted": 0, "modified": 0, "cancelled": 0, "escalated": 0, "log": []},
         )
         status = decision.get("status", "accept")
         record = {
@@ -782,6 +849,7 @@ class BaseAgent:
             "decision": payload.get("decision"),
             "recommendation": payload.get("recommendation"),
             "decision_class": payload.get("decision_class"),
+            "level": payload.get("level", ""),
             "status": status,
             "modified_value": decision.get("modified_value", ""),
             "user_note": decision.get("user_note", ""),
@@ -791,6 +859,9 @@ class BaseAgent:
             meta["recommendations"]["accepted"] += 1
         elif status == "modify":
             meta["recommendations"]["modified"] += 1
+        elif status == "escalated":
+            meta["recommendations"].setdefault("escalated", 0)
+            meta["recommendations"]["escalated"] += 1
         else:
             meta["recommendations"]["cancelled"] += 1
 
