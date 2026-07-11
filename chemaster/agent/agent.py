@@ -146,6 +146,7 @@ class BaseAgent:
         self.trajectory: Trajectory | None = None
         self._step_count = 0
         self._pending_ask_user: dict | None = None
+        self._finish_payload: dict | None = None
 
     # ------------------------------------------------------------------
     # Public
@@ -154,6 +155,24 @@ class BaseAgent:
     def run(self, task: TaskInstance, on_step=None) -> Trajectory:
         """Execute one task end-to-end. Returns the trajectory."""
         self._initialize(task)
+        return self._run_loop(on_step)
+
+    def continue_run(self, user_message: str, on_step=None) -> Trajectory:
+        """Append a new user message to an existing dialog and continue."""
+        if self.dialog is None:
+            raise RuntimeError("continue_run called before run(); no active dialog.")
+        self.dialog.add_message(UserMessage(content=user_message))
+        # Reset the pause flag for this turn but keep the dialog history.
+        self._pending_ask_user = None
+        # Reuse existing trajectory; mark it running again.
+        if self.trajectory is None:
+            self.trajectory = Trajectory()
+        self.trajectory.status = "running"
+        self.trajectory.finished_at = None
+        return self._run_loop(on_step)
+
+    def _run_loop(self, on_step=None) -> Trajectory:
+        """Shared sync driver behind `run` and `continue_run`."""
         assert self.trajectory is not None
         try:
             for turn in range(self.config.max_turns):
@@ -169,7 +188,7 @@ class BaseAgent:
                     if self._pending_ask_user:
                         self.trajectory.finish("waiting_for_input", self._pending_ask_user)
                     else:
-                        self.trajectory.finish("completed", getattr(self, "_finish_payload", None))
+                        self.trajectory.finish("completed", self._finish_payload)
                     break
             else:
                 logger.warning("Reached max_turns=%d without finishing", self.config.max_turns)
@@ -180,33 +199,6 @@ class BaseAgent:
             self._persist_trajectory()
             raise
 
-        self._persist_trajectory()
-        return self.trajectory
-
-    def continue_run(self, user_message: str, on_step=None) -> Trajectory:
-        """Append a new user message to an existing dialog and continue."""
-        if self.dialog is None:
-            raise RuntimeError("continue_run called before run(); no active dialog.")
-        self.dialog.add_message(UserMessage(content=user_message))
-        # Reset step count for this turn but keep the dialog history.
-        self._pending_ask_user = None
-        # Reuse existing trajectory; mark it running again.
-        if self.trajectory is None:
-            self.trajectory = Trajectory()
-        self.trajectory.status = "running"
-        self.trajectory.finished_at = None
-        for turn in range(self.config.max_turns):
-            done = self._step()
-            if on_step and self.trajectory.steps:
-                on_step(self.trajectory.steps[-1], turn + 1, self.config.max_turns)
-            if done:
-                if self._pending_ask_user:
-                    self.trajectory.finish("waiting_for_input", self._pending_ask_user)
-                else:
-                    self.trajectory.finish("completed", getattr(self, "_finish_payload", None))
-                break
-        else:
-            self.trajectory.finish("failed", {"reason": "max_turns_exceeded"})
         self._persist_trajectory()
         return self.trajectory
 
@@ -253,7 +245,7 @@ class BaseAgent:
                     if self._pending_ask_user:
                         self.trajectory.finish("waiting_for_input", self._pending_ask_user)
                     else:
-                        self.trajectory.finish("completed", getattr(self, "_finish_payload", None))
+                        self.trajectory.finish("completed", self._finish_payload)
                     break
             else:
                 logger.warning("Reached max_turns=%d without finishing", self.config.max_turns)
@@ -279,9 +271,7 @@ class BaseAgent:
             finish_payload = None
             reason = (self.trajectory.finish_payload or {}).get("reason")
         else:
-            finish_payload = (
-                getattr(self, "_finish_payload", None) or self.trajectory.finish_payload
-            )
+            finish_payload = self._finish_payload or self.trajectory.finish_payload
             reason = None
         yield RunCompletedEvent(
             task_id=self.trajectory.task_id,
@@ -291,31 +281,16 @@ class BaseAgent:
         )
 
     async def _step_streaming(self, step_id: int) -> AsyncIterator[AgentEvent]:
-        """One iteration of the loop, emitting events at every transition."""
+        """One iteration of the loop, emitting events at every transition.
+
+        Message shapes, decision_authority tags and audit records are shared
+        with the sync `_step` via the `_*_message` helpers — semantics live
+        there, not here.
+        """
         assert self.dialog is not None and self.trajectory is not None
         self._step_count += 1
 
-        dialog_for_query, compacted = self.context_manager.prepare_for_query(self.dialog)
-        if compacted:
-            self.dialog = dialog_for_query
-            self.context_manager.reset_prompt_tokens()
-
-        try:
-            assistant = self.llm.query(dialog_for_query)
-        except ContextOverflowError:
-            logger.warning("Context overflow, emergency truncate + retry")
-            self.dialog = self.context_manager.truncate(self.dialog)
-            self.context_manager.reset_prompt_tokens()
-            assistant = self.llm.query(self.dialog)
-
-        usage = (assistant.meta or {}).get("usage")
-        if usage:
-            self.context_manager.update_usage(usage)
-            if self.context_manager.is_overflow(usage):
-                self.dialog = self.context_manager.truncate(self.dialog)
-                self.context_manager.reset_prompt_tokens()
-
-        self.dialog.add_message(assistant)
+        assistant = self._query_assistant()
         step = StepRecord(step_id=self._step_count, assistant_message=assistant)
 
         yield AssistantMessageEvent(
@@ -341,39 +316,22 @@ class BaseAgent:
             # finish / ask_user are control-flow built-ins, never dispatched.
             if tc.name == "finish":
                 should_finish = True
-                tool_msg = ToolMessage(
-                    content="[finished]",
-                    tool_call_id=tc.id,
-                    name=tc.name,
-                    meta={"finish_payload": tc.arguments},
-                )
-                self.dialog.add_message(tool_msg)
-                step.tool_responses.append(tool_msg)
-                self._finish_payload = tc.arguments
+                tool_msg = self._finish_message(tc)
+                self._append_tool_message(step, tool_msg)
                 yield ToolCompletedEvent(
                     step_id=step_id,
                     tool_call_id=tc.id,
                     tool_name=tc.name,
                     ok=True,
                     is_error=False,
-                    observation="[finished]",
+                    observation=tool_msg.content,
                     data={"finish_payload": tc.arguments},
                 )
                 break
 
             if tc.name == "ask_user":
-                self._pending_ask_user = {
-                    "questions": tc.arguments.get("questions", []),
-                    "context": tc.arguments.get("context", ""),
-                }
-                tool_msg = ToolMessage(
-                    content="[ask_user] Awaiting user response.",
-                    tool_call_id=tc.id,
-                    name=tc.name,
-                    meta=self._pending_ask_user,
-                )
-                self.dialog.add_message(tool_msg)
-                step.tool_responses.append(tool_msg)
+                tool_msg = self._ask_user_message(tc)
+                self._append_tool_message(step, tool_msg)
                 should_finish = True
                 yield ToolCompletedEvent(
                     step_id=step_id,
@@ -381,30 +339,36 @@ class BaseAgent:
                     tool_name=tc.name,
                     ok=True,
                     is_error=False,
-                    observation="[ask_user] Awaiting user response.",
-                    data=dict(self._pending_ask_user),
+                    observation=tool_msg.content,
+                    data=dict(self._pending_ask_user or {}),
                 )
                 break
 
-            # Real tool — emit confirmation/started/completed events.
-            async for event in self._dispatch_tool_streaming(tc, step_id):
+            if tc.name == "recommend":
+                # Chemistry decision point — same handler as the sync path.
+                # The callback may block on user input, so run it off-loop.
+                tool_msg = await asyncio.to_thread(self._handle_recommend, tc)
+                self._append_tool_message(step, tool_msg)
+                status = (tool_msg.meta or {}).get("recommend_status")
+                yield ToolCompletedEvent(
+                    step_id=step_id,
+                    tool_call_id=tc.id,
+                    tool_name=tc.name,
+                    ok=status != "cancel",
+                    is_error=False,
+                    observation=tool_msg.content,
+                    data=dict(tool_msg.meta or {}),
+                )
+                if status == "cancel":
+                    should_finish = True
+                    break
+                continue
+
+            # Real tool — emit confirmation/started/completed events.  The
+            # dispatcher appends the ToolMessage itself, so event emission
+            # and dialog bookkeeping cannot drift apart.
+            async for event in self._dispatch_tool_streaming(tc, step_id, step):
                 yield event
-                if isinstance(event, ToolCompletedEvent):
-                    # Reconstruct the ToolMessage that the sync path would
-                    # have appended, so the dialog history is consistent
-                    # with how `_dispatch_tool` builds it.
-                    tool_msg = ToolMessage(
-                        content=event.observation,
-                        tool_call_id=event.tool_call_id,
-                        name=event.tool_name,
-                        is_error=event.is_error,
-                        meta={"data": event.data} if event.data else (
-                            {"declined": True, "reason": event.observation}
-                            if event.declined else {}
-                        ),
-                    )
-                    self.dialog.add_message(tool_msg)
-                    step.tool_responses.append(tool_msg)
 
         self.trajectory.add_step(step)
         yield StepCompletedEvent(step_id=step_id, finish_signaled=should_finish)
@@ -413,17 +377,24 @@ class BaseAgent:
         self,
         tc: ToolCall,
         step_id: int,
+        step: StepRecord,
     ) -> AsyncIterator[AgentEvent]:
-        """Dispatch one tool call, yielding (Confirmation?, Started, Completed)."""
+        """Dispatch one tool call, yielding (Confirmation?, Started, Completed).
+
+        Builds the exact same ToolMessages as the sync `_dispatch_tool` (via
+        the shared helpers) and appends them to dialog + step itself.
+        """
         tool = self.tools.get(tc.name)
         if tool is None:
+            tool_msg = self._unknown_tool_message(tc)
+            self._append_tool_message(step, tool_msg)
             yield ToolCompletedEvent(
                 step_id=step_id,
                 tool_call_id=tc.id,
                 tool_name=tc.name,
                 ok=False,
                 is_error=True,
-                observation=f"[error] Unknown tool: {tc.name}. Available: {self.tools.names()}",
+                observation=tool_msg.content,
                 data={"error": "unknown_tool"},
             )
             return
@@ -437,9 +408,12 @@ class BaseAgent:
                 arguments=dict(tc.arguments),
                 reason=reason,
             )
-            approved = await self._await_confirmation(tc, reason)
-            self._record_confirmation(tc, reason, approved)
+            approved, decided = await self._await_confirmation(tc, reason)
+            if decided:
+                self._record_confirmation(tc, reason, approved)
             if not approved:
+                tool_msg = self._declined_message(tc, reason)
+                self._append_tool_message(step, tool_msg)
                 yield ToolCompletedEvent(
                     step_id=step_id,
                     tool_call_id=tc.id,
@@ -447,10 +421,7 @@ class BaseAgent:
                     ok=False,
                     is_error=False,
                     declined=True,
-                    observation=(
-                        f"[user_declined] User declined to run {tc.name}. "
-                        "Choose a different action or ask the user for clarification."
-                    ),
+                    observation=tool_msg.content,
                     data={"declined": True, "reason": reason},
                 )
                 return
@@ -462,33 +433,11 @@ class BaseAgent:
             arguments=dict(tc.arguments),
         )
 
-        try:
-            result = tool.run(**tc.arguments)
-        except TypeError as exc:
-            result = ToolResult(
-                ok=False,
-                observation=f"[error] Tool {tc.name} called with invalid arguments: {exc}",
-                data={"error_code": "INVALID_ARGS", "details": str(exc)},
-                is_error=True,
-            )
-        except Exception as exc:
-            logger.exception("Tool %s raised", tc.name)
-            result = ToolResult(
-                ok=False,
-                observation=f"[error] Tool {tc.name} raised: {type(exc).__name__}: {exc}",
-                data={"error_code": "TOOL_EXCEPTION", "details": str(exc)},
-                is_error=True,
-            )
-
-        observation = result.observation
-        if len(observation) > self.config.max_tool_observation_chars:
-            half = self.config.max_tool_observation_chars // 2
-            observation = (
-                observation[:half]
-                + "\n... [truncated] ...\n"
-                + observation[-half:]
-            )
-
+        # Run in a worker thread so a slow engine call does not block the
+        # event loop that is streaming these events out.
+        result, observation = await asyncio.to_thread(self._execute_tool, tool, tc)
+        tool_msg = self._tool_message(tc, tool, result, observation)
+        self._append_tool_message(step, tool_msg)
         yield ToolCompletedEvent(
             step_id=step_id,
             tool_call_id=tc.id,
@@ -499,21 +448,29 @@ class BaseAgent:
             data=result.data if result.data else None,
         )
 
-    async def _await_confirmation(self, tc: ToolCall, reason: str) -> bool:
-        """Resolve confirmation via async callback, falling back to sync."""
+    async def _await_confirmation(self, tc: ToolCall, reason: str) -> tuple[bool, bool]:
+        """Resolve a confirmation. Returns (approved, decided_by_callback).
+
+        decided_by_callback=False means no callback was configured and the
+        call was auto-approved — matching the sync path, pure auto-approvals
+        are not written to the audit log.
+        """
         async_cb = self.config.async_confirm_callback
         if async_cb is not None:
             res = async_cb(tc.name, dict(tc.arguments), reason)
             if inspect.isawaitable(res):
-                return bool(await res)
-            return bool(res)
+                return bool(await res), True
+            return bool(res), True
         sync_cb = self.config.confirm_callback
         if sync_cb is not None:
             # Run sync callback in a thread so a slow blocking prompt does
             # not stall the event loop.
-            return bool(await asyncio.to_thread(sync_cb, tc.name, dict(tc.arguments), reason))
+            approved = await asyncio.to_thread(
+                sync_cb, tc.name, dict(tc.arguments), reason
+            )
+            return bool(approved), True
         # No callback configured → auto-approve (legacy default).
-        return True
+        return True, False
 
     # ------------------------------------------------------------------
     # Loop body
@@ -524,6 +481,77 @@ class BaseAgent:
         assert self.dialog is not None and self.trajectory is not None
         self._step_count += 1
 
+        assistant = self._query_assistant()
+        step = StepRecord(step_id=self._step_count, assistant_message=assistant)
+
+        # No tool calls
+        if not assistant.tool_calls:
+            if self.config.finish_on_no_tool_calls:
+                self.trajectory.add_step(step)
+                return True
+            self._nudge_no_tool_call()
+            self.trajectory.add_step(step)
+            return False
+
+        should_finish = False
+        for tc in assistant.tool_calls:
+            if tc.name == "finish":
+                should_finish = True
+                self._append_tool_message(step, self._finish_message(tc))
+                break
+
+            if tc.name == "ask_user":
+                self._append_tool_message(step, self._ask_user_message(tc))
+                should_finish = True
+                break
+
+            if tc.name == "recommend":
+                # v3.0 recommend mode: surface chemistry decision to the user.
+                tool_msg = self._handle_recommend(tc)
+                self._append_tool_message(step, tool_msg)
+                # If the user cancelled, treat as task termination.
+                if tool_msg.meta and tool_msg.meta.get("recommend_status") == "cancel":
+                    should_finish = True
+                    break
+                continue
+
+            self._append_tool_message(step, self._dispatch_tool(tc))
+
+        self.trajectory.add_step(step)
+        return should_finish
+
+    # ------------------------------------------------------------------
+    # Tool dispatch
+    # ------------------------------------------------------------------
+
+    def _dispatch_tool(self, tc: ToolCall) -> ToolMessage:
+        tool = self.tools.get(tc.name)
+        if tool is None:
+            return self._unknown_tool_message(tc)
+
+        # Confirmation gate (per-tool, only for destructive/long-running).
+        # No callback configured → auto-approve without an audit record,
+        # mirroring `_await_confirmation` on the streaming path.
+        if tool.needs_confirmation():
+            cb = self.config.confirm_callback
+            if cb is not None:
+                reason = self._confirmation_reason(tool)
+                approved = bool(cb(tc.name, tc.arguments, reason))
+                self._record_confirmation(tc, reason, approved)
+                if not approved:
+                    return self._declined_message(tc, reason)
+
+        result, observation = self._execute_tool(tool, tc)
+        return self._tool_message(tc, tool, result, observation)
+
+    # ------------------------------------------------------------------
+    # Shared step building blocks (single source of truth for both paths)
+    # ------------------------------------------------------------------
+
+    def _query_assistant(self):
+        """Query the LLM with context compaction, overflow retry and usage
+        bookkeeping, then append the assistant message to the dialog."""
+        assert self.dialog is not None
         dialog_for_query, compacted = self.context_manager.prepare_for_query(self.dialog)
         if compacted:
             self.dialog = dialog_for_query
@@ -545,103 +573,62 @@ class BaseAgent:
                 self.context_manager.reset_prompt_tokens()
 
         self.dialog.add_message(assistant)
-        step = StepRecord(step_id=self._step_count, assistant_message=assistant)
+        return assistant
 
-        # No tool calls
-        if not assistant.tool_calls:
-            if self.config.finish_on_no_tool_calls:
-                self.trajectory.add_step(step)
-                return True
-            self._nudge_no_tool_call()
-            self.trajectory.add_step(step)
-            return False
+    def _append_tool_message(self, step: StepRecord, tool_msg: ToolMessage) -> None:
+        assert self.dialog is not None
+        self.dialog.add_message(tool_msg)
+        step.tool_responses.append(tool_msg)
 
-        should_finish = False
-        for tc in assistant.tool_calls:
-            if tc.name == "finish":
-                should_finish = True
-                tool_msg = ToolMessage(
-                    content="[finished]",
-                    tool_call_id=tc.id,
-                    name=tc.name,
-                    meta={"finish_payload": tc.arguments},
-                )
-                self.dialog.add_message(tool_msg)
-                step.tool_responses.append(tool_msg)
-                # Stash on the trajectory for callers.
-                self._finish_payload = tc.arguments
-                break
+    def _finish_message(self, tc: ToolCall) -> ToolMessage:
+        # Stash on the agent for callers; `_run_loop` / `run_streaming`
+        # write it back to `trajectory.finish_payload`.
+        self._finish_payload = tc.arguments
+        return ToolMessage(
+            content="[finished]",
+            tool_call_id=tc.id,
+            name=tc.name,
+            meta={"finish_payload": tc.arguments},
+        )
 
-            if tc.name == "ask_user":
-                self._pending_ask_user = {
-                    "questions": tc.arguments.get("questions", []),
-                    "context": tc.arguments.get("context", ""),
-                }
-                tool_msg = ToolMessage(
-                    content="[ask_user] Awaiting user response.",
-                    tool_call_id=tc.id,
-                    name=tc.name,
-                    meta={
-                        **self._pending_ask_user,
-                        "decision_authority": "user-chemistry",
-                    },
-                )
-                self.dialog.add_message(tool_msg)
-                step.tool_responses.append(tool_msg)
-                should_finish = True
-                break
+    def _ask_user_message(self, tc: ToolCall) -> ToolMessage:
+        self._pending_ask_user = {
+            "questions": tc.arguments.get("questions", []),
+            "context": tc.arguments.get("context", ""),
+        }
+        return ToolMessage(
+            content="[ask_user] Awaiting user response.",
+            tool_call_id=tc.id,
+            name=tc.name,
+            meta={
+                **self._pending_ask_user,
+                "decision_authority": "user-chemistry",
+            },
+        )
 
-            if tc.name == "recommend":
-                # v3.0 recommend mode: surface chemistry decision to the user.
-                tool_msg = self._handle_recommend(tc)
-                self.dialog.add_message(tool_msg)
-                step.tool_responses.append(tool_msg)
-                # If the user cancelled, treat as task termination.
-                if tool_msg.meta and tool_msg.meta.get("recommend_status") == "cancel":
-                    should_finish = True
-                    break
-                continue
+    def _unknown_tool_message(self, tc: ToolCall) -> ToolMessage:
+        return ToolMessage(
+            content=f"[error] Unknown tool: {tc.name}. Available: {self.tools.names()}",
+            tool_call_id=tc.id,
+            name=tc.name,
+            is_error=True,
+            meta={"error": "unknown_tool"},
+        )
 
-            tool_msg = self._dispatch_tool(tc)
-            self.dialog.add_message(tool_msg)
-            step.tool_responses.append(tool_msg)
+    def _declined_message(self, tc: ToolCall, reason: str) -> ToolMessage:
+        return ToolMessage(
+            content=(
+                f"[user_declined] User declined to run {tc.name}. "
+                "Choose a different action or ask the user for clarification."
+            ),
+            tool_call_id=tc.id,
+            name=tc.name,
+            meta={"declined": True, "reason": reason},
+        )
 
-        self.trajectory.add_step(step)
-        return should_finish
-
-    # ------------------------------------------------------------------
-    # Tool dispatch
-    # ------------------------------------------------------------------
-
-    def _dispatch_tool(self, tc: ToolCall) -> ToolMessage:
-        tool = self.tools.get(tc.name)
-        if tool is None:
-            return ToolMessage(
-                content=f"[error] Unknown tool: {tc.name}. Available: {self.tools.names()}",
-                tool_call_id=tc.id,
-                name=tc.name,
-                is_error=True,
-                meta={"error": "unknown_tool"},
-            )
-
-        # Confirmation gate (per-tool, only for destructive/long-running)
-        if tool.needs_confirmation():
-            cb = self.config.confirm_callback
-            if cb is not None:
-                reason = self._confirmation_reason(tool)
-                approved = bool(cb(tc.name, tc.arguments, reason))
-                self._record_confirmation(tc, reason, approved)
-                if not approved:
-                    return ToolMessage(
-                        content=(
-                            f"[user_declined] User declined to run {tc.name}. "
-                            "Choose a different action or ask the user for clarification."
-                        ),
-                        tool_call_id=tc.id,
-                        name=tc.name,
-                        meta={"declined": True, "reason": reason},
-                    )
-
+    def _execute_tool(self, tool: BaseTool, tc: ToolCall) -> tuple[ToolResult, str]:
+        """Run the tool, mapping exceptions to error results and truncating
+        oversized observations."""
         try:
             result = tool.run(**tc.arguments)
         except TypeError as exc:
@@ -667,14 +654,24 @@ class BaseAgent:
                 + "\n... [truncated] ...\n"
                 + observation[-half:]
             )
-        # v3.0: tag decision_authority on every tool message
+        return result, observation
+
+    def _authority_for(self, tool: BaseTool) -> str:
+        """v3.0 decision_authority tag: who owned this step."""
         if tool.is_chemistry_decision:
-            authority = "user-chemistry"
-        elif tool.needs_confirmation():
-            authority = "user-binary"
-        else:
-            authority = "agent"
-        meta = {"decision_authority": authority}
+            return "user-chemistry"
+        if tool.needs_confirmation():
+            return "user-binary"
+        return "agent"
+
+    def _tool_message(
+        self,
+        tc: ToolCall,
+        tool: BaseTool,
+        result: ToolResult,
+        observation: str,
+    ) -> ToolMessage:
+        meta: dict[str, Any] = {"decision_authority": self._authority_for(tool)}
         if result.data:
             meta["data"] = result.data
         return ToolMessage(
@@ -797,19 +794,7 @@ class BaseAgent:
         else:
             meta["recommendations"]["cancelled"] += 1
 
-        try:
-            task_dir = self.config.runs_dir / self.trajectory.task_id
-            task_dir.mkdir(parents=True, exist_ok=True)
-            log_path = task_dir / "confirmations.jsonl"
-            line = json.dumps(
-                {"type": "recommend", **record},
-                ensure_ascii=False,
-                default=str,
-            )
-            with log_path.open("a", encoding="utf-8") as fh:
-                fh.write(line + "\n")
-        except OSError:
-            logger.exception("Failed to write recommend log")
+        self._append_audit_line({"type": "recommend", **record})
 
     @staticmethod
     def _confirmation_reason(tool: BaseTool) -> str:
@@ -834,15 +819,19 @@ class BaseAgent:
         }
         meta["confirmations"]["log"].append(record)
         meta["confirmations"]["approved" if approved else "declined"] += 1
+        self._append_audit_line(record)
 
-        # Append to disk so the user can audit even after long runs.
+    def _append_audit_line(self, record: dict) -> None:
+        """Append one JSON line to runs/<task_id>/confirmations.jsonl so the
+        user can audit decisions even after long runs."""
+        if self.trajectory is None:
+            return
         try:
             task_dir = self.config.runs_dir / self.trajectory.task_id
             task_dir.mkdir(parents=True, exist_ok=True)
             log_path = task_dir / "confirmations.jsonl"
-            import json
-            with log_path.open("a", encoding="utf-8") as f:
-                f.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+            with log_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
         except Exception as exc:
             logger.warning("Failed to persist confirmation log: %s", exc)
 
@@ -882,7 +871,7 @@ class BaseAgent:
         (self.config.runs_dir / task.task_id).mkdir(parents=True, exist_ok=True)
 
     def _ensure_builtins(self) -> None:
-        for name in ("finish", "ask_user", "think"):
+        for name in ("finish", "ask_user", "think", "recommend"):
             if not self.tools.has(name):
                 register_builtins(self.tools)
                 return

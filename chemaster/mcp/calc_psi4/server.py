@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -141,6 +142,52 @@ def _xyz_to_geom_block(xyz: str, charge: int, multiplicity: int) -> str:
     return f"{charge} {multiplicity}\n{coords}\nsymmetry c1\n"
 
 
+def _psi4_session(
+    geometry_xyz: str,
+    charge: int,
+    multiplicity: int,
+    memory_gb: float,
+    n_threads: int,
+    log_name: str,
+    options: dict[str, Any],
+):
+    """为一次工具调用准备隔离的 psi4 会话。
+
+    psi4 的 options / scratch 是进程级全局状态：不重置的话，同进程里上一个
+    工具设置的选项会泄漏进来（实测：TD-opt 留下的 optking + tdscf 选项会毒化
+    随后的普通 tddft 调用，表现为依赖测试顺序的失败）。
+
+    输出日志写到每次调用独立的临时目录——并发调用不会互相覆盖，CWD 也不再
+    被 *_output.log 弄脏。
+
+    Returns:
+        (psi4 module, psi4 version str, molecule handle, output log path)
+    """
+    import psi4
+    from psi4 import __version__ as psi4_version
+
+    try:
+        psi4.core.clean()  # 清掉上一次计算的 scratch
+    except Exception:  # noqa: BLE001 — 没有前次计算时某些版本会抱怨
+        pass
+    psi4.core.clean_options()  # 所有选项回到 psi4 默认值
+
+    psi4.set_memory(f"{int(memory_gb)} GB")
+    psi4.set_num_threads(n_threads)
+
+    out_dir = Path(tempfile.mkdtemp(prefix="chemaster_psi4_"))
+    output_path = str(out_dir / log_name)
+    psi4.core.set_output_file(output_path, False)
+
+    # 强制 symmetry c1 防对称性突跳（PITFALLS §2.6）。
+    # psi4.geometry() 会以副作用方式设置全局 active molecule。
+    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
+    mol = psi4.geometry(geom_block)
+
+    psi4.set_options(options)
+    return psi4, psi4_version, mol, output_path
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # MCP tools
 # ══════════════════════════════════════════════════════════════════════════════
@@ -233,28 +280,16 @@ def single_point(
         }
 
     # ── 2. 初始化 psi4（内部 import 避免导入开销）───────────────────────
-    import psi4
-
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-
-    output_path = "single_point_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # psi4.geometry() mutates the global active molecule as a side effect;
-    # the returned handle is unused here, so we discard it explicitly.
-    psi4.geometry(geom_block)
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "reference": reference,
-        "scf_type": "df",
-        "guess": scf_guess.lower(),
-    })
+    psi4, psi4_version, _mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "single_point_output.log",
+        {
+            "reference": reference,
+            "scf_type": "df",
+            "guess": scf_guess.lower(),
+        },
+    )
 
     # ── 4. 运行 SCF ────────────────────────────────────────────────────
     wall_start = time.time()
@@ -474,29 +509,19 @@ def optimize(
     opt_coordinates = opt_coords_map.get(coordinate_system.lower(), "INTERNAL")
 
     # ── 4. 初始化 psi4 ─────────────────────────────────────────────────
-    import psi4
-
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-
-    output_path = "optimize_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    # ── 5. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # `mol` is needed downstream by psi4.optimize() and mol.save_string_xyz().
-    mol = psi4.geometry(geom_block)  # noqa: F841 — used in psi4.optimize() and .save_string_xyz()
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "g_convergence": g_convergence,
-        "geom_maxiter": max_iter,
-        "opt_coordinates": opt_coordinates,
-        "scf_type": "df",
-        "reference": reference,
-    })
+    # `mol` is needed downstream by psi4.optimize() and mol.save_string_xyz().
+    psi4, psi4_version, mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "optimize_output.log",
+        {
+            "g_convergence": g_convergence,
+            "geom_maxiter": max_iter,
+            "opt_coordinates": opt_coordinates,
+            "scf_type": "df",
+            "reference": reference,
+        },
+    )
 
     # ── 6. 运行优化 ───────────────────────────────────────────────────
     wall_start = time.time()
@@ -714,26 +739,16 @@ def frequency(
         }
 
     # ── 2. 初始化 psi4 ─────────────────────────────────────────────────
-    import psi4
-
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-
-    output_path = "frequency_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # `mol` is needed downstream as the `molecule=` arg of psi4.frequencies().
-    mol = psi4.geometry(geom_block)  # noqa: F841 — passed to psi4.frequencies() below
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "reference": reference,
-        "scf_type": "df",
-    })
+    # `mol` is needed downstream as the `molecule=` arg of psi4.frequencies().
+    psi4, psi4_version, mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "frequency_output.log",
+        {
+            "reference": reference,
+            "scf_type": "df",
+        },
+    )
 
     # ── 4. 运行频率计算 ────────────────────────────────────────────────
     wall_start = time.time()
@@ -1053,27 +1068,18 @@ def tddft(
             "suggestion": "Closed-shell singlet needs multiplicity=1.",
         }
 
-    import psi4
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-    output_path = "tddft_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # psi4.geometry() mutates the global active molecule as a side effect;
-    # the returned handle is unused here, so we discard it explicitly.
-    psi4.geometry(geom_block)
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "reference": reference,
-        "scf_type": "df",
-        "tdscf_states": int(n_states),
-        "tdscf_triplets": "ALSO" if triplets else "NONE",
-        "tdscf_tda": bool(tda),
-    })
+    psi4, psi4_version, _mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "tddft_output.log",
+        {
+            "reference": reference,
+            "scf_type": "df",
+            "tdscf_states": int(n_states),
+            "tdscf_triplets": "ALSO" if triplets else "NONE",
+            "tdscf_tda": bool(tda),
+        },
+    )
 
     wall_start = time.time()
     warnings: list[str] = []
@@ -1345,32 +1351,25 @@ def optimize_excited_state(
     }
     opt_coordinates = opt_coords_map.get(coordinate_system.lower(), "INTERNAL")
 
-    import psi4
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-    output_path = "optimize_es_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    mol = psi4.geometry(geom_block)
-
     # Pass tdscf_states as a length-1 list matching c1 symmetry's single irrep.
     # Plain int triggers psi4's internal expansion which can mis-fire
     # during the FD-gradient driver loop and yield ValidationError
     # "States requested ([3, 3]) do not match number of irreps (1)".
-    psi4.set_options({
-        "reference": "rhf",
-        "scf_type": "df",
-        "tdscf_states": [int(n_states)],
-        "tdscf_tda": True,
-        "tdscf_triplets": "ONLY" if target_spin == "triplet" else "NONE",
-        "follow_root": int(target_state),
-        "g_convergence": g_convergence,
-        "geom_maxiter": int(max_iter),
-        "opt_coordinates": opt_coordinates,
-    })
+    psi4, psi4_version, mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "optimize_es_output.log",
+        {
+            "reference": "rhf",
+            "scf_type": "df",
+            "tdscf_states": [int(n_states)],
+            "tdscf_tda": True,
+            "tdscf_triplets": "ONLY" if target_spin == "triplet" else "NONE",
+            "follow_root": int(target_state),
+            "g_convergence": g_convergence,
+            "geom_maxiter": int(max_iter),
+            "opt_coordinates": opt_coordinates,
+        },
+    )
 
     wall_start = time.time()
     warnings: list[str] = []

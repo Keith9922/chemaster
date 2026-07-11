@@ -18,7 +18,7 @@ import json
 import logging
 import os
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from chemaster.agent.types import (
@@ -52,14 +52,58 @@ class ContextOverflowError(LLMError):
 
 @dataclass
 class LLMConfig:
-    provider: str = "mock"                 # mock | anthropic | openai_compat
-    model: str = "claude-sonnet-4-6"
+    provider: str = "mock"                 # mock | anthropic | minimax | qwen | deepseek | openai_compat
+    model: str | None = "claude-sonnet-4-6"   # None → provider default
     temperature: float = 0.0
     max_tokens: int = 4096
     api_key: str | None = None
     base_url: str | None = None
     timeout_s: float = 120.0
-    extra: dict[str, Any] = None  # type: ignore[assignment]
+    extra: dict[str, Any] | None = None
+
+
+def _looks_like_context_overflow(exc: Exception) -> bool:
+    """Best-effort detection of context-window overflow across vendors.
+
+    Vendor SDKs don't expose a common typed error for this, so we match the
+    message text. Kept in one place so a wording change is a one-line fix.
+    """
+    msg = str(exc).lower()
+    return (
+        ("context" in msg and ("length" in msg or "window" in msg))
+        or "maximum context" in msg
+    )
+
+
+def _normalized_config(
+    config: LLMConfig,
+    *,
+    provider: str,
+    default_model: str,
+    default_base_url: str | None,
+    env_keys: tuple[str, ...],
+    model_prefixes: tuple[str, ...],
+    missing_key_hint: str,
+) -> LLMConfig:
+    """Shared provider-config normalization (api key env fallback + default
+    model swap + default base url) used by the provider convenience classes."""
+    api_key = config.api_key
+    for env in env_keys:
+        api_key = api_key or os.environ.get(env)
+    if not api_key:
+        raise LLMError(missing_key_hint)
+    # LLMConfig.model defaults to an Anthropic id; swap it unless the user
+    # really supplied an id for this provider.
+    model = config.model
+    if not model or not model.startswith(model_prefixes):
+        model = default_model
+    return replace(
+        config,
+        provider=provider,
+        model=model,
+        api_key=api_key,
+        base_url=config.base_url or default_base_url,
+    )
 
 
 class BaseLLM(ABC):
@@ -144,7 +188,13 @@ class AnthropicLLM(BaseLLM):
     internal Dialog / ToolCall / AssistantMessage and Anthropic's wire format.
     """
 
+    DEFAULT_MODEL = "claude-sonnet-4-6"
+
     def __init__(self, config: LLMConfig) -> None:
+        if not config.model:
+            # e.g. the web/tui wiring passes model=None when the user gave
+            # no override — fall back instead of sending model=None to the API.
+            config = replace(config, model=self.DEFAULT_MODEL)
         super().__init__(config)
         api_key = config.api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
@@ -159,7 +209,11 @@ class AnthropicLLM(BaseLLM):
             ) from exc
 
         from anthropic import Anthropic
-        self._client = Anthropic(api_key=api_key, base_url=config.base_url)
+        self._client = Anthropic(
+            api_key=api_key,
+            base_url=config.base_url,
+            timeout=config.timeout_s,
+        )
 
     def query(self, dialog: Dialog) -> AssistantMessage:
         system, messages = self._translate_dialog(dialog)
@@ -179,8 +233,7 @@ class AnthropicLLM(BaseLLM):
             response = self._client.messages.create(**req)
         except Exception as exc:
             # Surface context overflow as a typed error so the loop can compact.
-            msg_str = str(exc).lower()
-            if "context" in msg_str and ("length" in msg_str or "window" in msg_str):
+            if _looks_like_context_overflow(exc):
                 raise ContextOverflowError(str(exc)) from exc
             raise LLMError(str(exc)) from exc
 
@@ -281,34 +334,17 @@ class MiniMaxLLM(AnthropicLLM):
     DEFAULT_MODEL = "MiniMax-M2.7"
 
     def __init__(self, config: LLMConfig) -> None:
-        # Normalize config so AnthropicLLM finds an api key + base url.
-        api_key = (
-            config.api_key
-            or os.environ.get("MINIMAX_API_KEY")
-            or os.environ.get("ANTHROPIC_API_KEY")
-        )
-        if not api_key:
-            raise LLMError(
-                "MINIMAX_API_KEY not set. Pass config.api_key or export the env var."
-            )
-        # Choose model: keep an explicit MiniMax model id, otherwise force the
-        # default MiniMax model. The default LLMConfig.model is an Anthropic
-        # id ("claude-sonnet-4-6"), so we swap it here unless the user really
-        # supplied a MiniMax-prefixed id.
-        model = config.model
-        if not model or not model.startswith("MiniMax"):
-            model = self.DEFAULT_MODEL
-        cfg = LLMConfig(
+        super().__init__(_normalized_config(
+            config,
             provider="minimax",
-            model=model,
-            temperature=config.temperature,
-            max_tokens=config.max_tokens,
-            api_key=api_key,
-            base_url=config.base_url or self.DEFAULT_BASE_URL,
-            timeout_s=config.timeout_s,
-            extra=config.extra,
-        )
-        super().__init__(cfg)
+            default_model=self.DEFAULT_MODEL,
+            default_base_url=self.DEFAULT_BASE_URL,
+            env_keys=("MINIMAX_API_KEY", "ANTHROPIC_API_KEY"),
+            model_prefixes=("MiniMax",),
+            missing_key_hint=(
+                "MINIMAX_API_KEY not set. Pass config.api_key or export the env var."
+            ),
+        ))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -356,7 +392,11 @@ class OpenAICompatLLM(BaseLLM):
                 "openai SDK not installed. Run: pip install openai>=1.0"
             ) from exc
         from openai import OpenAI
-        self._client = OpenAI(api_key=api_key, base_url=config.base_url)
+        self._client = OpenAI(
+            api_key=api_key,
+            base_url=config.base_url,
+            timeout=config.timeout_s,
+        )
 
     def query(self, dialog: Dialog) -> AssistantMessage:
         messages = self._translate_dialog(dialog)
@@ -373,9 +413,7 @@ class OpenAICompatLLM(BaseLLM):
                 req["tools"] = tools
             response = self._client.chat.completions.create(**req)
         except Exception as exc:
-            msg = str(exc).lower()
-            if ("context" in msg and ("length" in msg or "window" in msg)) \
-                    or "maximum context" in msg:
+            if _looks_like_context_overflow(exc):
                 raise ContextOverflowError(str(exc)) from exc
             raise LLMError(str(exc)) from exc
 
@@ -468,30 +506,15 @@ class QwenLLM(OpenAICompatLLM):
     DEFAULT_MODEL = "qwen-max"
 
     def __init__(self, config: LLMConfig) -> None:
-        api_key = (config.api_key
-                   or os.environ.get("DASHSCOPE_API_KEY")
-                   or os.environ.get("QWEN_API_KEY")
-                   or os.environ.get("OPENAI_API_KEY"))
-        if not api_key:
-            raise LLMError(
-                "DASHSCOPE_API_KEY (or QWEN_API_KEY) not set."
-            )
-        # LLMConfig.model defaults to an Anthropic id; swap unless the user
-        # supplied a Qwen-prefixed id.
-        model = config.model
-        if not model or not model.startswith(("qwen", "Qwen")):
-            model = self.DEFAULT_MODEL
-        cfg = LLMConfig(
+        super().__init__(_normalized_config(
+            config,
             provider="qwen",
-            model=model,
-            temperature=config.temperature,
-            max_tokens=config.max_tokens,
-            api_key=api_key,
-            base_url=config.base_url or self.DEFAULT_BASE_URL,
-            timeout_s=config.timeout_s,
-            extra=config.extra,
-        )
-        super().__init__(cfg)
+            default_model=self.DEFAULT_MODEL,
+            default_base_url=self.DEFAULT_BASE_URL,
+            env_keys=("DASHSCOPE_API_KEY", "QWEN_API_KEY", "OPENAI_API_KEY"),
+            model_prefixes=("qwen", "Qwen"),
+            missing_key_hint="DASHSCOPE_API_KEY (or QWEN_API_KEY) not set.",
+        ))
 
 
 class DeepSeekLLM(OpenAICompatLLM):
@@ -501,25 +524,15 @@ class DeepSeekLLM(OpenAICompatLLM):
     DEFAULT_MODEL = "deepseek-chat"
 
     def __init__(self, config: LLMConfig) -> None:
-        api_key = (config.api_key
-                   or os.environ.get("DEEPSEEK_API_KEY")
-                   or os.environ.get("OPENAI_API_KEY"))
-        if not api_key:
-            raise LLMError("DEEPSEEK_API_KEY not set.")
-        model = config.model
-        if not model or not model.startswith("deepseek"):
-            model = self.DEFAULT_MODEL
-        cfg = LLMConfig(
+        super().__init__(_normalized_config(
+            config,
             provider="deepseek",
-            model=model,
-            temperature=config.temperature,
-            max_tokens=config.max_tokens,
-            api_key=api_key,
-            base_url=config.base_url or self.DEFAULT_BASE_URL,
-            timeout_s=config.timeout_s,
-            extra=config.extra,
-        )
-        super().__init__(cfg)
+            default_model=self.DEFAULT_MODEL,
+            default_base_url=self.DEFAULT_BASE_URL,
+            env_keys=("DEEPSEEK_API_KEY", "OPENAI_API_KEY"),
+            model_prefixes=("deepseek",),
+            missing_key_hint="DEEPSEEK_API_KEY not set.",
+        ))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
