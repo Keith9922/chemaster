@@ -66,33 +66,22 @@ def _build_agent(provider: str, max_turns: int, runs_dir: Path):
     out-of-the-box without an API key, suitable for cross-client
     protocol-compliance demos.
     """
-    from chemaster.agent.agent import AgentConfig, ChemAgent
-    from chemaster.agent.llm_client import LLMConfig, MockLLM, create_llm
-    from chemaster.agent.tool_loader import build_default_registry
+    from chemaster.agent.factory import build_chem_agent
 
+    responder = None
     if provider == "mock":
         from chemaster.agent.mock_routing import build_routing_responder
         responder = build_routing_responder()
         responder.reset()
-        llm = MockLLM(responder=responder)
-    else:
-        default_model = {
-            "anthropic": "claude-3-5-sonnet-20241022",
-            "openai_compat": "gpt-4o-mini",
-            "minimax": "MiniMax-Text-01",
-            "qwen": "qwen-max",
-            "deepseek": "deepseek-chat",
-        }.get(provider, "")
-        llm_cfg = LLMConfig(provider=provider, model=default_model)
-        llm = create_llm(llm_cfg)
 
-    registry = build_default_registry()
-    cfg = AgentConfig(
-        max_turns=max_turns,
+    agent = build_chem_agent(
+        provider=provider,
         runs_dir=runs_dir,
+        max_turns=max_turns,
         confirm_callback=lambda *_a, **_kw: True,  # auto-approve (caller is an LLM)
+        mock_responder=responder,
     )
-    return ChemAgent(llm=llm, tools=registry, config=cfg), registry
+    return agent, agent.tools
 
 
 def _summarize_trajectory(traj, agent=None) -> dict[str, Any]:
@@ -389,22 +378,12 @@ def chemaster_list_engines() -> dict[str, Any]:
             "meta": {"engine": "chemaster.agent"}
         }``
     """
-    engines = ["psi4", "xtb", "gaussian", "orca", "bdf", "momap"]
-    out: dict[str, Any] = {}
-    for name in engines:
-        # Gaussian's binary is `g16` or `g09` — accept either as a hit.
-        candidates = (
-            ["g16", "g09", "gaussian"] if name == "gaussian"
-            else [name]
-        )
-        found_path = None
-        for cand in candidates:
-            p = shutil.which(cand)
-            if p:
-                found_path = p
-                break
-        out[name] = {"available": found_path is not None, "path": found_path}
+    from chemaster.engines import probe_engines
 
+    out: dict[str, Any] = {
+        s.name: {"available": s.available, "path": s.path}
+        for s in probe_engines()
+    }
     return {
         "ok": True,
         "result": out,

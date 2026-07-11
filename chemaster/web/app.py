@@ -136,22 +136,12 @@ def create_app(agent_factory: Any | None = None):
 
     @app.get("/api/engines")
     async def engine_status():
-        import importlib.util
-        engines = ["g16", "g09", "bdf", "momap", "psi4", "orca", "xtb"]
-
-        def _is_available(name: str) -> bool:
-            # psi4 is invoked as a Python module — require both binary on PATH
-            # and importable in the current interpreter.
-            if name == "psi4":
-                return (shutil.which("psi4") is not None
-                        and importlib.util.find_spec("psi4") is not None)
-            return shutil.which(name) is not None
+        from chemaster.engines import probe_engines
 
         return {
             "engines": [
-                {"name": e, "available": _is_available(e),
-                 "path": shutil.which(e)}
-                for e in engines
+                {"name": s.name, "available": s.available, "path": s.path}
+                for s in probe_engines()
             ],
         }
 

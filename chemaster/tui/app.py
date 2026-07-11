@@ -113,22 +113,13 @@ if TEXTUAL_AVAILABLE:
             return "\n".join(lines)
 
         def _render_engine_status(self) -> str:
-            import shutil
-            import importlib.util
-            engines = ["g16", "g09", "bdf", "momap", "psi4", "orca", "xtb"]
+            from chemaster.engines import probe_engines
 
-            def _is_ready(name: str) -> bool:
-                # psi4 is used as a Python module — also require importability
-                # (binary on PATH is not enough if current interpreter lacks the package).
-                if name == "psi4":
-                    return (shutil.which("psi4") is not None
-                            and importlib.util.find_spec("psi4") is not None)
-                return shutil.which(name) is not None
-
-            available = [e for e in engines if _is_ready(e)]
-            unavailable = [e for e in engines if e not in available]
+            statuses = probe_engines()
+            available = [s.name for s in statuses if s.available]
+            unavailable = [s.name for s in statuses if not s.available]
             return (
-                "[b]Engines on PATH[/b]\n"
+                "[b]Engines[/b]\n"
                 f"[green]ready[/green]: {' '.join(available) if available else '(none)'}\n"
                 f"[dim red]missing[/dim red]: {' '.join(unavailable[:4])}..."
             )
