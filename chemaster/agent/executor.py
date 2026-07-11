@@ -17,9 +17,12 @@ For new code use `ChemAgent.run(TaskInstance(description=...))`.
 from __future__ import annotations
 
 import importlib
+import json
 import logging
 import os
 import subprocess
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -135,14 +138,8 @@ class Executor:
     def _collect_meta(self) -> dict:
         """收集版本快照，写入 meta.json。"""
         meta: dict[str, Any] = {
-            "timestamp": subprocess.run(
-                ["date", "-u", "+%Y-%m-%dT%H:%M:%SZ"],
-                capture_output=True, text=True,
-            ).stdout.strip(),
-            "python_version": subprocess.run(
-                ["python", "--version"],
-                capture_output=True, text=True,
-            ).stdout.strip(),
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "python_version": f"Python {sys.version.split()[0]}",
         }
 
         # Git commit（若有）
@@ -165,11 +162,10 @@ class Executor:
 
     def _write_json_sync(self, path: Path, data: dict) -> None:
         """写 JSON 并 fsync 确保持久化。"""
-        path.write_text(
-            __import__("json").dumps(data, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        os.fsync(path.open())
+        with path.open("w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2, ensure_ascii=False)
+            fh.flush()
+            os.fsync(fh.fileno())
 
     # ------------------------------------------------------------------
     # 公共 API

@@ -159,13 +159,29 @@ def single_point(
     wall = time.time() - t0
     converged = bool(mf.converged)
 
-    warnings: list[str] = []
     if not converged:
-        warnings.append(
-            f"SCF did not converge in {max_cycle} cycles. "
-            "Consider increasing max_cycle, switching guess, or starting "
-            "from a smaller-basis converged density."
-        )
+        # 与其余 server 的契约一致：失败 → ok=False（此前 ok=True 与
+        # error_code 并存，agent 侧按 ok 判读会把不收敛当成功；x2c_soc
+        # 也会拿不收敛的能量继续算修正值）。
+        return {
+            "ok": False,
+            "error_code": "SCF_NOT_CONVERGED",
+            "details": f"SCF did not converge in {max_cycle} cycles.",
+            "suggestion": (
+                "Increase max_cycle, switch the initial guess, or start "
+                "from a smaller-basis converged density."
+            ),
+            "data_source": "real_pyscf",
+            "engine": f"pyscf {version}",
+            "method": method,
+            "basis": basis,
+            "relativistic": relativistic,
+            "charge": charge,
+            "multiplicity": multiplicity,
+            "energy_hartree_unconverged": float(energy),
+            "converged": False,
+            "wall_time_s": round(wall, 3),
+        }
 
     return {
         "ok": True,
@@ -178,12 +194,11 @@ def single_point(
         "multiplicity": multiplicity,
         "energy_hartree": float(energy),
         "energy_eV": float(energy) * HARTREE_TO_EV,
-        "converged": converged,
+        "converged": True,
         "n_basis": int(mol.nao_nr()),
         "n_electrons": int(mol.nelectron),
         "wall_time_s": round(wall, 3),
-        "warnings": warnings,
-        "error_code": "SCF_NOT_CONVERGED" if not converged else None,
+        "warnings": [],
     }
 
 
