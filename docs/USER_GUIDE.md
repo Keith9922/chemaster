@@ -1,34 +1,52 @@
 # ChemMaster — 用户使用手册
 
-> 这是给真实使用者的一页索引。展示当前 V2 (0.2.0a1) 系统**实际能做什么**、
+> 这是给真实使用者的一页索引。展示当前 V2 (0.2.0a2, 2026-05) 系统**实际能做什么**、
 > 怎么调用、以及每个功能背后调的是哪些工具。
 
 ---
 
 ## 1. 安装 + 第一次配置
 
+### 选项 A — 一行安装（推荐普通用户）
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Keith9922/chemaster/main/scripts/install.sh | bash
+```
+
+完整三条路径（pipx / uvx / conda）见 [`INSTALL.md`](INSTALL.md)。
+
+### 选项 B — 完整 conda（化学栈 + psi4）
+
 ```bash
 # 1. 装 chemaster 环境
-conda create -n chemaster python=3.11 -y
-conda activate chemaster
-conda install -c conda-forge psi4 xtb cclib rdkit ase pyyaml -y
+mamba create -n chemaster python=3.11 -y
+mamba activate chemaster
+mamba install -c psi4 -c conda-forge psi4 xtb cclib rdkit ase pyyaml -y
 
 # 2. 装 chemaster 自身
-git clone https://github.com/<your>/chemaster
-cd chemaster
-pip install -e ".[dev]"
+pip install chemaster
+```
 
-# 3. 一键配置（写到 ~/.chemaster/env）
-chemaster init
-# → 选 LLM provider (anthropic / minimax / qwen / deepseek / mock)
-# → 输入 API key
-# → 选默认 runs 目录
+### 一行环境审计
 
-# 4. 把生成的 env 加到 shell rc
-echo 'source ~/.chemaster/env' >> ~/.zshrc
+```bash
+chemaster doctor
+# → Python / pipx / uv 版本
+# → psi4 / Gaussian / xtb / ORCA / BDF / MOMAP / pyscf 在 PATH 上的可用性
+# → LLM API key 是否配置（masked 显示）
+# → user_kb 配置目录状态
+# → SLURM 连通性（如有）
+```
 
-# 5. 检查计算引擎
-chemaster --check-engines
+### LLM API key 配置
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...      # 推荐
+# 或 export MINIMAX_API_KEY=...           # 国内 MiniMax M2.7
+# 或 export DASHSCOPE_API_KEY=...         # Qwen
+# 或 export DEEPSEEK_API_KEY=...          # DeepSeek
+# 或 export OPENAI_API_KEY=...            # OpenAI / openai_compat
+# 不配 → MockLLM 仍能跑（适合协议演示）
 ```
 
 ---
@@ -37,19 +55,24 @@ chemaster --check-engines
 
 | 命令 | 用途 | 真实做的事 |
 |---|---|---|
-| `chemaster` | 进入交互式 REPL | 启动 ChemAgent，等用户输入；/help、/tools、/exit 命令 |
-| `chemaster run "<intent>"` | 一次性任务 | 调 LLM → tool-use loop → 写 trajectory.json + report.md |
+| `chemaster run "<intent>"` | 一次性任务 | 调 LLM → tool-use loop → 写 trajectory.json + report.md，完成时弹桌面通知 |
+| `chemaster tui` | Textual TUI 交互界面 | 全屏对话区 + 引擎状态面板 |
+| `chemaster web` | 本地 Web 前端 | FastAPI + 内嵌 SPA，浏览器 http://127.0.0.1:8765 |
+| `chemaster mcp-serve` | **作为 MCP server 启动** | 把整个 agent 内核暴露成 MCP server，Claude Code / Cursor / Codex 可挂载 |
+| `chemaster doctor` | 一行环境审计 | Python / pipx / 引擎 / API key / user_kb / SLURM 全过一遍 |
 | `chemaster show <task_id>` | 看历史任务 | 读 `runs/<task_id>/trajectory.json`，rich 表格渲染 |
 | `chemaster replay <task_id>` | 复现历史任务 | 用持久化的 user_intent 重跑 |
 | `chemaster init` | 配置向导 | 写 `~/.chemaster/env`（mode 0600） |
 | `chemaster --check-engines` | 看引擎可用性 | which psi4 / xtb / orca / multiwfn |
-| `chemaster tools list` | 看 Agent 能调的所有工具 | 22 + 8 = 30 个，含 read-only / destructive / long-running 标志 |
-| `chemaster skills list` | 看可用工作流 playbook | kb/skills/* (10 份完整文档) |
+| `chemaster tools list` | 看 Agent 能调的所有工具 | 45 个工具（含 finish/ask_user/think/recommend + 计算 + KB + viz + parse + io） |
+| `chemaster skills list` | 看可用工作流 playbook | kb/skills/* |
 | `chemaster skills show <name>` | 读完整 skill | 例：`chemaster skills show tadf-pipeline` |
-| `chemaster kb search "<query>"` | 搜知识库 | 检索 rules/*.yaml + skills/*/SKILL.md |
-| `chemaster kb list` | 列 yaml 规则 | basis_sets / functionals / convergence / workflows |
-| `chemaster mcps list` | 列 MCP server entry-points | const / io_ase / calc_psi4 / calc_xtb / calc_orca / calc_bdf / analysis_multiwfn / parse_cclib / viz / kb / hpc_slurm / pdf |
-| `chemaster --tui` | 实验 Textual TUI | beta 版，CLI 是主要入口 |
+| `chemaster kb search "<query>"` | 搜知识库 | 检索 rules/*.yaml + skills/*/SKILL.md + 用户 KB |
+| `chemaster kb list` | 列 yaml 规则 | basis_sets / functionals / convergence / workflows / method_selection |
+| `chemaster kb method-rules` | 看方法选择规则集 | 11 条内置 + 用户覆盖（命中规则会显式回显到 L2 recommend 卡片） |
+| `chemaster kb add <path>` | 把外部文档加入个人 KB | 复制到 `~/.chemaster/user_kb/{skills,rules,notes}/` |
+| `chemaster kb prefs` | 看/改个人偏好 | `~/.chemaster/user_kb/prefs.yaml`（如 `soc: BDF`） |
+| `chemaster mcps list` | 列 MCP server entry-points | 15 个：const / io_ase / calc_psi4 / calc_xtb / calc_orca / calc_bdf / calc_pyscf / calc_gaussian / calc_momap / analysis_multiwfn / parse_cclib / viz / kb / hpc_slurm / pdf |
 
 ---
 

@@ -85,7 +85,6 @@ def _classify_route(route: str) -> dict[str, Any]:
     has_opt = bool(re.search(r"\bopt\b", r))
     has_freq = bool(re.search(r"\bfreq\b", r))
     has_td = bool(re.search(r"\btd\b\s*(?:\(|=)", r) or re.search(r"^td\b", r) or " td " in r)
-    has_td_simple = bool(re.search(r"^\s*#p?\s+td\b", r) or " td/" in r or " td " in r)
     has_nacme = bool(re.search(r"prop\s*=\s*field|iop\(6/22|nacme", r))
     has_field = "prop=field" in r.replace(" ", "")
     is_triplet = "td(triplet" in r.replace(" ", "") or "triplet" in r

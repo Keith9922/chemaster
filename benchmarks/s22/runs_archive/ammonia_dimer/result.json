@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "ammonia_dimer",
+  "method": "B3LYP-D3(BJ)/def2-TZVP, counterpoise-corrected, via psi4 1.10",
+  "computed_binding_energy_kcal": -3.214,
+  "reference_binding_energy_kcal": -3.17,
+  "error_kcal": -0.044,
+  "abs_error_kcal": 0.044,
+  "within_acceptance": true,
+  "interaction_hartree": -0.005123,
+  "wall_time_s": 2.96,
+  "geometry_note": "water_dimer uses the standard S22 hydrogen-bonded geometry; other dimers use approximate near-equilibrium geometries due to lack of canonical S22A coordinates in our local copy. Direct comparison to S22A reference values is therefore strongest for water_dimer; other systems reflect both method and geometry approximation errors."
+}

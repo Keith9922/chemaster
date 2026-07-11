@@ -38,7 +38,6 @@ dependencies = [
     # Agent / LLM
     "anthropic>=0.39",
     "openai>=1.30",              # OpenAI-compat (Qwen / DeepSeek / vLLM)
-    "claude-agent-sdk>=0.1",     # 占位；按实际包名调整
     "mcp>=1.0",
 
     # TUI
@@ -49,6 +48,7 @@ dependencies = [
     "ase>=3.23",
     "rdkit>=2024.3",
     "cclib>=1.8",
+    "pyscf>=2.13",                # open-source X2C SOC reference for the BDF wrapper
     "pint>=0.23",
     "numpy>=1.26",
     "scipy>=1.11",
@@ -90,10 +90,10 @@ pdf = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/chemaster"
-Documentation = "https://your-username.github.io/chemaster"
-Repository = "https://github.com/your-username/chemaster"
-Issues = "https://github.com/your-username/chemaster/issues"
+Homepage = "https://github.com/Keith9922/chemaster"
+Documentation = "https://Keith9922.github.io/chemaster"
+Repository = "https://github.com/Keith9922/chemaster"
+Issues = "https://github.com/Keith9922/chemaster/issues"
 
 [project.scripts]
 chemaster = "chemaster.cli:main"
@@ -106,6 +106,7 @@ io_ase            = "chemaster.mcp.io_ase.server:mcp"
 calc_psi4         = "chemaster.mcp.calc_psi4.server:mcp"
 calc_orca         = "chemaster.mcp.calc_orca.server:mcp"
 calc_bdf          = "chemaster.mcp.calc_bdf.server:mcp"
+calc_pyscf        = "chemaster.mcp.calc_pyscf.server:mcp"
 calc_xtb          = "chemaster.mcp.calc_xtb.server:mcp"
 parse_cclib       = "chemaster.mcp.parse_cclib.server:mcp"
 analysis_multiwfn = "chemaster.mcp.analysis_multiwfn.server:mcp"

@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "data_source": "real_psi4",
+  "system": "water",
+  "formula": "H2O",
+  "method": "TD-CAM-B3LYP/def2-SVP, TDA, via psi4 1.10",
+  "states": [
+    {
+      "state_idx": 1,
+      "computed_eV": 7.714,
+      "ref_cc3_eV": 7.62,
+      "ref_character": "n -> 3s (Rydberg)",
+      "error_eV": 0.094,
+      "abs_error_eV": 0.094,
+      "oscillator_strength": 0.0179
+    },
+    {
+      "state_idx": 2,
+      "computed_eV": 9.669,
+      "ref_cc3_eV": 9.41,
+      "ref_character": "n -> 3p (Rydberg)",
+      "error_eV": 0.259,
+      "abs_error_eV": 0.259,
+      "oscillator_strength": 0.0
+    }
+  ],
+  "mae_eV": 0.176,
+  "max_abs_error_eV": 0.259,
+  "wall_time_s": 0.4
+}

@@ -1,0 +1,5105 @@
+{
+  "data_source": "real_simulation",
+  "method": "Drive ChemAgent.run() with the deterministic keyword router from chemaster.agent.mock_routing on every prompt from chemaster.agent.test_fixtures.iter_all_prompts().",
+  "n_prompts": 334,
+  "overall": {
+    "routing_correctness": 1.0,
+    "agent_ok_rate": 1.0,
+    "unique_tool_sequences": 4
+  },
+  "wall_clock_ms": {
+    "mean": 97.52968328441689,
+    "stdev": 48.45198700891092,
+    "p50": 128.2670497894287,
+    "p95": 132.735013961792,
+    "p99": 139.94407653808594,
+    "max": 473.79207611083984
+  },
+  "by_group": {
+    "energy": {
+      "correct": 170,
+      "total": 170,
+      "agent_ok": 170
+    },
+    "optimize": {
+      "correct": 120,
+      "total": 120,
+      "agent_ok": 120
+    },
+    "constant": {
+      "correct": 16,
+      "total": 16,
+      "agent_ok": 16
+    },
+    "kb": {
+      "correct": 12,
+      "total": 12,
+      "agent_ok": 12
+    },
+    "skill": {
+      "correct": 16,
+      "total": 16,
+      "agent_ok": 16
+    }
+  },
+  "by_molecule": {
+    "H2": {
+      "correct": 29,
+      "total": 29
+    },
+    "H2O": {
+      "correct": 29,
+      "total": 29
+    },
+    "NH3": {
+      "correct": 29,
+      "total": 29
+    },
+    "N2": {
+      "correct": 29,
+      "total": 29
+    },
+    "CH4": {
+      "correct": 29,
+      "total": 29
+    },
+    "CO2": {
+      "correct": 29,
+      "total": 29
+    },
+    "O2": {
+      "correct": 29,
+      "total": 29
+    },
+    "HCl": {
+      "correct": 29,
+      "total": 29
+    },
+    "CH3OH": {
+      "correct": 29,
+      "total": 29
+    },
+    "C2H6": {
+      "correct": 29,
+      "total": 29
+    },
+    "(unspecified)": {
+      "correct": 44,
+      "total": 44
+    }
+  },
+  "rows": [
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "Compute the SCF energy of H2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 473.79207611083984,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "Compute the SCF energy of H2O.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.7071189880371,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "Compute the SCF energy of NH3.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 134.0320110321045,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "Compute the SCF energy of N2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.23798370361328,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "Compute the SCF energy of CH4.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 127.86006927490234,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "Compute the SCF energy of CO2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.2726993560791,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "Compute the SCF energy of O2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.84499740600586,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "Compute the SCF energy of HCl.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.55198097229004,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "Compute the SCF energy of CH3OH.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.20904159545898,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "Compute the SCF energy of C2H6.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 136.23619079589844,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "What is the single-point energy of H2 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.56890869140625,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "What is the single-point energy of H2O at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.59687614440918,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "What is the single-point energy of NH3 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.54006004333496,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "What is the single-point energy of N2 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.83219528198242,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "What is the single-point energy of CH4 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.6591033935547,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "What is the single-point energy of CO2 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.67007064819336,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "What is the single-point energy of O2 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.9800148010254,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "What is the single-point energy of HCl at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.2021999359131,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "What is the single-point energy of CH3OH at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 139.94407653808594,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "What is the single-point energy of C2H6 at HF/sto-3g?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.80103492736816,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "Calculate the electronic energy of H2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.75008583068848,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "Calculate the electronic energy of H2O.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.3478946685791,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "Calculate the electronic energy of NH3.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.54880905151367,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "Calculate the electronic energy of N2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.7830810546875,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "Calculate the electronic energy of CH4.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.08594512939453,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "Calculate the electronic energy of CO2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.98723983764648,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "Calculate the electronic energy of O2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.5829029083252,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "Calculate the electronic energy of HCl.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.21724128723145,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "Calculate the electronic energy of CH3OH.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.0040225982666,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "Calculate the electronic energy of C2H6.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.87892532348633,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "Compute total energy for H2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.07800483703613,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "Compute total energy for H2O.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.23002243041992,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "Compute total energy for NH3.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.9607753753662,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "Compute total energy for N2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.472017288208,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "Compute total energy for CH4.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.8119297027588,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "Compute total energy for CO2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.60181045532227,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "Compute total energy for O2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 125.16999244689941,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "Compute total energy for HCl.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.34296035766602,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "Compute total energy for CH3OH.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.11591339111328,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "Compute total energy for C2H6.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.20906257629395,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "Run a single point on H2 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.2490234375,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "Run a single point on H2O with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.735013961792,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "Run a single point on NH3 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.19895553588867,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "Run a single point on N2 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.85103034973145,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "Run a single point on CH4 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.75692749023438,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "Run a single point on CO2 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.13696670532227,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "Run a single point on O2 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.80890274047852,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "Run a single point on HCl with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 126.44672393798828,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "Run a single point on CH3OH with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.85222244262695,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "Run a single point on C2H6 with B3LYP-D3(BJ)/def2-SVP.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.9041976928711,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "Hey, can you give me the energy of H2?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.486083984375,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "Hey, can you give me the energy of H2O?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.4147243499756,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "Hey, can you give me the energy of NH3?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.96189498901367,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "Hey, can you give me the energy of N2?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 135.78009605407715,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "Hey, can you give me the energy of CH4?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.57899475097656,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "Hey, can you give me the energy of CO2?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.22971153259277,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "Hey, can you give me the energy of O2?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.0262680053711,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "Hey, can you give me the energy of HCl?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.48529624938965,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "Hey, can you give me the energy of CH3OH?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.50825691223145,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "Hey, can you give me the energy of C2H6?",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.2670497894287,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "energy of H2 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.30209732055664,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "energy of H2O please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.033109664917,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "energy of NH3 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.53607940673828,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "energy of N2 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 133.41498374938965,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "energy of CH4 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.57501411437988,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "energy of CO2 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.99687004089355,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "energy of O2 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 133.01801681518555,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "energy of HCl please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.4108371734619,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "energy of CH3OH please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.40900230407715,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "energy of C2H6 please",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.63399696350098,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "scf H2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.50213050842285,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "scf H2O",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.00082969665527,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "scf NH3",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.57890129089355,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "scf N2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.9798698425293,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "scf CH4",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.94105911254883,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "scf CO2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.6600570678711,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "scf O2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.65903091430664,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "scf HCl",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.9589614868164,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "scf CH3OH",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.74676895141602,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "scf C2H6",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.3721408843994,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "what's the SCF energy of H2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.65020942687988,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "what's the SCF energy of H2O",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.98812103271484,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "what's the SCF energy of NH3",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.35805320739746,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "what's the SCF energy of N2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.13799285888672,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "what's the SCF energy of CH4",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.9490203857422,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "what's the SCF energy of CO2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.77497482299805,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "what's the SCF energy of O2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 127.83098220825195,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "what's the SCF energy of HCl",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.34692001342773,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "what's the SCF energy of CH3OH",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.12099266052246,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "what's the SCF energy of C2H6",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.0047378540039,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "compute H2 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.53710556030273,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "compute H2O energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.44612312316895,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "compute NH3 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.65290451049805,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "compute N2 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.74088096618652,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "compute CH4 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.64422798156738,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "compute CO2 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.95498085021973,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "compute O2 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.44285774230957,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "compute HCl energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.2051544189453,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "compute CH3OH energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.46105003356934,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "compute C2H6 energy",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.97896766662598,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "计算 H2 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.34477424621582,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "计算 H2O 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 127.12812423706055,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "计算 NH3 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.10716438293457,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "计算 N2 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.6889991760254,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "计算 CH4 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.3328742980957,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "计算 CO2 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.6440830230713,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "计算 O2 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.7229995727539,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "计算 HCl 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.44095039367676,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "计算 CH3OH 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.41489028930664,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "计算 C2H6 分子的 SCF 能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.2429904937744,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "我需要 H2 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.65505027770996,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "我需要 H2O 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.63390350341797,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "我需要 NH3 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.31792640686035,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "我需要 N2 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 127.91299819946289,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "我需要 CH4 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.03890419006348,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "我需要 CO2 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.0811767578125,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "我需要 O2 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 127.60305404663086,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "我需要 HCl 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.04493713378906,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "我需要 CH3OH 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.9878101348877,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "我需要 C2H6 的单点能。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 126.94096565246582,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "请算一下 H2 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.76503372192383,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "请算一下 H2O 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.90388679504395,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "请算一下 NH3 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.9821605682373,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "请算一下 N2 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.0436725616455,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "请算一下 CH4 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.46295738220215,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "请算一下 CO2 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.45206260681152,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "请算一下 O2 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.64193725585938,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "请算一下 HCl 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.25004959106445,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "请算一下 CH3OH 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 143.11814308166504,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "请算一下 C2H6 在 HF/sto-3g 下的总能量。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.01394271850586,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "对 H2 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.84228134155273,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "对 H2O 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.14769554138184,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "对 NH3 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.20331954956055,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "对 N2 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 127.71987915039062,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "对 CH4 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.81400299072266,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "对 CO2 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.52105903625488,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "对 O2 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.1180591583252,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "对 HCl 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.2051544189453,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "对 CH3OH 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.41305541992188,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "对 C2H6 做一个单点能计算。",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 140.0911808013916,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "H2 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.00312042236328,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "H2O 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.26006317138672,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "NH3 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.90307807922363,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "N2 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.21881675720215,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "CH4 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.14483451843262,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "CO2 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.70001792907715,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "O2 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.12003898620605,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "HCl 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.5310001373291,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "CH3OH 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 137.98904418945312,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "C2H6 能量",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 139.634370803833,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "算下 H2 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 125.60892105102539,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "算下 H2O 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.7839412689209,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "算下 NH3 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.1201114654541,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "算下 N2 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.25975227355957,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "算下 CH4 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.76408004760742,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "算下 CO2 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.23202323913574,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "算下 O2 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.7229995727539,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "算下 HCl 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.28487968444824,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "算下 CH3OH 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 128.62014770507812,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "算下 C2H6 单点能",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.75599479675293,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2",
+      "intent": "H2 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.95712661743164,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "H2O",
+      "intent": "H2O 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 134.36007499694824,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "NH3",
+      "intent": "NH3 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.31205940246582,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "N2",
+      "intent": "N2 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.4380168914795,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH4",
+      "intent": "CH4 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.19101524353027,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CO2",
+      "intent": "CO2 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 134.25803184509277,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "O2",
+      "intent": "O2 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.13203239440918,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "HCl",
+      "intent": "HCl 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.62691688537598,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "CH3OH",
+      "intent": "CH3OH 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.2180290222168,
+      "error": null
+    },
+    {
+      "group": "energy",
+      "molecule": "C2H6",
+      "intent": "C2H6 的电子能是多少",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.0178508758545,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "Optimize the geometry of H2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.11617851257324,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "Optimize the geometry of H2O.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.93712615966797,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "Optimize the geometry of NH3.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.60398292541504,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "Optimize the geometry of N2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.79414749145508,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "Optimize the geometry of CH4.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.3000717163086,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "Optimize the geometry of CO2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.42476463317871,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "Optimize the geometry of O2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.09615135192871,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "Optimize the geometry of HCl.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 94.5131778717041,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "Optimize the geometry of CH3OH.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 81.7108154296875,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "Optimize the geometry of C2H6.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.75616645812988,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "Find the equilibrium structure of H2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.07023620605469,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "Find the equilibrium structure of H2O.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.88791847229004,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "Find the equilibrium structure of NH3.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.25977897644043,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "Find the equilibrium structure of N2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.72374153137207,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "Find the equilibrium structure of CH4.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.47085189819336,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "Find the equilibrium structure of CO2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 74.8291015625,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "Find the equilibrium structure of O2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 74.75566864013672,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "Find the equilibrium structure of HCl.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 74.86701011657715,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "Find the equilibrium structure of CH3OH.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.37302780151367,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "Find the equilibrium structure of C2H6.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.58600807189941,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "Run geometry optimization on H2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.30793952941895,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "Run geometry optimization on H2O.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.36103439331055,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "Run geometry optimization on NH3.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.25303077697754,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "Run geometry optimization on N2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.40998268127441,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "Run geometry optimization on CH4.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.42602920532227,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "Run geometry optimization on CO2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.48992538452148,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "Run geometry optimization on O2.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.71809196472168,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "Run geometry optimization on HCl.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.64918899536133,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "Run geometry optimization on CH3OH.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.8430233001709,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "Run geometry optimization on C2H6.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.60000228881836,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "Minimise H2 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.7828426361084,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "Minimise H2O energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.82599639892578,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "Minimise NH3 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 137.9568576812744,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "Minimise N2 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.3251724243164,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "Minimise CH4 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.40733337402344,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "Minimise CO2 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 129.9140453338623,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "Minimise O2 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 130.1250457763672,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "Minimise HCl energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 132.03692436218262,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "Minimise CH3OH energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 133.21185111999512,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "Minimise C2H6 energy with respect to coordinates.",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 131.0558319091797,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "optimise H2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.55391502380371,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "optimise H2O",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.67295837402344,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "optimise NH3",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.26001739501953,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "optimise N2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 83.44197273254395,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "optimise CH4",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.69076728820801,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "optimise CO2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.46808433532715,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "optimise O2",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.71587371826172,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "optimise HCl",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.83222198486328,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "optimise CH3OH",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.96311378479004,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "optimise C2H6",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.48293876647949,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "geometry of H2 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.1550407409668,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "geometry of H2O optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.68511772155762,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "geometry of NH3 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.00412178039551,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "geometry of N2 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.13198661804199,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "geometry of CH4 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.49381256103516,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "geometry of CO2 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.63314247131348,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "geometry of O2 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.1639347076416,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "geometry of HCl optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.55684852600098,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "geometry of CH3OH optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 79.28133010864258,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "geometry of C2H6 optimize",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.96192169189453,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "优化 H2 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.4158706665039,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "优化 H2O 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.83429527282715,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "优化 NH3 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.88593864440918,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "优化 N2 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.42905616760254,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "优化 CH4 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.98290252685547,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "优化 CO2 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.26263999938965,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "优化 O2 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.70705223083496,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "优化 HCl 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.6219367980957,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "优化 CH3OH 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.25906372070312,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "优化 C2H6 的几何结构",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.1710147857666,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "找 H2 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.81107521057129,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "找 H2O 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.53396034240723,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "找 NH3 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.81512832641602,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "找 N2 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.19707489013672,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "找 CH4 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.21192932128906,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "找 CO2 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.08301734924316,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "找 O2 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.71911811828613,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "找 HCl 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.18124580383301,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "找 CH3OH 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 89.57815170288086,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "找 C2H6 的平衡构型",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.99925994873047,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "H2 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 90.54994583129883,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "H2O 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.98480987548828,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "NH3 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 74.93782043457031,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "N2 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.73010635375977,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "CH4 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 79.11300659179688,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "CO2 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.50988006591797,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "O2 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.36706733703613,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "HCl 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.27384567260742,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "CH3OH 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.43597030639648,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "C2H6 几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.62186431884766,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "H2 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.20487022399902,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "H2O optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.50003242492676,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "NH3 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.39584350585938,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "N2 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.3851146697998,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "CH4 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.6369571685791,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "CO2 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.76212692260742,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "O2 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.69203186035156,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "HCl optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.17514038085938,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "CH3OH optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.96590232849121,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "C2H6 optimize 一下",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.5291919708252,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "对 H2 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.68289947509766,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "对 H2O 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.71492004394531,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "对 NH3 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.83682441711426,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "对 N2 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 75.13427734375,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "对 CH4 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.31294631958008,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "对 CO2 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 79.02908325195312,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "对 O2 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.83000373840332,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "对 HCl 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.24301719665527,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "对 CH3OH 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.36008071899414,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "对 C2H6 做几何优化",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 76.3237476348877,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2",
+      "intent": "优化 H2 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.98998260498047,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "H2O",
+      "intent": "优化 H2O 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.53174209594727,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "NH3",
+      "intent": "优化 NH3 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.22108268737793,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "N2",
+      "intent": "优化 N2 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.0022144317627,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH4",
+      "intent": "优化 CH4 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.50313186645508,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CO2",
+      "intent": "优化 CO2 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.31811904907227,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "O2",
+      "intent": "优化 O2 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.2480239868164,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "HCl",
+      "intent": "优化 HCl 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 78.97806167602539,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "CH3OH",
+      "intent": "优化 CH3OH 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.94713973999023,
+      "error": null
+    },
+    {
+      "group": "optimize",
+      "molecule": "C2H6",
+      "intent": "优化 C2H6 极小值",
+      "expected_tool": "calc_psi4_single_point",
+      "observed_tool": "calc_psi4_single_point",
+      "tool_sequence": [
+        "calc_psi4_single_point"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 77.15988159179688,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "What is Planck's constant?",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6970634460449219,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "Look up Avogadro's number.",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7948150634765625,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "Tell me the value of hbar.",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7478466033935547,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "I need the Boltzmann constant kB.",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6450881958007812,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "Get the speed of light.",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.5819072723388672,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "Get me a physical constant.",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7211437225341797,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "constant please",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.1567344665527344,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "planck constant value",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6968250274658203,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "普朗克常数是多少",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6701221466064453,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "查一下阿伏伽德罗常数",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6007423400878906,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "玻尔兹曼常数 kB 数值",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6262531280517578,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "光速的数值是多少",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6019344329833984,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "查物理常数",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6677379608154297,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "我要 hbar 的值",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.8610954284667969,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "convert 1 hartree to eV",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7368793487548828,
+      "error": null
+    },
+    {
+      "group": "constant",
+      "molecule": null,
+      "intent": "hartree 到 eV 的换算因子是多少",
+      "expected_tool": "const_get",
+      "observed_tool": "const_get",
+      "tool_sequence": [
+        "const_get"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6748905181884766,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "Search the knowledge base for TADF.",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 24.578094482421875,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "Find a playbook on opt-freq.",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.415180206298828,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "Look up the kRISC skill.",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.593994140625,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "Find documentation on conformer search.",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.8548240661621094,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "search kb for solvation",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.4161338806152344,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "search kb tddft",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.26593017578125,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "搜索知识库 TADF",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.6700496673583984,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "查一下 kRISC 的 skill",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.3660659790039062,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "搜 opt-freq 的 playbook",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.3260116577148438,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "找 tddft 的 skill",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.750873565673828,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "kb 搜 solvation",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.7701854705810547,
+      "error": null
+    },
+    {
+      "group": "kb",
+      "molecule": null,
+      "intent": "查相对论方法的 playbook",
+      "expected_tool": "kb_search",
+      "observed_tool": "kb_search",
+      "tool_sequence": [
+        "kb_search"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.918243408203125,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "Use the opt-freq skill.",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7709732055664062,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "Apply the tddft skill.",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.590179443359375,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "use_skill on soc",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7971992492675781,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "Load the tadf-pipeline skill.",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6787052154541016,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "Apply the conformer skill.",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 2.0952224731445312,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "use skill ts-search",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6407966613769531,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "load the dlpno-ccsdt skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7321109771728516,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "use the pka skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6541481018066406,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "use_skill pes-scan",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.5208721160888672,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "使用 opt-freq skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.9080638885498047,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "应用 tddft skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.5790462493896484,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "调用 use_skill soc",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.8870830535888672,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "加载 tadf-pipeline skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.6849040985107422,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "应用 conformer skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.7199516296386719,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "调用 ts-search skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.493692398071289,
+      "error": null
+    },
+    {
+      "group": "skill",
+      "molecule": null,
+      "intent": "加载 dlpno-ccsdt skill",
+      "expected_tool": "use_skill",
+      "observed_tool": "use_skill",
+      "tool_sequence": [
+        "use_skill"
+      ],
+      "correct": true,
+      "agent_ok": true,
+      "wall_ms": 1.4767646789550781,
+      "error": null
+    }
+  ],
+  "wall_times_ms": [
+    473.79207611083984,
+    132.7071189880371,
+    134.0320110321045,
+    131.23798370361328,
+    127.86006927490234,
+    129.2726993560791,
+    131.84499740600586,
+    131.55198097229004,
+    129.20904159545898,
+    136.23619079589844,
+    131.56890869140625,
+    130.59687614440918,
+    131.54006004333496,
+    130.83219528198242,
+    130.6591033935547,
+    130.67007064819336,
+    130.9800148010254,
+    128.2021999359131,
+    139.94407653808594,
+    129.80103492736816,
+    128.75008583068848,
+    131.3478946685791,
+    132.54880905151367,
+    130.7830810546875,
+    130.08594512939453,
+    129.98723983764648,
+    132.5829029083252,
+    131.21724128723145,
+    132.0040225982666,
+    130.87892532348633,
+    131.07800483703613,
+    129.23002243041992,
+    129.9607753753662,
+    129.472017288208,
+    130.8119297027588,
+    131.60181045532227,
+    125.16999244689941,
+    130.34296035766602,
+    131.11591339111328,
+    132.20906257629395,
+    130.2490234375,
+    132.735013961792,
+    130.19895553588867,
+    130.85103034973145,
+    129.75692749023438,
+    130.13696670532227,
+    129.80890274047852,
+    126.44672393798828,
+    130.85222244262695,
+    130.9041976928711,
+    129.486083984375,
+    130.4147243499756,
+    130.96189498901367,
+    135.78009605407715,
+    130.57899475097656,
+    130.22971153259277,
+    131.0262680053711,
+    130.48529624938965,
+    129.50825691223145,
+    128.2670497894287,
+    128.30209732055664,
+    132.033109664917,
+    130.53607940673828,
+    133.41498374938965,
+    129.57501411437988,
+    131.99687004089355,
+    133.01801681518555,
+    131.4108371734619,
+    130.40900230407715,
+    131.63399696350098,
+    128.50213050842285,
+    130.00082969665527,
+    128.57890129089355,
+    132.9798698425293,
+    128.94105911254883,
+    130.6600570678711,
+    131.65903091430664,
+    131.9589614868164,
+    131.74676895141602,
+    132.3721408843994,
+    131.65020942687988,
+    130.98812103271484,
+    129.35805320739746,
+    129.13799285888672,
+    130.9490203857422,
+    130.77497482299805,
+    127.83098220825195,
+    128.34692001342773,
+    130.12099266052246,
+    132.0047378540039,
+    129.53710556030273,
+    131.44612312316895,
+    130.65290451049805,
+    130.74088096618652,
+    128.64422798156738,
+    130.95498085021973,
+    130.44285774230957,
+    130.2051544189453,
+    129.46105003356934,
+    128.97896766662598,
+    128.34477424621582,
+    127.12812423706055,
+    130.10716438293457,
+    132.6889991760254,
+    131.3328742980957,
+    130.6440830230713,
+    130.7229995727539,
+    130.44095039367676,
+    131.41489028930664,
+    131.2429904937744,
+    130.65505027770996,
+    129.63390350341797,
+    130.31792640686035,
+    127.91299819946289,
+    131.03890419006348,
+    130.0811767578125,
+    127.60305404663086,
+    130.04493713378906,
+    131.9878101348877,
+    126.94096565246582,
+    129.76503372192383,
+    131.90388679504395,
+    130.9821605682373,
+    131.0436725616455,
+    129.46295738220215,
+    128.45206260681152,
+    130.64193725585938,
+    129.25004959106445,
+    143.11814308166504,
+    130.01394271850586,
+    129.84228134155273,
+    130.14769554138184,
+    129.20331954956055,
+    127.71987915039062,
+    131.81400299072266,
+    130.52105903625488,
+    131.1180591583252,
+    130.2051544189453,
+    130.41305541992188,
+    140.0911808013916,
+    128.00312042236328,
+    129.26006317138672,
+    129.90307807922363,
+    129.21881675720215,
+    130.14483451843262,
+    128.70001792907715,
+    130.12003898620605,
+    131.5310001373291,
+    137.98904418945312,
+    139.634370803833,
+    125.60892105102539,
+    128.7839412689209,
+    129.1201114654541,
+    130.25975227355957,
+    129.76408004760742,
+    131.23202323913574,
+    130.7229995727539,
+    132.28487968444824,
+    128.62014770507812,
+    132.75599479675293,
+    130.95712661743164,
+    134.36007499694824,
+    132.31205940246582,
+    131.4380168914795,
+    131.19101524353027,
+    134.25803184509277,
+    129.13203239440918,
+    130.62691688537598,
+    130.2180290222168,
+    132.0178508758545,
+    78.11617851257324,
+    77.93712615966797,
+    78.60398292541504,
+    76.79414749145508,
+    77.3000717163086,
+    77.42476463317871,
+    78.09615135192871,
+    94.5131778717041,
+    81.7108154296875,
+    77.75616645812988,
+    77.07023620605469,
+    75.88791847229004,
+    77.25977897644043,
+    77.72374153137207,
+    76.47085189819336,
+    74.8291015625,
+    74.75566864013672,
+    74.86701011657715,
+    77.37302780151367,
+    76.58600807189941,
+    77.30793952941895,
+    78.36103439331055,
+    78.25303077697754,
+    77.40998268127441,
+    76.42602920532227,
+    76.48992538452148,
+    76.71809196472168,
+    76.64918899536133,
+    76.8430233001709,
+    77.60000228881836,
+    130.7828426361084,
+    130.82599639892578,
+    137.9568576812744,
+    132.3251724243164,
+    130.40733337402344,
+    129.9140453338623,
+    130.1250457763672,
+    132.03692436218262,
+    133.21185111999512,
+    131.0558319091797,
+    78.55391502380371,
+    77.67295837402344,
+    77.26001739501953,
+    83.44197273254395,
+    78.69076728820801,
+    78.46808433532715,
+    77.71587371826172,
+    77.83222198486328,
+    77.96311378479004,
+    77.48293876647949,
+    78.1550407409668,
+    77.68511772155762,
+    78.00412178039551,
+    77.13198661804199,
+    75.49381256103516,
+    77.63314247131348,
+    77.1639347076416,
+    77.55684852600098,
+    79.28133010864258,
+    77.96192169189453,
+    78.4158706665039,
+    78.83429527282715,
+    76.88593864440918,
+    77.42905616760254,
+    77.98290252685547,
+    77.26263999938965,
+    77.70705223083496,
+    77.6219367980957,
+    77.25906372070312,
+    78.1710147857666,
+    76.81107521057129,
+    77.53396034240723,
+    76.81512832641602,
+    77.19707489013672,
+    76.21192932128906,
+    75.08301734924316,
+    75.71911811828613,
+    75.18124580383301,
+    89.57815170288086,
+    75.99925994873047,
+    90.54994583129883,
+    77.98480987548828,
+    74.93782043457031,
+    78.73010635375977,
+    79.11300659179688,
+    77.50988006591797,
+    77.36706733703613,
+    77.27384567260742,
+    77.43597030639648,
+    78.62186431884766,
+    78.20487022399902,
+    78.50003242492676,
+    78.39584350585938,
+    78.3851146697998,
+    77.6369571685791,
+    77.76212692260742,
+    77.69203186035156,
+    77.17514038085938,
+    78.96590232849121,
+    77.5291919708252,
+    78.68289947509766,
+    77.71492004394531,
+    76.83682441711426,
+    75.13427734375,
+    77.31294631958008,
+    79.02908325195312,
+    78.83000373840332,
+    78.24301719665527,
+    78.36008071899414,
+    76.3237476348877,
+    78.98998260498047,
+    78.53174209594727,
+    78.22108268737793,
+    78.0022144317627,
+    78.50313186645508,
+    78.31811904907227,
+    78.2480239868164,
+    78.97806167602539,
+    77.94713973999023,
+    77.15988159179688,
+    1.6970634460449219,
+    1.7948150634765625,
+    1.7478466033935547,
+    1.6450881958007812,
+    1.5819072723388672,
+    1.7211437225341797,
+    2.1567344665527344,
+    1.6968250274658203,
+    1.6701221466064453,
+    1.6007423400878906,
+    1.6262531280517578,
+    1.6019344329833984,
+    1.6677379608154297,
+    1.8610954284667969,
+    1.7368793487548828,
+    1.6748905181884766,
+    24.578094482421875,
+    2.415180206298828,
+    2.593994140625,
+    2.8548240661621094,
+    2.4161338806152344,
+    2.26593017578125,
+    2.6700496673583984,
+    2.3660659790039062,
+    2.3260116577148438,
+    2.750873565673828,
+    2.7701854705810547,
+    2.918243408203125,
+    1.7709732055664062,
+    2.590179443359375,
+    1.7971992492675781,
+    1.6787052154541016,
+    2.0952224731445312,
+    1.6407966613769531,
+    1.7321109771728516,
+    1.6541481018066406,
+    1.5208721160888672,
+    1.9080638885498047,
+    1.5790462493896484,
+    1.8870830535888672,
+    1.6849040985107422,
+    1.7199516296386719,
+    1.493692398071289,
+    1.4767646789550781
+  ]
+}

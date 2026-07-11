@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "data_source": "real_pyscf",
+  "system": "anthracene",
+  "method_under_test": {
+    "engine": "pyscf 2.13",
+    "basis": "def2-svp",
+    "functional": "B3LYP",
+    "note": "PySCF X2C-1e relativistic Hamiltonian replacing BDF in this work (BDF licence not available on the test machine). sto-3g chosen for wall-time feasibility on M-series Mac; absolute energies are not quantitatively comparable to BDF/Niu-Shuai 2008."
+  },
+  "n_electrons": 94,
+  "n_basis": 246,
+  "stages": [
+    {
+      "name": "rks_nr",
+      "method": "RKS B3LYP, non-relativistic",
+      "energy_hartree": -537.7109760986821,
+      "converged": true,
+      "wall_time_s": 35.27
+    },
+    {
+      "name": "rks_x2c1e_scalar",
+      "method": "RKS B3LYP + X2C-1e (scalar relativistic)",
+      "energy_hartree": -537.9050021629198,
+      "converged": true,
+      "wall_time_s": 36.12
+    },
+    {
+      "name": "gks_x2c1e_soc",
+      "method": "GKS B3LYP + X2C-1e (two-component, SOC included)",
+      "energy_hartree": -537.9050059251892,
+      "converged": true,
+      "wall_time_s": 197.15
+    }
+  ],
+  "analysis": {
+    "scalar_relativistic_correction_meV": -5279.721,
+    "soc_correction_meV": -0.102,
+    "interpretation": "Anthracene contains only C and H (no heavy atoms), so the spin-orbit correction relative to the scalar-relativistic limit is intrinsically tiny (sub-meV). This is consistent with the chemistry: anthracene phosphorescence rate is small and is dominated by vibronic coupling rather than direct SOC. BDF in heavy-atom systems is where SOC magnitude becomes physically important; the present run only certifies the ChemMaster -> PySCF X2C call path."
+  },
+  "total_wall_time_s": 269.08
+}

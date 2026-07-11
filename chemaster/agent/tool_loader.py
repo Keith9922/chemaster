@@ -30,6 +30,7 @@ class _ToolDecl:
     is_read_only: bool = False
     is_destructive: bool = False
     is_long_running: bool = False
+    is_chemistry_decision: bool = False
 
 
 # Tool exposure naming convention for the LLM:
@@ -66,6 +67,75 @@ TOOL_MANIFEST: list[_ToolDecl] = [
             "conversions (Hartree → kcal/mol, eV → cm⁻¹, Bohr → Å, K → kJ/mol via kT, "
             "etc.). Never hand-calculate."
         ),
+        is_read_only=True,
+    ),
+
+    # formulas ─────────────────────────────────────────────────────────────
+    # Deterministic chemistry formulas. CLAUDE.md §5.1: LLM does not do
+    # floating-point math. These tools wrap chemaster.kb.formulas.* so the
+    # agent gets exact numerical results instead of LLM arithmetic.
+    _ToolDecl(
+        exposed_name="formula_krisc_marcus",
+        module="chemaster.mcp.formulas.server",
+        function="compute_krisc_marcus",
+        description=(
+            "RISC (reverse intersystem crossing) rate constant k_RISC via Marcus "
+            "high-T limit. Inputs: ΔE_ST (eV), SOC (cm⁻¹), reorganization energy "
+            "λ (eV), T (K). Use whenever you have these four quantities — never "
+            "hand-compute the exponential/sqrt."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_kf_strickler_berg",
+        module="chemaster.mcp.formulas.server",
+        function="compute_kf_strickler_berg",
+        description=(
+            "Radiative rate constant k_F via Strickler-Berg. Inputs: emission "
+            "energy E (eV), oscillator strength f. Returns k_F (s⁻¹) and "
+            "radiative lifetime (ns)."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_kisc_marcus",
+        module="chemaster.mcp.formulas.server",
+        function="compute_kisc_marcus",
+        description="ISC (S→T) rate via Marcus high-T limit. Same input shape as k_RISC.",
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_plqy",
+        module="chemaster.mcp.formulas.server",
+        function="compute_plqy",
+        description="Photoluminescence quantum yield Φ_F = k_F / (k_F + k_NR + k_ISC).",
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_boltzmann",
+        module="chemaster.mcp.formulas.server",
+        function="compute_boltzmann_weights",
+        description=(
+            "Boltzmann conformer populations from relative energies (kcal/mol). "
+            "Always use for multi-conformer averaging — DO NOT take arithmetic mean."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_eyring",
+        module="chemaster.mcp.formulas.server",
+        function="compute_eyring",
+        description=(
+            "Eyring rate constant k = κ·(kBT/h)·exp(-ΔG‡/RT). Inputs: ΔG‡ in "
+            "kJ/mol, T in K. Use for any TST rate from activation free energy."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_arrhenius",
+        module="chemaster.mcp.formulas.server",
+        function="compute_arrhenius",
+        description="Arrhenius rate k = A·exp(-Ea/RT). Use when you have A and Ea.",
         is_read_only=True,
     ),
 
@@ -392,6 +462,37 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         ),
     ),
 
+    # calc_pyscf (open-source X2C SOC reference for the BDF wrapper) ──────
+    _ToolDecl(
+        exposed_name="calc_pyscf_single_point",
+        module="chemaster.mcp.calc_pyscf.server",
+        function="single_point",
+        description=(
+            "Single-point energy with PySCF. Supports HF/DFT and three "
+            "relativistic levels: 'none' / 'scalar' (X2C-1e via decorator) / "
+            "'soc' (two-component GKS+X2C-1e, includes spin-orbit coupling). "
+            "Open-source pip-installable, runs natively on macOS arm64. Use "
+            "as the open-source reference path for SOC tasks when BDF is "
+            "unavailable."
+        ),
+        is_read_only=False,
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_pyscf_x2c_soc",
+        module="chemaster.mcp.calc_pyscf.server",
+        function="x2c_soc",
+        description=(
+            "Three-stage relativistic analysis (non-rel / scalar X2C / "
+            "two-component X2C+SOC) on the same geometry, reporting scalar "
+            "and SOC corrections in meV. Open-source reference for the BDF "
+            "X2C-TDA SOC pathway."
+        ),
+        is_read_only=False,
+        is_long_running=True,
+        is_chemistry_decision=True,
+    ),
+
     # parse_cclib ──────────────────────────────────────────────────────────
     _ToolDecl(
         exposed_name="parse_output",
@@ -459,6 +560,7 @@ def build_default_registry(extras: list[_ToolDecl] | None = None) -> ToolRegistr
             is_read_only=decl.is_read_only,
             is_destructive=decl.is_destructive,
             is_long_running=decl.is_long_running,
+            is_chemistry_decision=decl.is_chemistry_decision,
         )
         registry.register(adapter)
 

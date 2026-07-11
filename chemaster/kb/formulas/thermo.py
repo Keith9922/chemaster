@@ -9,7 +9,6 @@ import math
 from collections.abc import Iterable
 
 from chemaster.kb.formulas import constants as C
-from chemaster.kb.formulas import units as U
 
 
 def zpe_from_frequencies_cm_inv(freqs_cm_inv: Iterable[float]) -> float:
