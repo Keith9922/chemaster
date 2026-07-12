@@ -1,0 +1,210 @@
+{
+  "data_source": "real_llm",
+  "provider": "minimax",
+  "model": "(provider default)",
+  "method": "Same 5 intent groups × bilingual phrasings as the mock-routing execution_correctness.json, but driven by a real LLM over the full default tool registry. Success: agent completes AND the expected tool appears in the call sequence.",
+  "generated_at": "2026-07-12T13:36:00Z",
+  "n_total": 10,
+  "agent_ok": 7,
+  "agent_ok_rate_pct": 70.0,
+  "routed_ok": 6,
+  "routing_rate_pct": 60.0,
+  "per_group": {
+    "energy": {
+      "n": 2,
+      "agent_ok": 2,
+      "routed_ok": 2
+    },
+    "constant": {
+      "n": 2,
+      "agent_ok": 2,
+      "routed_ok": 1
+    },
+    "kb": {
+      "n": 2,
+      "agent_ok": 2,
+      "routed_ok": 1
+    },
+    "optimize": {
+      "n": 2,
+      "agent_ok": 1,
+      "routed_ok": 0
+    },
+    "skill": {
+      "n": 2,
+      "agent_ok": 0,
+      "routed_ok": 2
+    }
+  },
+  "n_recommend_cards_auto_accepted": 3,
+  "usage_totals": {
+    "input_tokens": 95603,
+    "output_tokens": 9980
+  },
+  "wall_s_total": 329.5,
+  "trials": [
+    {
+      "group": "energy",
+      "intent": "Compute the energy of water",
+      "expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "routed_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "io_lookup_by_name",
+        "recommend",
+        "gaussian_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_frequency",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 7,
+      "wall_s": 72.05
+    },
+    {
+      "group": "energy",
+      "intent": "What is the SCF energy of H2O?",
+      "expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "routed_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "io_lookup_by_name",
+        "recommend",
+        "gaussian_single_point",
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 29.0
+    },
+    {
+      "group": "constant",
+      "intent": "What is Planck's constant?",
+      "expected_tool": "const_get",
+      "agent_ok": true,
+      "routed_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 12.7
+    },
+    {
+      "group": "constant",
+      "intent": "Convert Hartree to eV",
+      "expected_tool": "const_get",
+      "agent_ok": true,
+      "routed_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 11.61
+    },
+    {
+      "group": "kb",
+      "intent": "Search the knowledge base for TADF",
+      "expected_tool": "kb_search",
+      "agent_ok": true,
+      "routed_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 27.29
+    },
+    {
+      "group": "kb",
+      "intent": "Look up the kRISC skill",
+      "expected_tool": "kb_search",
+      "agent_ok": true,
+      "routed_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 15.45
+    },
+    {
+      "group": "optimize",
+      "intent": "Optimize geometry of H2",
+      "expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "routed_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "io_lookup_by_name",
+        "recommend",
+        "io_smiles_to_xyz",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 7,
+      "wall_s": 68.54
+    },
+    {
+      "group": "optimize",
+      "intent": "Find the minimum of water",
+      "expected_tool": "calc_psi4_single_point",
+      "agent_ok": false,
+      "routed_ok": false,
+      "status": "failed",
+      "tool_sequence": [
+        "io_smiles_to_xyz",
+        "io_parse_geometry",
+        "io_lookup_by_name",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "io_compute_descriptors",
+        "io_compute_descriptors"
+      ],
+      "n_steps": 8,
+      "wall_s": 54.59
+    },
+    {
+      "group": "skill",
+      "intent": "Use the opt-freq skill",
+      "expected_tool": "use_skill",
+      "agent_ok": false,
+      "routed_ok": true,
+      "status": "waiting_for_input",
+      "tool_sequence": [
+        "use_skill",
+        "ask_user"
+      ],
+      "n_steps": 2,
+      "wall_s": 12.92
+    },
+    {
+      "group": "skill",
+      "intent": "Apply skill tddft",
+      "expected_tool": "use_skill",
+      "agent_ok": false,
+      "routed_ok": true,
+      "status": "waiting_for_input",
+      "tool_sequence": [
+        "use_skill",
+        "ask_user"
+      ],
+      "n_steps": 3,
+      "wall_s": 25.28
+    }
+  ]
+}

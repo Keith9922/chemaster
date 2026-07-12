@@ -14,6 +14,7 @@ chemaster `dependencies` block.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -34,6 +35,11 @@ mcp = FastMCP("chem.hpc_slurm")
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+def _chemaster_home() -> Path:
+    """~/.chemaster（尊重 CHEMASTER_HOME 覆盖，与 policy/user_kb 一致）。"""
+    return Path(os.environ.get("CHEMASTER_HOME", "~/.chemaster")).expanduser()
+
+
 def _config_path() -> Path:
     """Where the user's HPC config lives.
 
@@ -50,7 +56,41 @@ def _config_path() -> Path:
           - openmpi/4.1
         pre_run_hook: ""
     """
-    return Path(os.path.expanduser("~/.chemaster/hpc.yaml"))
+    return _chemaster_home() / "hpc.yaml"
+
+
+def _jobs_index_path() -> Path:
+    """job_id → 提交信息 的持久化索引（fetch/status 靠它定位远端目录）。"""
+    return _chemaster_home() / "hpc_jobs.json"
+
+
+def _load_jobs_index() -> dict[str, dict[str, Any]]:
+    p = _jobs_index_path()
+    if not p.exists():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:  # noqa: BLE001 — 损坏的索引当空处理，不阻塞提交
+        logger.warning("hpc_jobs.json unreadable; starting a fresh index")
+        return {}
+
+
+def _record_job(job_id: str, entry: dict[str, Any]) -> None:
+    """submit 成功后登记一条 job 映射（fetch 的目录来源）。"""
+    try:
+        index = _load_jobs_index()
+        index[str(job_id)] = entry
+        p = _jobs_index_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(index, indent=2, ensure_ascii=False),
+                     encoding="utf-8")
+    except Exception as exc:  # noqa: BLE001 — 登记失败不应让提交本身失败
+        logger.warning("failed to record hpc job %s: %s", job_id, exc)
+
+
+def _lookup_job(job_id: str) -> dict[str, Any] | None:
+    return _load_jobs_index().get(str(job_id))
 
 
 def _load_config() -> dict[str, Any] | None:
@@ -218,6 +258,16 @@ def submit(
 
     m = re.search(r"Submitted batch job\s+(\d+)", out)
     job_id = m.group(1) if m else None
+    if job_id:
+        # fetch/status 依赖这条映射定位远端目录（此前 fetch 猜目录名，
+        # 与 submit 的 jobname-timestamp 约定永远对不上 → 功能性坏死）。
+        _record_job(job_id, {
+            "remote_workdir": remote_dir,
+            "host": host,
+            "user": user,
+            "jobname": jobname,
+            "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
     return {
         "ok": True,
         "result": {
@@ -297,13 +347,15 @@ def status(job_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-def fetch(job_id: str, local_dir: str) -> dict[str, Any]:
+def fetch(job_id: str, local_dir: str,
+          remote_dir: str | None = None) -> dict[str, Any]:
     """Pull a finished job's artefacts back via rsync.
 
     Args:
-        job_id: SLURM job_id (used to locate the remote workdir from a
-                ``runs/`` index — for now we ask the user to keep track).
+        job_id: SLURM job_id。远端目录从 ``~/.chemaster/hpc_jobs.json``
+                （submit 时自动登记）解析。
         local_dir: where to drop the files locally.
+        remote_dir: 显式覆盖远端目录（老任务 / 索引丢失时的逃生口）。
     """
     if not shutil.which("rsync"):
         return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
@@ -314,17 +366,36 @@ def fetch(job_id: str, local_dir: str) -> dict[str, Any]:
         return {"ok": False, "error_code": "NO_HPC_CONFIG",
                 "details": "see ~/.chemaster/hpc.yaml",
                 "suggestion": "Add HPC config first."}
-    # We can't introspect the original remote_workdir from job_id alone
-    # without persistent state; rely on the caller passing a ``REMOTE``
-    # env-style hint via local_dir's sibling marker.
+
+    entry = _lookup_job(job_id)
+    if remote_dir is None:
+        if entry is None:
+            return {
+                "ok": False,
+                "error_code": "UNKNOWN_JOB",
+                "details": (
+                    f"job_id={job_id!r} not found in {_jobs_index_path()}; "
+                    "cannot locate its remote workdir."
+                ),
+                "suggestion": (
+                    "Pass remote_dir=<path> explicitly, or re-submit through "
+                    "ChemMaster (submit records the job_id → remote_workdir "
+                    "mapping automatically)."
+                ),
+            }
+        remote_dir = entry["remote_workdir"]
+
+    host = (entry or {}).get("host") or cfg.get("host")
+    user = (entry or {}).get("user") or cfg.get("user")
+
     Path(local_dir).mkdir(parents=True, exist_ok=True)
-    remote = f"{cfg['user']}@{cfg['host']}:{cfg.get('remote_workdir', '~')}"
+    remote = f"{user}@{host}:{remote_dir.rstrip('/')}/"
+    cmd = ["rsync", "-avz"]
+    if cfg.get("ssh_key"):
+        cmd += ["-e", f"ssh -i {os.path.expanduser(cfg['ssh_key'])}"]
+    cmd += [remote, local_dir]
     try:
-        proc = subprocess.run(
-            ["rsync", "-avz", "--include", f"*{job_id}*", "--exclude", "*",
-             remote, local_dir],
-            capture_output=True, text=True, timeout=600,
-        )
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     except subprocess.TimeoutExpired:
         return {"ok": False, "error_code": "TIMEOUT",
                 "details": "rsync exceeded 10 min.",
@@ -335,7 +406,9 @@ def fetch(job_id: str, local_dir: str) -> dict[str, Any]:
                 "suggestion": "Verify SSH key and remote path."}
     return {
         "ok": True,
-        "result": {"local_dir": local_dir, "stdout_tail": proc.stdout[-500:]},
+        "result": {"local_dir": local_dir,
+                   "remote_dir": remote_dir,
+                   "stdout_tail": proc.stdout[-500:]},
         "warnings": [], "meta": {},
     }
 
