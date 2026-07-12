@@ -27,7 +27,7 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 # Status values emitted by chemaster.agent.types.Trajectory
 TaskStatus = Literal["completed", "failed", "waiting_for_input"]
@@ -47,7 +47,7 @@ def _is_wsl() -> bool:
     if platform.system() != "Linux":
         return False
     try:
-        with open("/proc/version", "r", encoding="utf-8") as f:
+        with open("/proc/version", encoding="utf-8") as f:
             return "microsoft" in f.read().lower()
     except OSError:
         return False
@@ -187,7 +187,7 @@ def notify_task_done(
     status: TaskStatus,
     *,
     summary: str = "",
-    elapsed_s: Optional[float] = None,
+    elapsed_s: float | None = None,
 ) -> bool:
     """Send a task-completion notification with sensible defaults.
 

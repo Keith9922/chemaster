@@ -110,7 +110,7 @@ def _ssh_run(*, host: str, user: str, key: str | None,
         kwargs["key_filename"] = os.path.expanduser(key)
     try:
         client.connect(hostname=host, **kwargs)
-        stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+        _stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
         rc = stdout.channel.recv_exit_status()
         out = stdout.read().decode("utf-8", errors="replace")
         err = stderr.read().decode("utf-8", errors="replace")
@@ -158,7 +158,8 @@ def submit(
                 "MCP docstring for the schema."
             ),
         }
-    host = cfg.get("host"); user = cfg.get("user")
+    host = cfg.get("host")
+    user = cfg.get("user")
     if not host or not user:
         return {
             "ok": False,
@@ -247,7 +248,7 @@ def status(job_id: str) -> dict[str, Any]:
                 "suggestion": "Run `chemaster init` then add HPC block."}
 
     try:
-        rc, out, err = _ssh_run(
+        rc, out, _err = _ssh_run(
             host=cfg["host"], user=cfg["user"], key=cfg.get("ssh_key"),
             command=f"squeue -j {job_id} -h -o '%T|%M|%P|%R'",
             timeout=20,

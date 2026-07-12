@@ -22,7 +22,7 @@ import logging
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -75,8 +75,9 @@ class Executor:
         """
         # 预先初始化 psi4 全局状态（rdkit 兼容性 hack，PITFALLS §8）
         try:
-            import psi4
             import os
+
+            import psi4
             os.environ.setdefault("OMP_NUM_THREADS", "1")
             psi4.set_num_threads(1)
             logger.debug("psi4 全局线程数已预设为 1")
@@ -130,7 +131,7 @@ class Executor:
         """
         if "geometry_xyz" not in args:
             for key in ("optimized_geometry_xyz", "xyz"):
-                if key in state and state[key]:
+                if state.get(key):
                     args = {**args, "geometry_xyz": state[key]}
                     break
         return args
@@ -138,7 +139,7 @@ class Executor:
     def _collect_meta(self) -> dict:
         """收集版本快照，写入 meta.json。"""
         meta: dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "python_version": f"Python {sys.version.split()[0]}",
         }
 

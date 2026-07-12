@@ -44,7 +44,7 @@ def _check_engine() -> tuple[str | None, str | None]:
 
 def _xyz_to_pyscf_atom(xyz: str) -> str:
     """Convert standard XYZ string to PySCF 'C 0 0 0; H 0 0 1' format."""
-    lines = [l for l in xyz.strip().splitlines() if l.strip()]
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Empty XYZ")
     # Skip atom-count + comment lines if present
@@ -56,7 +56,7 @@ def _xyz_to_pyscf_atom(xyz: str) -> str:
         atom_lines = lines
     if not atom_lines:
         raise ValueError("No atom lines found in XYZ")
-    return "; ".join(l.strip() for l in atom_lines)
+    return "; ".join(ln.strip() for ln in atom_lines)
 
 
 @mcp.tool()
@@ -119,7 +119,7 @@ def single_point(
                        "('none', 'scalar', 'soc')",
         }
 
-    from pyscf import gto, dft, scf
+    from pyscf import dft, gto, scf
 
     spin = multiplicity - 1
     mol = gto.M(
@@ -233,8 +233,8 @@ def x2c_soc(
             "suggestion": "pip install pyscf",
         }
 
-    common = dict(geometry_xyz=geometry_xyz, method=method, basis=basis,
-                  charge=charge, multiplicity=multiplicity, max_cycle=max_cycle)
+    common = {"geometry_xyz": geometry_xyz, "method": method, "basis": basis,
+              "charge": charge, "multiplicity": multiplicity, "max_cycle": max_cycle}
     nr = single_point(relativistic="none", **common)
     if not nr.get("ok"):
         return {**nr, "stage_failed": "nr"}

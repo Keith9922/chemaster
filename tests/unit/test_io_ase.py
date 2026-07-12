@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from chemaster.mcp.io_ase import server as S
-
 
 # ------------------------------------------------------------------
 # smiles_to_xyz

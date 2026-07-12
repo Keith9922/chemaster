@@ -173,7 +173,7 @@ def soc(
             proc = subprocess.run(
                 [bdf_path, str(inp_path)],
                 cwd=workdir,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True, timeout=timeout_s,
             )
         except subprocess.TimeoutExpired:
@@ -303,7 +303,7 @@ def optimize(
         try:
             proc = subprocess.run(
                 [bdf_path, str(inp_path)],
-                cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                cwd=workdir, capture_output=True,
                 text=True, timeout=timeout_s,
             )
         except subprocess.TimeoutExpired:
@@ -368,7 +368,7 @@ def tddft(
         try:
             proc = subprocess.run(
                 [bdf_path, str(inp_path)],
-                cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                cwd=workdir, capture_output=True,
                 text=True, timeout=timeout_s,
             )
         except subprocess.TimeoutExpired:

@@ -20,7 +20,6 @@ import pytest
 
 from chemaster.mcp.calc_psi4.server import optimize_excited_state
 
-
 # ─── small smoke test: H2O S1 / B3LYP / sto-3g ────────────────────────
 H2O_GS_XYZ = """3
 H2O ground state geometry

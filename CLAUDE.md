@@ -5,9 +5,11 @@
 >
 > 不要绕过本文档去推理项目目标 —— 这里写的是已经和用户对齐过的决策，**不要重新讨论**。
 >
-> **本版本（v3.0）反映 2026-05-05 的方案修正：定位调整为"通用工具 + 基础验证"，
-> 砍掉 TADF 应用层验证，引入 labor-saving collaborator 哲学与权限分级机制。
-> 详见 `docs/archive/REFACTOR_PLAN.md`。**
+> **本版本（v4.0，2026-07-11）是答辩后的第一次大同步：毕设已于 2026-05-21
+> 完成答辩、2026-05-30 论文修订定稿。仓库完成了四路代码整合（advisor 分支 +
+> 本地 main 独有 commit + 未提交修复 + meitner worktree）、agent 内核重构与
+> 权限分级真接线。项目从"毕设冲刺"切换为"开源工具打磨"阶段，§8 是新的
+> 下一步清单。历史方案见 `docs/archive/REFACTOR_PLAN.md`。**
 
 ---
 
@@ -242,7 +244,10 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ---
 
-## 6. 开发阶段（v3.0 修订）
+## 6. 开发阶段（v3.0 制定，**已全部完成** — 历史记录）
+
+> v4.0 注：下表是毕设期的阶段规划，Phase 0-5 均已交付（答辩 2026-05-21）。
+> 答辩后的新阶段规划见 §8。
 
 详见 [`docs/archive/REFACTOR_PLAN.md`](docs/archive/REFACTOR_PLAN.md)。本节给一个粗概览：
 
@@ -278,37 +283,42 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ---
 
-## 8. 立即可做的下一步（v3.0 入口）
+## 8. 立即可做的下一步（v4.0 入口，答辩后阶段）
 
-新会话从这里开始（按依赖排序）：
+> v3.0 的 12 条毕设待办已全部完成（含 meitner worktree 合并、Gaussian 拆细、
+> BDF 扩充、MOMAP TVCF、三前端、3 benchmark、论文与答辩）。以下是答辩后的
+> 新清单，按优先级排序：
 
-1. **MCP 跨客户端 demo 验证**（30 min）：把 `chem.const` 或 `chem.kb` 挂到 Claude Code 等 MCP 客户端，截图。**未跑通前不允许在论文 §1.3 贡献章节写相关 claim**。
-2. **合并 worktree `objective-meitner-befa64` 的 8 个 commit** 回主线（含 TD-opt + MLJ + 鲸钛起步数据）。
-3. **system_prompt.md 重写**：按 `docs/archive/REFACTOR_PLAN.md` §1.1 重写，新增 Principle 0（labor-saving collaborator），改 §3 / §6 / §When to ask user，改 cheat-sheet 主路径走 Gaussian/BDF/MOMAP。
-4. **`RecommendTool` 实现**（builtins.py 新增类）+ `confirmation.py` 第三 mode 扩展 + `~/.chemaster/policy.yaml` 加载 + Trajectory `decision_authority` tagging。
-5. **Gaussian MCP 拆细**：当前只有 `parse_input` + 通用 `run`，需要拆出 `optimize / frequency / tddft / opt_excited_state / single_point`。
-6. **BDF MCP 扩充**：当前只有 `soc`，需要加 `optimize / tddft`。
-7. **MOMAP MCP 从零写**：speed / dynamics / TVCF 解析 + 与 Gaussian/BDF 数据流对接。
-8. **HPC 平台 adapter 接口**：基于现有 paramiko SSH 层，加平台抽象 + `local_slurm` 占位 adapter。
-9. **Textual TUI 完整版** + **本地 Web 前端最小版**（FastAPI + 简单 SPA）。
-10. **3 公开 benchmark**（S22 / QUEST / 蒽）输入文件 + 跑通脚本 + 文献参考值对比。
-11. **工程指标实验**：`docs/BENCHMARK_PROTOCOL.md` 协议先行，2-3 被试，注入故障，统计三指标。
-12. **论文 §1-§5 + 附录撰写**（Markdown）。
+**近期（0.3.0 目标）**：
+
+1. **补测试盲区**：`web/app.py` 与 `tui/app.py` 目前零测试（曾因此埋过"提交任务必崩"级 bug）；给 FastAPI 端点上 TestClient 测试、TUI 上 Textual pilot 测试。
+2. **Web 前端拆出 `web/static/index.html`**：~640 行 HTML/JS 埋在 Python 字符串里无法 lint；机制已支持读 static 文件。顺带去掉 marked.js 的 CDN 依赖（离线白屏）、做真的任务取消（现在取消只是前端停止轮询，后端线程继续跑）。
+3. **MCP 公共骨架 `chemaster/mcp/_common.py`**：统一 `ok()/err()` envelope 构造（`suggestion` 必填）、`EngineProbe`、`strip_xyz_header`、`run_engine` subprocess 流程。当前 `_check_engine` 有 7 份拷贝、XYZ 头剥离 5 份、元素表 3 份；calc_gaussian 结构化工具与 calc_bdf/momap 的错误返回大面积缺 `suggestion` 字段。
+4. **`calc_psi4` 拆分**：解析器群（~180 行）拆到 `calc_psi4/parsers.py`，压缩四份重复超长 docstring（1200+ 行 → 约 700）。
+5. **修 `hpc_slurm.fetch`**：submit 与 fetch 的远端目录约定对不上（功能性坏死），submit 时要持久化 job_id → remote_dir 映射。
+6. **BDF 输入生成按手册重写**：`_bdf_input_for_opt` 拼出的 `$compass` 块疑似非法语法、basis 用字符串替换 hack，真机大概率跑不通；参照 MOMAP 的做法加 `dry_run`。
+
+**中期（对外成长）**：
+
+7. **真实 LLM API 重跑工程指标**：当前故障恢复/路由/稳定性数据是"真 agent loop + mock 路由"；接 ANTHROPIC_API_KEY 重跑并对比。
+8. **推荐接受率实验（指标 3b）**：论文里唯一 `not_collected` 的指标，需要 2-3 名被试 × ≥5 anchor 分子（协议见 `docs/BENCHMARK_PROTOCOL.md`）。
+9. **token 级流式输出**：`run_streaming` 目前是事件级伪流且无生产消费者；给 Web 上 SSE/WebSocket 消费端。
+10. **MOMAP / BDF 真机验证**（需 license）；**TADF 应用线重启**（毕设时降级的未来工作，现在没有 scope 约束了）。
+11. **PyPI 发布 + CI**（GitHub Actions 跑 unit suite + ruff）。
 
 每一步都先写 test 再写实现。每完成一步用 git commit。
 
 **不要**：
 - 不要重构现有 PDF 代码 —— 它在 `tools/pdf-structure-extract/`，是外挂工具。
-- 不要让 Agent "自由发挥" 选基组/泛函 —— 必须经 `recommend` 让用户决策。
+- 不要让 Agent "自由发挥" 选基组/泛函 —— 必须经 `recommend` 让用户决策（policy.yaml 可显式降级到 L1）。
 - 不要在 system prompt 里写公式 —— 公式只在 `chemaster.kb.formulas` Python 模块里。
-- **不要把"MCP 跨客户端复用"等未验证的 claim 写进论文** —— 必须先跑通 demo。
-- **不要把 TADF / AIE 应用层结果写进论文 §4 主验证** —— 这一类已降级为未来工作。
+- 不要再把"最新数字"只写进 benchmark JSON 而不回写 README / CLAUDE.md —— 答辩前夜的 84%→100% 口径变更曾造成三处文档三种数字。
 
 ---
 
 ## 9. 用户偏好与约定（**记住，少返工**）
 
-- 用户是**化学专业本科生**，这是毕业设计。**导师方向：基础化学，懂 Gaussian/BDF/MOMAP 等软件**——属于 REFACTOR_PLAN 里的"情形 A"，方案合适度风险消除。
+- 用户是**化学专业本科生（2026 届，毕设已答辩通过）**。导师曲泽星教授，方向基础化学，懂 Gaussian/BDF/MOMAP 等软件。**毕设阶段已结束**：论文最终版在 `~/Desktop/毕业论文/最终版/`，答辩材料在 `~/Desktop/毕设答辩材料/` 与 `~/Desktop/ChemMaster项目/`；现在是答辩后的开源工具打磨阶段，不再受毕设 scope 约束。
 - 用户**没有当前可用的 HPC 账号**（v3.0 修订）。商业云（并行/鸿之微）接入降级为"接口预留 + 本地 SLURM demo"，真实接入推到未来工作。
 - 用户**没说要支持 Windows**，但 macOS + Linux 是必须。Windows 走 WSL2。
 - 用户已经有 `chemaster/output/` 目录的 PDF 抽取产物 —— 不要清理。
@@ -343,38 +353,31 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 ---
 
-## 11. 当前状态快照（v3.1, 2026-05-20）
+## 11. 当前状态快照（v4.0, 2026-07-11）
 
-V2 五层架构已落地，v3.0 哲学修正全部完成，v3.1（round-2 robustness）已合入 main。
+毕设线（V2 架构 → v3.0 哲学修正 → v3.1 round-2 robustness → 论文 → 答辩）已全部完成；
+2026-07-11 完成答辩后第一轮大整合与重构。
 
-- ✅ Phase 0 仓库脚手架 + 设计文档
-- ✅ Phase 1 工具链路打通：硬编码 H2O e2e
-- ✅ **Phase 1.5 真 Claude tool-use Agent loop**（V2 核心里程碑）
-- ✅ **v3.0 哲学修正**（labor-saving collaborator + L1/L2/L3 权限分级 + recommend 机制 + decision_authority tagging）
-- ✅ **多前端**：CLI / Textual TUI / FastAPI Web 三前端共享同一 Agent 内核
-- ✅ **15 个 MCP server**：const / kb / calc_psi4 / calc_gaussian / calc_bdf / calc_momap / calc_pyscf / calc_orca / calc_xtb / io_ase / parse_cclib / viz / hpc_slurm / pdf / analysis_multiwfn
-- ✅ **Codex-borrows（2026-05-20 落地）**：
-  - `AGENTS.md` 与 `CLAUDE.md` 双 schema 兼容（symlink）
-  - `chemaster.mcp.agent.server` —— **agent 内核本身作为 MCP server**
-  - `chemaster.notify` —— 跨平台桌面通知
-  - `chemaster doctor` —— 一行环境审计
-  - `scripts/install.sh` + `docs/INSTALL.md` —— pipx/uvx 一行安装
-  - `chemaster.kb.method_selection` + `chemaster kb method-rules` —— 声明式方法选择规则，用户可覆盖
-  - 共享 `chemaster.agent.mock_routing` 路由器（双语关键词，benchmark + MCP server 共用）
-- ✅ **完整 benchmark 数据**：
+- ✅ **毕设完结**：2026-05-21 答辩通过（评委 5 条意见均为论文格式类，05-30 修订定稿）；论文/答辩材料在桌面归档
+- ✅ **四路代码整合为一条主线**：feat/advisor-feedback-r1（答辩前冲刺 22 commit）+ 本地 main 独有 3 commit（Web 大修 + PyInstaller）+ 主仓库未提交修复（TUI TaskInstance 字段 bug / LLM provider 自动探测）+ objective-meitner worktree 8 commit（psi4 TD-opt、MLJ、io_compute_descriptors）
+- ✅ **权限分级真接线**：`policy.yaml` 的 L1/L2/L3 此前是死代码（只靠 system prompt 文字自觉），现在 `_handle_recommend` 真按 policy 分流——L1 静默接受（authority=agent）、L2 推荐卡片、L3 无交互通道时强制升级 ask_user 挂起；8 个专项测试
+- ✅ **agent 内核重构**：sync/streaming 三对镜像方法收敛到共享 helper（~350 行重复消除），修掉漂移出的 5 个 bug（streaming 的 recommend no-op、authority 标签缺失、continue_run 异常不落盘等）
+- ✅ **llm_client 表驱动**：MiniMax/Qwen/DeepSeek 三份复制样板收敛；anthropic model=None 兜底；timeout 真正传给 SDK
+- ✅ **统一组装与探测**：`chemaster/agent/factory.py`（此前 5 处各抄一份 wiring 且已漂移）+ `chemaster/engines.py`（此前 4 套引擎清单互不一致）
+- ✅ **psi4 会话隔离**：`_psi4_session` 每次调用 clean_options()（修掉 TD-opt 选项泄漏毒化后续 tddft 的顺序依赖 bug）；日志写独立临时目录（不再把 `*_output.log`、`psi.*.clean` 拉到仓库根，且并发不互相覆盖）
+- ✅ **17 个 MCP server / 54 个注册工具**：const / formulas / kb / calc_psi4(5 工具含 TD-opt) / calc_gaussian(7) / calc_bdf(3) / calc_momap(3) / calc_pyscf(2) / calc_orca(2) / calc_xtb(2) / io_ase(5) / parse_cclib / viz / hpc_slurm / analysis_multiwfn / agent(agent-as-MCP) / pdf(占位)
+- ✅ **完整 benchmark 数据**（`data_source` 全程标注真伪）：
   - S22 全 22 体系 MAE 0.245 kcal/mol（psi4 实跑）
-  - QUEST 10 分子 20 状态 MAE 0.64 eV（psi4 实跑）
-  - 蒽 X2C-1e 三阶段相对论（PySCF 实跑作为 BDF 开源 reference）
-  - 工程指标：故障恢复 84%（21/25）、应答率 100/100、路由 98.0%、stress 334/334、scalability N=2000 mean 131 ms / std 4.9 ms
-  - MCP 跨客户端探针：4/4 server OK（含 agent server 真跑 chemaster_run）
-  - hard cases 11/11 在两种方法×基组组合下全过
-- ✅ **测试**：336 unit pass + 2 skipped（无 API key），整套套件全绿，0 ruff F-finding
-- ✅ **论文**：51 页 docx 已在 `~/Desktop/ChemMaster项目/论文与PPT/`，9 轮真值审计无 stale claim
-- ⬜ 未来工作：TADF / AIE 应用层验证、ORCA / xTB / MultiWFN 深度集成、商业云真实接入、Hooks 系统、OS-level 沙盒、`!\`cmd\`` 动态 skill 注入
+  - QUEST 10 分子 20 状态 MAE 0.635 eV（psi4 实跑，>0.4 阈值未达标**如实记录**）
+  - 蒽 X2C-1e 三阶段相对论（PySCF 实跑作 BDF 开源 reference）+ naive-vs-ChemMaster head-to-head 对照（v1-v4）
+  - 工程指标（真 agent loop + mock 路由）：技术故障处置 25/25（L1 自主恢复或干净升级）、执行正确率 100/100、stress 334/334、scalability **N=10000** 100% 成功 mean 128.9 ms（该数据曾被误覆盖为 N=100，已从 git 历史恢复）、自主步占比 80%、hard cases 11/11、MCP 跨客户端 4/4
+  - 推荐接受率（3b）：`not_collected`，待真人被试实验
+- ✅ **测试**：385 collected（unit 375 + integration 10），全绿；单测与真实 `~/.chemaster` 完全隔离
+- ⬜ 下一步见 §8（web/tui 测试盲区、MCP 公共骨架、hpc fetch 修复、BDF 输入重写、真 LLM 指标、TADF 重启、PyPI/CI）
 
 ---
 
-*文档版本：v3.1 (2026-05-20)。每次重大架构调整后更新本文档的 §0、§2、§3、§5、§7、§8、§9、§11。*
+*文档版本：v4.0 (2026-07-11)。每次重大架构调整后更新本文档的 §0、§2、§3、§5、§7、§8、§9、§11。*
 
 ---
 

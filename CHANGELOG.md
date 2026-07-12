@@ -3,6 +3,65 @@
 所有面向用户可见的变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0a3] — 答辩后大整合：四路合流 + 内核重构 + 权限分级真接线 (2026-07-11)
+
+> 毕设于 2026-05-21 完成答辩、05-30 论文修订定稿。本版本把答辩前后散落在
+> 4 处的代码统一为一条主线，并完成第一轮答辩后重构。
+
+### Added
+- **权限分级真接线**：`~/.chemaster/policy.yaml` 的 L1/L2/L3 此前只是
+  system prompt 里的文字约定（`policy.py` 是死代码），现在 `_handle_recommend`
+  真按 policy 分流——L1 静默接受（authority=agent，全程留痕）、L2 推荐卡片、
+  **L3 无交互通道时拒绝自动接受，强制升级 ask_user 并挂起任务**。
+  新增 8 个专项测试（此前 recommend 循环路径零测试覆盖）。
+- **`chemaster/agent/factory.py`**：统一的 agent 组装工厂（provider 探测 /
+  默认 model / wiring）。替换 5 处互相漂移的复制粘贴——REPL 此前不认
+  qwen/deepseek 的 key，agent-as-MCP server 用的还是一批旧 model id。
+- **`chemaster/engines.py`**：统一引擎探测（4 处互不一致的引擎清单合一；
+  psi4/pyscf 按"当前解释器可 import"判定，doctor 此前漏检纯模块安装）。
+- **psi4 TD-opt 移植**（来自 objective-meitner worktree 的 8 个 commit）：
+  `calc_psi4_optimize_excited_state`（TDA 激发态几何优化）、
+  `io_compute_descriptors`（键长/键角/二面角确定性计算）、MLJ 速率公式
+  `k_mlj`、HCHO 全流水线 benchmark 证据。开源路径首次具备激发态优化能力。
+- 恢复主仓库工作区滞留 2 个月的未提交修复：TUI `TaskInstance(intent=)`
+  字段错误（提交任务必崩）、TUI 硬编码 mock LLM（改为按环境变量自动探测
+  + `--llm-provider/--llm-model` 选项）、TUI 逐步流式显示。
+
+### Changed
+- **agent 内核重构**：run/continue_run 收敛为 `_run_loop`；sync 与 streaming
+  两条路径的三对镜像方法（~350 行语义重复）收敛到共享 helper——消掉复制后
+  各自演化出的 5 个 bug（streaming 的 recommend 直通 no-op、authority 标签
+  缺失、`continue_run` 异常时 trajectory 不落盘等）。streaming 的工具执行
+  改为 `asyncio.to_thread`，不再阻塞事件循环。
+- **llm_client 表驱动**：MiniMax/Qwen/DeepSeek 三份复制样板收敛为
+  `_normalized_config`；context-overflow 探测合一；anthropic `model=None`
+  兜底默认模型（web/tui 传 None 曾直接把 None 发给 API）；`timeout_s`
+  真正传给 SDK（此前形同虚设）。
+- **psi4 会话隔离**：五个工具的重复 setup 收敛为 `_psi4_session`，每次调用
+  `clean_options()`——修掉 TD-opt 的 optking/tdscf 选项泄漏毒化后续 tddft
+  的顺序依赖 bug；输出日志写独立临时目录（不再把 `*_output.log`、
+  `psi.*.clean` 拉到仓库根，且并发调用不再互相覆盖）。
+
+### Fixed
+- `calc_pyscf` 返回契约：SCF 不收敛此前返回 `ok=True` + `error_code` 并存
+  ——agent 按 `ok` 判读会把不收敛当成功，`x2c_soc` 还会拿不收敛的能量继续
+  算修正值。现在统一 `ok=False` + `suggestion`。
+- `kb/rules/functionals.yaml` 非法 YAML（B2PLYP 条目）导致整个文件从不进
+  检索语料；修复后给用户自带文档加 1.3× 检索加权（实验室自定义规则不再被
+  通用条目挤出 top-k）。
+- `list_skills` 不再把 user_kb 的 notes 当 skill 返回；单测与真实
+  `~/.chemaster`（user_kb 与 policy.yaml）完全隔离。
+- **scalability N=10000 数据找回**：bd1ec99 重新生成时把 be787c2 的
+  N=10000 结果误覆盖为 N=100，已从 git 历史恢复。
+- executor：时间戳/Python 版本不再 shell 出去取；`_write_json_sync` 真正
+  fsync 写入的 fd（此前 fsync 的是一个新打开且未写入的句柄）。
+- 版本号统一为 0.2.0a3（pyproject 此前停在 0.2.0a1，CHANGELOG 已是 0.2.0a2）。
+
+### Docs
+- CLAUDE.md → v4.0（答辩后状态；§8 换成新阶段清单）；README 数字与
+  benchmark JSON 对齐（路由 100%、故障处置 25/25 双口径注明、N=10000、
+  3c=80%、17 server / 54 工具）；thesis.md 英文摘要与中文正文同步。
+
 ## [0.2.0a2] — Round-2 robustness + Codex-inspired upgrades + thesis sync (2026-05-20)
 
 ### Added — ChemMaster-as-MCP-server (`chemaster.mcp.agent.server`)

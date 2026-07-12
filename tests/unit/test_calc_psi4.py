@@ -10,7 +10,6 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-
 # ─── 测试用 H2O XYZ（标准 xyz：首行原子数 + 注释行） ─────────────────────
 H2O_XYZ = """3
 H2O test geometry
@@ -964,7 +963,6 @@ class TestThermalParserWithRealLog(unittest.TestCase):
   Total G, Gibbs energy at  298.15 [K]                                    -76.35424270 [Eh]
 """
         # write to a tmp file
-        from pathlib import Path
         import tempfile
         with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as f:
             f.write(sample)

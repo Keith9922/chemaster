@@ -9,8 +9,9 @@ server 用的还是一批旧 model id。所有前端一律经由本模块组装 
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from chemaster.agent.agent import AgentConfig, ChemAgent
 from chemaster.agent.llm_client import LLMConfig, MockLLM, create_llm

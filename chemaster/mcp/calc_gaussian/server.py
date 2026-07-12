@@ -554,7 +554,7 @@ def _execute_gaussian_job(
     timeout_s: int,
 ) -> tuple[bool, str, str]:
     """Drive g16 on a generated input. Returns (ok, stdout_path, stderr)."""
-    g_path, g_name = _check_engine()
+    g_path, _g_name = _check_engine()
     if not g_path:
         return False, "", "ENGINE_NOT_FOUND"
 

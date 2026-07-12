@@ -20,11 +20,9 @@ focus on the tool-level contract.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Shared lazy imports — load the module once per test session
@@ -187,7 +185,10 @@ class TestSummarizeTrajectory:
         """Build a minimal Trajectory by hand with a finish tool call, then
         verify the summarizer picks up the payload."""
         from chemaster.agent.types import (
-            AssistantMessage, StepRecord, ToolCall, Trajectory,
+            AssistantMessage,
+            StepRecord,
+            ToolCall,
+            Trajectory,
         )
         traj = Trajectory()
         traj.add_step(StepRecord(
@@ -212,7 +213,7 @@ class TestSummarizeTrajectory:
     def test_agent_attr_takes_priority_over_trajectory(self, srv):
         """If the agent has _finish_payload set (the normal happy path),
         it should win over the trajectory's finish_payload."""
-        from chemaster.agent.types import StepRecord, Trajectory
+        from chemaster.agent.types import Trajectory
         traj = Trajectory()
         traj.finish("completed", {"from": "trajectory"})
 

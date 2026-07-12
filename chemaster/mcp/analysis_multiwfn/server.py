@@ -54,7 +54,7 @@ def _run_multiwfn(*, wfn_file: str, command_script: str,
         [bin_path, wfn_file],
         cwd=workdir,
         input=command_script,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        capture_output=True,
         text=True, timeout=timeout_s,
     )
     return proc.returncode, proc.stdout, proc.stderr

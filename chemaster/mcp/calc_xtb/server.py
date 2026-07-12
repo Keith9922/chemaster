@@ -198,7 +198,7 @@ def _run_xtb(
             "stderr": e.stderr or "",
             "wall_time_s": timeout,
             "tmpdir": tmpdir,
-            "warnings": warnings + [f"xTB timed out after {timeout}s"],
+            "warnings": [*warnings, f"xTB timed out after {timeout}s"],
             "error_code": "TIMEOUT",
         }
 

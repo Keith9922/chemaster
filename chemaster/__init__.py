@@ -10,5 +10,5 @@
 详见仓库根目录的 CLAUDE.md。
 """
 
-__version__ = "0.2.0a1"
+__version__ = "0.2.0a3"
 __all__ = ["__version__"]

@@ -653,4 +653,4 @@ def _try_register_kb(registry: ToolRegistry) -> None:
         ))
 
 
-__all__ = ["build_default_registry", "TOOL_MANIFEST"]
+__all__ = ["TOOL_MANIFEST", "build_default_registry"]

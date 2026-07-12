@@ -12,9 +12,8 @@ import logging
 import os
 from typing import Any
 
+import cclib
 from mcp.server.fastmcp import FastMCP
-
-import cclib  # noqa: E402
 
 logger = logging.getLogger(__name__)
 mcp = FastMCP("chem.parse_cclib")
@@ -46,7 +45,7 @@ def _build_xyz(atomnos: Any, atomcoords: Any) -> str:
     coords = np.asarray(atomcoords)
     final = coords[-1]  # 取最终构型
     lines = [str(len(atomnos)), ""]
-    for num, (x, y, z) in zip(atomnos, final):
+    for num, (x, y, z) in zip(atomnos, final, strict=False):
         elem = _ELEMENTS[int(num)] if int(num) < len(_ELEMENTS) else f"X{int(num)}"
         lines.append(f"{elem:>3s}  {x:12.6f}  {y:12.6f}  {z:12.6f}")
     return "\n".join(lines)

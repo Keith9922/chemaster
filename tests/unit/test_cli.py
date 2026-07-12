@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from unittest.mock import patch
 
 from click.testing import CliRunner
 
@@ -211,7 +210,10 @@ def test_cli_init_writes_env_file(tmp_path: Path, monkeypatch):
 
 def test_write_markdown_report_writes_well_formed_file(tmp_path: Path):
     from chemaster.agent.types import (
-        AssistantMessage, StepRecord, ToolCall, Trajectory,
+        AssistantMessage,
+        StepRecord,
+        ToolCall,
+        Trajectory,
     )
     from chemaster.cli import _write_markdown_report
 

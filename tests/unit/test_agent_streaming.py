@@ -19,8 +19,6 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from chemaster.agent.agent import AgentConfig, ChemAgent
 from chemaster.agent.builtins import register_builtins
 from chemaster.agent.llm_client import MockLLM
@@ -29,7 +27,6 @@ from chemaster.agent.types import (
     AssistantMessage,
     AssistantMessageEvent,
     ConfirmationRequiredEvent,
-    ErrorEvent,
     RunCompletedEvent,
     StepCompletedEvent,
     StepStartedEvent,
@@ -38,7 +35,6 @@ from chemaster.agent.types import (
     ToolCompletedEvent,
     ToolStartedEvent,
 )
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Test fixtures: tools and helpers

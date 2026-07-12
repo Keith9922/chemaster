@@ -15,7 +15,6 @@ import pytest
 
 from chemaster.agent.agent import AgentConfig, BaseAgent, ChemAgent
 from chemaster.agent.builtins import register_builtins
-from chemaster.agent.context import ContextConfig, TruncationStrategy
 from chemaster.agent.llm_client import (
     MockLLM,
     stub_assistant_message,
@@ -29,7 +28,6 @@ from chemaster.agent.types import (
     TaskInstance,
     ToolCall,
 )
-
 
 # ──────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -487,7 +485,7 @@ def test_agent_config_coerces_string_runs_dir(tmp_path):
 
 def test_minimax_llm_uses_minimax_endpoint_and_model(monkeypatch):
     """MiniMaxLLM(LLMConfig(provider='minimax')) → MiniMax base URL + default model."""
-    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig
+    from chemaster.agent.llm_client import LLMConfig, MiniMaxLLM
 
     monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -498,7 +496,7 @@ def test_minimax_llm_uses_minimax_endpoint_and_model(monkeypatch):
 
 def test_minimax_llm_keeps_explicit_minimax_model(monkeypatch):
     """An explicit MiniMax-prefixed model id wins over the default."""
-    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig
+    from chemaster.agent.llm_client import LLMConfig, MiniMaxLLM
     monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
     llm = MiniMaxLLM(LLMConfig(provider="minimax", model="MiniMax-M2.7-highspeed"))
     assert llm.config.model == "MiniMax-M2.7-highspeed"
@@ -507,14 +505,14 @@ def test_minimax_llm_keeps_explicit_minimax_model(monkeypatch):
 def test_minimax_llm_overrides_anthropic_default_model(monkeypatch):
     """LLMConfig defaults to claude-sonnet-4-6; MiniMaxLLM should swap that
     out (otherwise the API call will be routed weirdly)."""
-    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig
+    from chemaster.agent.llm_client import LLMConfig, MiniMaxLLM
     monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
     llm = MiniMaxLLM(LLMConfig(provider="minimax", model="claude-sonnet-4-6"))
     assert llm.config.model == "MiniMax-M2.7"
 
 
 def test_minimax_llm_raises_without_api_key(monkeypatch):
-    from chemaster.agent.llm_client import MiniMaxLLM, LLMConfig, LLMError
+    from chemaster.agent.llm_client import LLMConfig, LLMError, MiniMaxLLM
     monkeypatch.delenv("MINIMAX_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(LLMError, match="MINIMAX_API_KEY"):
@@ -522,7 +520,7 @@ def test_minimax_llm_raises_without_api_key(monkeypatch):
 
 
 def test_create_llm_factory_routes_minimax(monkeypatch):
-    from chemaster.agent.llm_client import create_llm, LLMConfig, MiniMaxLLM
+    from chemaster.agent.llm_client import LLMConfig, MiniMaxLLM, create_llm
     monkeypatch.setenv("MINIMAX_API_KEY", "test-key-not-real")
     llm = create_llm(LLMConfig(provider="minimax"))
     assert isinstance(llm, MiniMaxLLM)
@@ -568,8 +566,11 @@ def test_openai_compat_translates_dialog(monkeypatch):
     """Verify the prompt-translation logic without actually calling OpenAI."""
     from chemaster.agent.llm_client import LLMConfig, OpenAICompatLLM
     from chemaster.agent.types import (
-        AssistantMessage, Dialog, SystemMessage, ToolCall,
-        ToolMessage, ToolSpec, UserMessage,
+        AssistantMessage,
+        SystemMessage,
+        ToolMessage,
+        ToolSpec,
+        UserMessage,
     )
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     llm = OpenAICompatLLM(LLMConfig(provider="openai_compat",
@@ -599,7 +600,10 @@ def test_openai_compat_translates_dialog(monkeypatch):
 
 def test_create_llm_routes_qwen_and_deepseek(monkeypatch):
     from chemaster.agent.llm_client import (
-        DeepSeekLLM, LLMConfig, QwenLLM, create_llm,
+        DeepSeekLLM,
+        LLMConfig,
+        QwenLLM,
+        create_llm,
     )
     monkeypatch.setenv("DASHSCOPE_API_KEY", "k")
     monkeypatch.setenv("DEEPSEEK_API_KEY", "k")

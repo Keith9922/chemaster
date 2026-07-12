@@ -386,7 +386,7 @@ class OpenAICompatLLM(BaseLLM):
                 "(e.g. https://dashscope.aliyuncs.com/compatible-mode/v1)."
             )
         try:
-            from openai import OpenAI            # noqa: F401
+            from openai import OpenAI
         except ImportError as exc:  # pragma: no cover
             raise LLMError(
                 "openai SDK not installed. Run: pip install openai>=1.0"

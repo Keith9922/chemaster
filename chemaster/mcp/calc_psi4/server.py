@@ -51,7 +51,7 @@ def _au_to_debye() -> float:
 
 def _electron_count(xyz: str, charge: int) -> int:
     """从 XYZ 几何字串推算总价电子数（用于多重度校验）。"""
-    lines = [l.strip() for l in xyz.strip().split("\n") if l.strip()]
+    lines = [ln.strip() for ln in xyz.strip().split("\n") if ln.strip()]
     total = 0
     for line in lines:
         parts = line.split()
@@ -102,7 +102,7 @@ def _xyz_to_geom_block(xyz: str, charge: int, multiplicity: int) -> str:
       - 有 comment 行：'3\\nWater\\nO ...\\nH ...\\nH ...'
       - 无 comment 行：'3\\nO ...\\nH ...\\nH ...'
     """
-    lines = [l for l in xyz.strip().splitlines() if l.strip()]
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Empty geometry_xyz")
 
@@ -124,7 +124,7 @@ def _xyz_to_geom_block(xyz: str, charge: int, multiplicity: int) -> str:
     except ValueError:
         raise ValueError(
             f"geometry_xyz first line must be atom count (int), got {lines[0]!r}"
-        )
+        ) from None
 
     if len(lines) == n_atoms + 1:
         # 无 comment 行：lines[0]=n_atoms, lines[1:]=coordinates
@@ -168,7 +168,7 @@ def _psi4_session(
 
     try:
         psi4.core.clean()  # 清掉上一次计算的 scratch
-    except Exception:  # noqa: BLE001 — 没有前次计算时某些版本会抱怨
+    except Exception:
         pass
     psi4.core.clean_options()  # 所有选项回到 psi4 默认值
 
@@ -783,7 +783,7 @@ def frequency(
             if not freqs_cm_inv:
                 raise RuntimeError(
                     "psi4 wavefunction access failed and frequency parser found no frequencies in output"
-                )
+                ) from None
             ir_intensities = [0.0] * len(freqs_cm_inv)
 
         # 虚频判定：< -10 cm^-1
@@ -1310,8 +1310,8 @@ def optimize_excited_state(
                 f"[1, n_states={n_states}]."
             ),
             "suggestion": (
-                f"Set n_states ≥ target_state. For TADF S1 opt use "
-                f"target_state=1, n_states=3 (extra states stabilize root following)."
+                "Set n_states ≥ target_state. For TADF S1 opt use "
+                "target_state=1, n_states=3 (extra states stabilize root following)."
             ),
         }
 

@@ -14,9 +14,9 @@ from pathlib import Path
 class KnowledgeRetriever:
     """混合检索（BM25 + 向量）over kb/rules/."""
 
-    def __init__(self, kb_root: str | Path = None) -> None:  # noqa: ARG002
+    def __init__(self, kb_root: str | Path | None = None) -> None:
         raise NotImplementedError("Phase 2: implement KnowledgeRetriever.")
 
-    def search(self, query: str, top_k: int = 5) -> list[dict]:  # noqa: ARG002
+    def search(self, query: str, top_k: int = 5) -> list[dict]:
         """检索，返回 [{text, source, score}, ...]。"""
         raise NotImplementedError("Phase 2.")

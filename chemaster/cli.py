@@ -230,8 +230,9 @@ def run(
     # or when the host platform has no notification mechanism). Wrapped so a
     # broken notifier never breaks a successful CLI run.
     try:
-        from chemaster.notify import notify_task_done
         from datetime import datetime
+
+        from chemaster.notify import notify_task_done
 
         elapsed_s = None
         if traj.started_at and traj.finished_at:
@@ -620,7 +621,8 @@ def show(task_id: str, runs_dir: str) -> None:
                             border_style="cyan"))
     if payload.get("key_results"):
         kr = Table(title="Key results")
-        kr.add_column("name"); kr.add_column("value")
+        kr.add_column("name")
+        kr.add_column("value")
         for k, v in payload["key_results"].items():
             kr.add_row(str(k), str(v))
         console.print(kr)
@@ -746,7 +748,6 @@ def doctor_cmd(quiet: bool) -> None:
     Designed to be the first command a new user runs.  Non-zero exit code
     means at least one check failed in a way that blocks ``chemaster run``.
     """
-    import importlib
     import platform as _platform
     import shutil
 
@@ -772,8 +773,10 @@ def doctor_cmd(quiet: bool) -> None:
 
     # ── 1. Python / package manager ──────────────────────────────────────
     t1 = Table(title="Runtime", show_lines=False)
-    t1.add_column("", width=2); t1.add_column("check", style="cyan")
-    t1.add_column("detail"); t1.add_column("hint", style="dim")
+    t1.add_column("", width=2)
+    t1.add_column("check", style="cyan")
+    t1.add_column("detail")
+    t1.add_column("hint", style="dim")
     py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     _row(t1, "python", "ok" if sys.version_info >= (3, 11) else "fail",
          py_ver, "Need Python ≥ 3.11")
@@ -790,8 +793,10 @@ def doctor_cmd(quiet: bool) -> None:
     from chemaster.engines import probe_engines
 
     t2 = Table(title="Chemistry engines", show_lines=False)
-    t2.add_column("", width=2); t2.add_column("engine", style="cyan")
-    t2.add_column("path"); t2.add_column("how to install", style="dim")
+    t2.add_column("", width=2)
+    t2.add_column("engine", style="cyan")
+    t2.add_column("path")
+    t2.add_column("how to install", style="dim")
     have_any = False
     for status in probe_engines():
         detail = status.path or "(not available)"
@@ -808,7 +813,9 @@ def doctor_cmd(quiet: bool) -> None:
 
     # ── 3. LLM API keys (auto-detect from env) ──────────────────────────
     t3 = Table(title="LLM API keys", show_lines=False)
-    t3.add_column("", width=2); t3.add_column("key", style="cyan"); t3.add_column("detail")
+    t3.add_column("", width=2)
+    t3.add_column("key", style="cyan")
+    t3.add_column("detail")
     api_keys = {
         "ANTHROPIC_API_KEY": "Anthropic Claude",
         "MINIMAX_API_KEY":   "MiniMax",
@@ -831,7 +838,8 @@ def doctor_cmd(quiet: bool) -> None:
 
     # ── 4. User config layout ────────────────────────────────────────────
     t4 = Table(title="User config", show_lines=False)
-    t4.add_column("", width=2); t4.add_column("path", style="cyan")
+    t4.add_column("", width=2)
+    t4.add_column("path", style="cyan")
     t4.add_column("status")
     try:
         from chemaster.agent.user_kb import user_kb_root
@@ -854,7 +862,9 @@ def doctor_cmd(quiet: bool) -> None:
     sinfo = shutil.which("sinfo")
     if sinfo:
         t5 = Table(title="HPC (SLURM)", show_lines=False)
-        t5.add_column("", width=2); t5.add_column("check", style="cyan"); t5.add_column("detail")
+        t5.add_column("", width=2)
+        t5.add_column("check", style="cyan")
+        t5.add_column("detail")
         _row(t5, "sinfo", "ok", sinfo)
         console.print(t5)
 

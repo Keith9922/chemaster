@@ -11,8 +11,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 logger = logging.getLogger(__name__)
 mcp = FastMCP("chem.io_ase")
@@ -116,6 +115,7 @@ def _load_tadf_anchors() -> dict[str, dict[str, Any]]:
       - benchmarks/momap-jingti/jingti.xyz (师姐 reference, 46 atoms)
     """
     from pathlib import Path
+
     import yaml
 
     anchors: dict[str, dict[str, Any]] = {}
@@ -536,7 +536,7 @@ def compute_descriptors(
     import math
 
     # ── parse XYZ ────────────────────────────────────────────────────
-    lines = [l for l in geometry_xyz.strip().splitlines() if l.strip()]
+    lines = [ln for ln in geometry_xyz.strip().splitlines() if ln.strip()]
     if not lines:
         return {
             "ok": False,
@@ -660,15 +660,15 @@ def compute_descriptors(
             return {"ok": False, "error_code": "INVALID_INDEX",
                     "details": f"dihedrals entry must be [i, j, k, l], got {quad!r}",
                     "suggestion": "Pass exactly four indices per dihedral."}
-        i, j, k, l = quad
-        for v in (i, j, k, l):
+        i, j, k, m = quad
+        for v in (i, j, k, m):
             err = _check_idx(v)
             if err:
                 return {"ok": False, "error_code": "INVALID_INDEX",
                         "details": err, "suggestion": f"Use 0-based indices in [0, {n - 1}]."}
         b1 = _vec(j, i)   # i - j
         b2 = _vec(j, k)   # k - j
-        b3 = _vec(k, l)   # l - k
+        b3 = _vec(k, m)   # m - k
         n1 = _cross(b1, b2)
         n2 = _cross(b2, b3)
         nn1, nn2 = _norm(n1), _norm(n2)
@@ -683,8 +683,8 @@ def compute_descriptors(
         # IUPAC dihedral: signed angle, [-180, 180]
         dih_deg = math.degrees(math.atan2(y, x))
         dihedral_results.append({
-            "indices": [i, j, k, l],
-            "elements": [elements[i], elements[j], elements[k], elements[l]],
+            "indices": [i, j, k, m],
+            "elements": [elements[i], elements[j], elements[k], elements[m]],
             "value": round(dih_deg, 3),
             "unit": "deg",
         })

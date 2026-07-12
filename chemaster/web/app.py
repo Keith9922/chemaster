@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import json
 import logging
-import shutil
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -91,10 +90,10 @@ def create_app(agent_factory: Any | None = None):
         from fastapi import FastAPI, HTTPException
         from fastapi.responses import HTMLResponse
         from fastapi.staticfiles import StaticFiles
-    except ImportError:
+    except ImportError as exc:
         raise RuntimeError(
             "FastAPI is not installed. Run: pip install fastapi uvicorn"
-        )
+        ) from exc
 
     app = FastAPI(title="ChemMaster", version="0.3.0")
     store = WebTaskStore()
@@ -257,7 +256,7 @@ def _run_agent_blocking(task: WebTask, agent_factory: Any) -> None:
                 })
                 return
             # 把每个 tool 调用与对应 response 配对
-            for tc, tr in zip(tcs, trs):
+            for tc, tr in zip(tcs, trs, strict=False):
                 ok = not getattr(tr, "is_error", False)
                 tr_content = (getattr(tr, "content", "") or "")
                 task.events.append({
@@ -973,8 +972,8 @@ def main(host: str = "127.0.0.1", port: int = 8765,
     """Launch the Web UI."""
     try:
         import uvicorn
-    except ImportError:
-        raise RuntimeError("uvicorn is not installed. Run: pip install fastapi uvicorn")
+    except ImportError as exc:
+        raise RuntimeError("uvicorn is not installed. Run: pip install fastapi uvicorn") from exc
 
     app = create_app(agent_factory=agent_factory)
     print(f"ChemMaster Web UI running at http://{host}:{port}/")

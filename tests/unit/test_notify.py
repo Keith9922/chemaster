@@ -12,13 +12,11 @@ is mocked.  The tests verify:
 
 from __future__ import annotations
 
-import os
 from unittest.mock import patch
 
 import pytest
 
 from chemaster import notify as nf
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # is_enabled / opt-out via env var
@@ -141,11 +139,11 @@ class TestNotifyPublicAPI:
         monkeypatch.setenv("CHEMASTER_NO_NOTIFY", "1")
         # Should never touch the platform layer.
         with patch.object(nf, "_notify_macos") as m, \
-             patch.object(nf, "_notify_linux") as l, \
+             patch.object(nf, "_notify_linux") as lin, \
              patch.object(nf, "_notify_wsl") as w, \
              patch.object(nf, "_notify_windows") as win:
             assert nf.notify("t", "b") is False
-        for mock in (m, l, w, win):
+        for mock in (m, lin, w, win):
             mock.assert_not_called()
 
     def test_swallows_inner_exception(self, monkeypatch):

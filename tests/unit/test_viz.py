@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import os
 
-import pytest
-
 from chemaster.mcp.viz import server as S
-
 
 # ------------------------------------------------------------------
 # plot_3d

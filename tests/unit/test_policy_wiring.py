@@ -210,6 +210,6 @@ def test_recommend_audit_line_written_with_level(tmp_path):
     log = tmp_path / "runs" / traj.task_id / "confirmations.jsonl"
     assert log.exists()
     import json
-    lines = [json.loads(l) for l in log.read_text().splitlines()]
-    rec = [l for l in lines if l.get("type") == "recommend"]
+    lines = [json.loads(ln) for ln in log.read_text().splitlines()]
+    rec = [entry for entry in lines if entry.get("type") == "recommend"]
     assert rec and rec[0]["level"] == "L1" and rec[0]["status"] == "accept"

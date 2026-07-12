@@ -26,6 +26,7 @@ Reference points used:
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -45,7 +46,6 @@ from chemaster.agent.types import (
     TaskInstance,
     ToolMessage,
 )
-
 
 # ──────────────────────────────────────────────────────────────────────────
 # Sweep configuration
@@ -103,7 +103,6 @@ _FULL_MOLECULES: list[dict[str, Any]] = [
     },
 ]
 
-import os
 SWEEP_MOLECULES = list(_CORE_MOLECULES)
 if os.environ.get("CHEMASTER_E2E_FULL"):
     SWEEP_MOLECULES.extend(_FULL_MOLECULES)

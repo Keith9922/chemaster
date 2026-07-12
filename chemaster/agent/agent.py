@@ -29,21 +29,23 @@ import asyncio
 import inspect
 import json
 import logging
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, AsyncIterator, Awaitable, Callable
+from typing import Any
 
 from chemaster.agent.builtins import register_builtins
 from chemaster.agent.context import ContextConfig, ContextManager
-from chemaster.agent.policy import Policy, load_policy
 from chemaster.agent.llm_client import (
     BaseLLM,
     ContextOverflowError,
     LLMConfig,
     create_llm,
 )
+from chemaster.agent.policy import Policy, load_policy
 from chemaster.agent.tool_registry import BaseTool, ToolRegistry, ToolResult
 from chemaster.agent.types import (
+    AgentEvent,  # type: ignore  # union, for typing
     AssistantMessageEvent,
     ConfirmationRequiredEvent,
     Dialog,
@@ -61,7 +63,6 @@ from chemaster.agent.types import (
     Trajectory,
     UserMessage,
 )
-from chemaster.agent.types import AgentEvent  # type: ignore  # union, for typing
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class AgentConfig:
     enabled_tools: list[str] | None = None      # None = all registered tools exposed
     confirm_callback: ConfirmCallback | None = None   # None = auto-approve
     async_confirm_callback: AsyncConfirmCallback | None = None  # used by run_streaming
-    recommend_callback: "RecommendCallback | None" = None  # v3.0: recommend mode handler
+    recommend_callback: RecommendCallback | None = None  # v3.0: recommend mode handler
     policy: Policy | None = None   # None = lazy-load ~/.chemaster/policy.yaml
     max_tool_observation_chars: int = 30_000
     finish_on_no_tool_calls: bool = False        # treat plain text as completion?

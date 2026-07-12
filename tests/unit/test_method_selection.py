@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 import yaml
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Built-in ruleset — verify it parses + the headline rules exist
@@ -176,7 +173,7 @@ class TestUserOverride:
                 "rationale": "user-added rule",
             }]})
         )
-        from chemaster.kb.method_selection import select_method, load_rules
+        from chemaster.kb.method_selection import load_rules, select_method
         # The new rule is loaded.
         ids = {r.id for r in load_rules()}
         assert "my_custom_rule" in ids
@@ -202,7 +199,7 @@ class TestUserOverride:
                 "rationale": "Lab preference: ωB97X-D for ground-state energetics.",
             }]})
         )
-        from chemaster.kb.method_selection import select_method, load_rules
+        from chemaster.kb.method_selection import load_rules, select_method
         # Only one rule with that id should exist post-merge.
         with_id = [r for r in load_rules() if r.id == "small_org_ground_state"]
         assert len(with_id) == 1

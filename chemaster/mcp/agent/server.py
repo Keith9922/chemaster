@@ -211,8 +211,8 @@ def chemaster_run(
     runs_dir = Path(tempfile.mkdtemp(prefix="chemaster_mcp_runs_"))
 
     try:
-        from chemaster.agent.types import TaskInstance
         from chemaster.agent.agent import BaseAgent
+        from chemaster.agent.types import TaskInstance
 
         try:
             agent, registry = _build_agent(provider, max_turns, runs_dir)

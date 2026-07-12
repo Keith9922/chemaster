@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 
 def test_no_hpc_config_when_yaml_missing(monkeypatch, tmp_path: Path):
     monkeypatch.setenv("HOME", str(tmp_path))

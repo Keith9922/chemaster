@@ -113,17 +113,17 @@ python -m pytest tests/unit/ -q
 
 | 指标 | 结果 | 数据源 |
 |---|---|---|
-| **应答率 + 工具调用正确性** | **5 类任务 × 20 条中英文 phrasing = 100 测试，agent_ok 100%，路由正确率 98.0%** | [`benchmarks/engineering_metrics/execution_correctness.json`](benchmarks/engineering_metrics/execution_correctness.json) |
+| **应答率 + 工具调用正确性** | **5 类任务 × 20 条中英文 phrasing = 100 测试，agent_ok 100%，路由正确率 100%** | [`benchmarks/engineering_metrics/execution_correctness.json`](benchmarks/engineering_metrics/execution_correctness.json) |
 | **压力测试（扩展集）** | **10 分子 × ~33 phrasings = 334 测试，路由正确率 100%，agent_ok 100%** | [`benchmarks/engineering_metrics/stress_test.json`](benchmarks/engineering_metrics/stress_test.json) |
-| **大规模调用稳定性** | **N = 2000 次重复同一任务，0 失败，唯一工具调用序列；mean 131 ms ± 4.9 ms，p99 = 150 ms，散点+滚动均值无漂移** | [`benchmarks/engineering_metrics/scalability.json`](benchmarks/engineering_metrics/scalability.json) |
-| **操作性故障自动恢复率** | **84%（21/25）**，5 类故障（SCF guess / 磁盘满 / 输入语法 / 网络瞬时异常 / 超时）×  5 次注入 | [`benchmarks/engineering_metrics/fault_recovery.json`](benchmarks/engineering_metrics/fault_recovery.json) |
+| **大规模调用稳定性** | **N = 10000 次重复同一任务，0 失败，唯一工具调用序列；mean 128.9 ms ± 4.5 ms，p99 = 139 ms，无漂移** | [`benchmarks/engineering_metrics/scalability.json`](benchmarks/engineering_metrics/scalability.json) |
+| **操作性故障处置成功率** | **25/25（100%）**，5 类故障（SCF guess / 磁盘满 / 输入语法 / 网络瞬时异常 / 超时）× 5 次注入；判定口径 = L1 三次内自主恢复 **或** 干净升级 ask_user（论文 §4.3.1 采用更严格的"纯 L1 恢复"口径，为 84%） | [`benchmarks/engineering_metrics/fault_recovery.json`](benchmarks/engineering_metrics/fault_recovery.json) |
 | **MCP 跨客户端协议合规** | **4/4 server 通过 initialize → list_tools → call_tool**（const / kb / calc_psi4 + 整个 agent 内核作为 `chemaster.mcp.agent.server`）| [`benchmarks/use_cases/mcp_cross_client/probe_results.json`](benchmarks/use_cases/mcp_cross_client/probe_results.json) |
 | **硬例子真跑（不同元素/电荷/自旋）** | **11/11 case 在 psi4 上 OK**（含 HCl / H2S / O₂ 三重态 / 苯 / 乙醇 / OH⁻ / NH₄⁺）| [`benchmarks/engineering_metrics/hard_cases.json`](benchmarks/engineering_metrics/hard_cases.json) |
 | **单元测试** | **336 passed, 2 skipped**（covers agent loop, MCP servers, KB, user_kb, method_selection, notify, mcp.agent.server）| `python -m pytest tests/unit/` |
 | **方法选择规则可用户覆盖** | 11 条内置规则；用户 `~/.chemaster/user_kb/rules/method_selection.yaml` 按 id 覆盖；命中规则的 id + rationale 在 L2 recommend 卡片中显式回显 | `chemaster kb method-rules` |
+| Trajectory 自主步占比（指标 3c）| **80%**（5 个 anchor 任务共 10 次工具调用：8 次自主、2 次二元确认、0 次化学决策；真 agent loop + mock 路由）| [`benchmarks/engineering_metrics/trajectory_breakdown.json`](benchmarks/engineering_metrics/trajectory_breakdown.json) |
 | 提交摩擦时间节省率（指标 5）| 协议固化，未采集 — 需要 2-3 名真人被试 | [`docs/BENCHMARK_PROTOCOL.md`](docs/BENCHMARK_PROTOCOL.md) §3.2 |
 | 化学决策推荐接受率（指标 3b）| 协议固化，未采集 — 需要真人被试 | 同上 §3.4 |
-| Trajectory 自主步占比（指标 3c）| 协议固化，未采集 — 需要真实 LLM API key | 同上 §3.5 |
 
 ### 软件层（化学精度，由后端化学软件决定）
 
@@ -148,7 +148,7 @@ chemaster/
 │   │   ├── test_fixtures.py   # 334-prompt 交叉积（10 分子 × 5 任务 × 多语 phrasing）
 │   │   └── user_kb.py         # 用户级 KB 与偏好管理
 │   ├── notify.py              # 任务完成桌面通知（跨平台）
-│   ├── mcp/                   # 15 个 MCP server
+│   ├── mcp/                   # 17 个 MCP server
 │   │   ├── agent/             # ★ ChemMaster-as-MCP-server（agent 内核也对外暴露）
 │   │   └── ...                # const / kb / calc_psi4 / calc_gaussian / calc_bdf / ...
 │   ├── kb/                    # 知识库
@@ -195,7 +195,7 @@ chemaster/
 
 ![对比](paper/figures/v4/fig_comparison.png)
 
-完整对比与讨论见毕业论文 §1.2 与 §4.6（[paper/thesis_draft.docx](paper/thesis_draft.docx)）。
+完整对比与讨论见毕业论文 §1.2 与 §4.5（[paper/thesis_draft.docx](paper/thesis_draft.docx)）。
 
 ## 开发状态
 
@@ -204,7 +204,7 @@ chemaster/
 | 部分 | 状态 |
 |---|---|
 | Agent 内核（tool-use, 权限分级, trajectory）| ✅ |
-| 13 个 MCP server | ✅ |
+| 17 个 MCP server / 54 个注册工具 | ✅ |
 | psi4、xTB 实测可用 | ✅ |
 | Gaussian、BDF、MOMAP 真实接入测试 | ⏸ 软件许可受限，留作后续工作 |
 | CLI / TUI / Web 三前端 | ✅ |

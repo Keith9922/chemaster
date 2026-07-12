@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -83,7 +83,7 @@ class Plan:
     """完整 Plan 对象。Confirmation 阶段渲染、Executor 阶段执行。"""
 
     task_id: str = field(default_factory=lambda: f"task-{uuid.uuid4().hex[:8]}")
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     user_intent: str = ""
     inferred_workflow: str = ""          # "opt+freq" / "tddft" / "tadf-pipeline"
     target_system: System = field(default_factory=System)
@@ -104,12 +104,12 @@ class Plan:
         Path(path).write_text(self.to_json(), encoding="utf-8")
 
     @classmethod
-    def load(cls, path: str | Path) -> "Plan":
+    def load(cls, path: str | Path) -> Plan:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         return cls.from_dict(data)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Plan":
+    def from_dict(cls, data: dict) -> Plan:
         # 简化反序列化；生产环境用 pydantic 更稳。
         steps = [
             PlanStep(

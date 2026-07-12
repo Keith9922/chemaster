@@ -142,7 +142,9 @@ if TEXTUAL_AVAILABLE:
             if self._pending_card:
                 self._handle_card_input(text, chat)
                 return
-            asyncio.create_task(self._run_agent_task(text, chat))
+            self._agent_task = asyncio.create_task(
+                self._run_agent_task(text, chat)
+            )
 
         def _handle_command(self, text: str, chat: RichLog) -> None:
             cmd = text.lower().strip()
