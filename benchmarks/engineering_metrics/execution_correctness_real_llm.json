@@ -1,0 +1,2290 @@
+{
+  "data_source": "real_llm",
+  "provider": "minimax",
+  "model": "(provider default)",
+  "method": "Same 5 intent groups × bilingual phrasings as the mock-routing execution_correctness.json, driven by a real LLM over the full default tool registry (54 tools). Each phrasing carries a benchmark context suffix (default molecule H2 + geometries + default method) replicating the information the mock router injected implicitly. routed_ok: any semantically acceptable tool for the group appears in the call sequence (see acceptable_tools per trial); mock_criterion_ok kept for comparison with the mock harness's single expected_tool.",
+  "context_suffix": "\n\n(Benchmark context: if the request does not name a molecule, use H2. Geometries —\nH2:\n2\nH2\nH 0 0 0\nH 0 0 0.74\nwater/H2O:\n3\nwater\nO 0 0 0\nH 0.757 -0.587 0\nH -0.757 -0.587 0\nDefault method HF/sto-3g unless the request says otherwise. Do not ask for clarification; proceed.)",
+  "n_clarified": 3,
+  "generated_at": "2026-07-12T14:53:33Z",
+  "n_total": 100,
+  "agent_ok": 88,
+  "agent_ok_rate_pct": 88.0,
+  "routed_ok": 98,
+  "routing_rate_pct": 98.0,
+  "mock_criterion_ok": 67,
+  "mock_criterion_rate_pct": 67.0,
+  "per_group": {
+    "energy": {
+      "n": 20,
+      "agent_ok": 20,
+      "routed_ok": 20
+    },
+    "constant": {
+      "n": 20,
+      "agent_ok": 18,
+      "routed_ok": 18
+    },
+    "kb": {
+      "n": 20,
+      "agent_ok": 18,
+      "routed_ok": 20
+    },
+    "optimize": {
+      "n": 20,
+      "agent_ok": 20,
+      "routed_ok": 20
+    },
+    "skill": {
+      "n": 20,
+      "agent_ok": 12,
+      "routed_ok": 20
+    }
+  },
+  "n_recommend_cards_auto_accepted": 4,
+  "usage_totals": {
+    "input_tokens": 340954,
+    "output_tokens": 99536
+  },
+  "wall_s_total": 2684.9,
+  "trials": [
+    {
+      "group": "energy",
+      "intent": "Compute the energy of water",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "io_parse_geometry",
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 17.99
+    },
+    {
+      "group": "energy",
+      "intent": "What is the SCF energy of H2O?",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 12.82
+    },
+    {
+      "group": "energy",
+      "intent": "Calculate single-point energy for water molecule",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "const_convert",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 18.13
+    },
+    {
+      "group": "energy",
+      "intent": "Compute energies of H2",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 14.73
+    },
+    {
+      "group": "energy",
+      "intent": "Run SCF on H2 with HF/sto-3g",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "const_convert",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 18.98
+    },
+    {
+      "group": "energy",
+      "intent": "Single point energy please",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 9.05
+    },
+    {
+      "group": "energy",
+      "intent": "Give me the SCF energy",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "io_parse_geometry",
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 12.66
+    },
+    {
+      "group": "energy",
+      "intent": "Total energy?",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 8.22
+    },
+    {
+      "group": "energy",
+      "intent": "I need the electronic energy",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 17.04
+    },
+    {
+      "group": "energy",
+      "intent": "Compute the energy",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 11.57
+    },
+    {
+      "group": "energy",
+      "intent": "计算 H2 的能量",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 10.29
+    },
+    {
+      "group": "energy",
+      "intent": "请算一下水分子的单点能",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 12.27
+    },
+    {
+      "group": "energy",
+      "intent": "我需要 H2 的 SCF 能量",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 43.7
+    },
+    {
+      "group": "energy",
+      "intent": "计算 H2 的总能量",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 13.34
+    },
+    {
+      "group": "energy",
+      "intent": "做一个 SCF 计算",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "io_xyz_to_smiles",
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 14.97
+    },
+    {
+      "group": "energy",
+      "intent": "能量计算",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "io_compute_descriptors",
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 13.37
+    },
+    {
+      "group": "energy",
+      "intent": "水分子的单点能",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 11.77
+    },
+    {
+      "group": "energy",
+      "intent": "H2 的电子能",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 11.69
+    },
+    {
+      "group": "energy",
+      "intent": "做单点 energy",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 10.43
+    },
+    {
+      "group": "energy",
+      "intent": "用 HF 算 H2 的能量",
+      "acceptable_tools": [
+        "calc_psi4_single_point"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_single_point",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 10.34
+    },
+    {
+      "group": "constant",
+      "intent": "What is Planck's constant?",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 18.69
+    },
+    {
+      "group": "constant",
+      "intent": "Convert Hartree to eV",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 19.03
+    },
+    {
+      "group": "constant",
+      "intent": "I need Avogadro's number",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 10.56
+    },
+    {
+      "group": "constant",
+      "intent": "Look up the speed of light",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 13.39
+    },
+    {
+      "group": "constant",
+      "intent": "Constants for kB",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "const_get",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert"
+      ],
+      "n_steps": 10,
+      "wall_s": 42.53
+    },
+    {
+      "group": "constant",
+      "intent": "Unit conversion: Hartree -> eV",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 7.13
+    },
+    {
+      "group": "constant",
+      "intent": "Tell me the value of hbar",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 20.14
+    },
+    {
+      "group": "constant",
+      "intent": "What's the eV factor?",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 9.62
+    },
+    {
+      "group": "constant",
+      "intent": "Get me a constant",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": false,
+      "clarified": true,
+      "routed_ok": false,
+      "mock_criterion_ok": false,
+      "status": "waiting_for_input",
+      "tool_sequence": [
+        "const_list",
+        "ask_user"
+      ],
+      "n_steps": 2,
+      "wall_s": 9.58
+    },
+    {
+      "group": "constant",
+      "intent": "Convert 1 hartree to ev",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 11.21
+    },
+    {
+      "group": "constant",
+      "intent": "普朗克常数是多少",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 16.62
+    },
+    {
+      "group": "constant",
+      "intent": "把 hartree 转换成 eV",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 18.76
+    },
+    {
+      "group": "constant",
+      "intent": "查一下阿伏伽德罗常数",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 15.84
+    },
+    {
+      "group": "constant",
+      "intent": "光速的数值",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 8.36
+    },
+    {
+      "group": "constant",
+      "intent": "玻尔兹曼常数 kB",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 11.56
+    },
+    {
+      "group": "constant",
+      "intent": "Hartree 到 eV 的换算因子",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 10.55
+    },
+    {
+      "group": "constant",
+      "intent": "查 hbar 数值",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 8.99
+    },
+    {
+      "group": "constant",
+      "intent": "eV 是多少 hartree",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_convert",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 9.36
+    },
+    {
+      "group": "constant",
+      "intent": "查物理常数",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": false,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "const_list",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 15.15
+    },
+    {
+      "group": "constant",
+      "intent": "1 hartree 等于多少 ev",
+      "acceptable_tools": [
+        "const_convert",
+        "const_get"
+      ],
+      "mock_expected_tool": "const_get",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 9.42
+    },
+    {
+      "group": "kb",
+      "intent": "Search the knowledge base for TADF",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 7,
+      "wall_s": 35.6
+    },
+    {
+      "group": "kb",
+      "intent": "Look up the kRISC skill",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "list_skills",
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 24.42
+    },
+    {
+      "group": "kb",
+      "intent": "Find a playbook for opt-freq",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 24.15
+    },
+    {
+      "group": "kb",
+      "intent": "Search KB for SOC computation",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "think",
+        "calc_bdf_optimize",
+        "calc_orca_optimize",
+        "calc_pyscf_x2c_soc",
+        "gaussian_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point"
+      ],
+      "n_steps": 10,
+      "wall_s": 74.65
+    },
+    {
+      "group": "kb",
+      "intent": "Find skill for tddft",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "use_skill",
+        "io_lookup_by_name",
+        "calc_orca_tddft",
+        "gaussian_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft",
+        "finish"
+      ],
+      "n_steps": 9,
+      "wall_s": 55.79
+    },
+    {
+      "group": "kb",
+      "intent": "kb search for solvation",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "recommend",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "const_get",
+        "const_get",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "calc_orca_single_point"
+      ],
+      "n_steps": 10,
+      "wall_s": 58.37
+    },
+    {
+      "group": "kb",
+      "intent": "Look up basis set rules",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "kb_search",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 35.72
+    },
+    {
+      "group": "kb",
+      "intent": "Find documentation on conformer search",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 20.69
+    },
+    {
+      "group": "kb",
+      "intent": "Search for relativistic methods playbook",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "use_skill",
+        "list_skills",
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 6,
+      "wall_s": 40.94
+    },
+    {
+      "group": "kb",
+      "intent": "search the kb",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 18.73
+    },
+    {
+      "group": "kb",
+      "intent": "搜索知识库 TADF",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "kb_search",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 19.92
+    },
+    {
+      "group": "kb",
+      "intent": "查一下 kRISC 的 skill",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "list_skills",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 29.36
+    },
+    {
+      "group": "kb",
+      "intent": "搜 opt-freq 的 playbook",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 23.46
+    },
+    {
+      "group": "kb",
+      "intent": "kb 搜 SOC 计算",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 26.19
+    },
+    {
+      "group": "kb",
+      "intent": "找 tddft 的 skill",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 20.54
+    },
+    {
+      "group": "kb",
+      "intent": "kb 搜索 solvation",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 26.39
+    },
+    {
+      "group": "kb",
+      "intent": "查基组规则",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "kb_search",
+        "kb_search",
+        "kb_search",
+        "kb_search",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 26.34
+    },
+    {
+      "group": "kb",
+      "intent": "查构象搜索的文档",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 31.13
+    },
+    {
+      "group": "kb",
+      "intent": "搜相对论方法 playbook",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "kb_search",
+        "kb_search",
+        "think",
+        "finish"
+      ],
+      "n_steps": 8,
+      "wall_s": 42.36
+    },
+    {
+      "group": "kb",
+      "intent": "kb 检索一下",
+      "acceptable_tools": [
+        "kb_search",
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "kb_search",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "kb_search",
+        "kb_search",
+        "kb_search",
+        "kb_search",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 6,
+      "wall_s": 34.96
+    },
+    {
+      "group": "optimize",
+      "intent": "Optimize geometry of H2",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 18.17
+    },
+    {
+      "group": "optimize",
+      "intent": "Find the minimum of water",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "io_compute_descriptors",
+        "io_compute_descriptors",
+        "finish"
+      ],
+      "n_steps": 6,
+      "wall_s": 31.83
+    },
+    {
+      "group": "optimize",
+      "intent": "Run a geometry optimization",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 20.64
+    },
+    {
+      "group": "optimize",
+      "intent": "Minimise water energy",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 17.32
+    },
+    {
+      "group": "optimize",
+      "intent": "Optimise the geometry of H2",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 14.41
+    },
+    {
+      "group": "optimize",
+      "intent": "find equilibrium minimum of H2",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 28.48
+    },
+    {
+      "group": "optimize",
+      "intent": "Geometry minimum optimization",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 19.63
+    },
+    {
+      "group": "optimize",
+      "intent": "Optimize H2",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "think",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "io_compute_descriptors",
+        "io_compute_descriptors",
+        "finish"
+      ],
+      "n_steps": 6,
+      "wall_s": 30.02
+    },
+    {
+      "group": "optimize",
+      "intent": "Minimum of H2 optimize",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 28.16
+    },
+    {
+      "group": "optimize",
+      "intent": "Equilibrium geometry optimize H2",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "finish"
+      ],
+      "n_steps": 10,
+      "wall_s": 41.83
+    },
+    {
+      "group": "optimize",
+      "intent": "优化 H2 的几何结构",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "io_lookup_by_name",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 27.29
+    },
+    {
+      "group": "optimize",
+      "intent": "找水分子的极小值",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "io_compute_descriptors",
+        "io_compute_descriptors",
+        "finish"
+      ],
+      "n_steps": 6,
+      "wall_s": 50.53
+    },
+    {
+      "group": "optimize",
+      "intent": "几何优化",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "recommend",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 5,
+      "wall_s": 30.29
+    },
+    {
+      "group": "optimize",
+      "intent": "做 geometry optimize",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 16.23
+    },
+    {
+      "group": "optimize",
+      "intent": "把 H2 的几何 optimise 一下",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 16.65
+    },
+    {
+      "group": "optimize",
+      "intent": "找平衡结构 minimum",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 20.53
+    },
+    {
+      "group": "optimize",
+      "intent": "几何最小值",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "think",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 24.6
+    },
+    {
+      "group": "optimize",
+      "intent": "优化 H2 minimum",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 15.24
+    },
+    {
+      "group": "optimize",
+      "intent": "极小值优化 H2",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 18.3
+    },
+    {
+      "group": "optimize",
+      "intent": "对 H2 做 optimize",
+      "acceptable_tools": [
+        "calc_psi4_optimize"
+      ],
+      "mock_expected_tool": "calc_psi4_single_point",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 17.74
+    },
+    {
+      "group": "skill",
+      "intent": "Use the opt-freq skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 22.84
+    },
+    {
+      "group": "skill",
+      "intent": "Apply skill tddft",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "use_skill",
+        "gaussian_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft",
+        "calc_bdf_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft"
+      ],
+      "n_steps": 10,
+      "wall_s": 52.63
+    },
+    {
+      "group": "skill",
+      "intent": "use_skill on soc",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 24.95
+    },
+    {
+      "group": "skill",
+      "intent": "load the tadf-pipeline skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 25.61
+    },
+    {
+      "group": "skill",
+      "intent": "use skill tadf-pipeline",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "use_skill",
+        "think",
+        "recommend",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency"
+      ],
+      "n_steps": 10,
+      "wall_s": 112.01
+    },
+    {
+      "group": "skill",
+      "intent": "Apply the conformer skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "calc_xtb_optimize",
+        "calc_xtb_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "think",
+        "finish"
+      ],
+      "n_steps": 7,
+      "wall_s": 71.67
+    },
+    {
+      "group": "skill",
+      "intent": "use skill ts-search",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "use_skill",
+        "io_parse_geometry",
+        "think",
+        "calc_orca_optimize",
+        "calc_psi4_single_point",
+        "think",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_frequency",
+        "calc_psi4_frequency"
+      ],
+      "n_steps": 10,
+      "wall_s": 137.1
+    },
+    {
+      "group": "skill",
+      "intent": "Apply the dlpno-ccsdt skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": true,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "waiting_for_input",
+      "tool_sequence": [
+        "use_skill",
+        "calc_orca_single_point",
+        "ask_user"
+      ],
+      "n_steps": 3,
+      "wall_s": 21.61
+    },
+    {
+      "group": "skill",
+      "intent": "use the pka skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": false,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 8.87
+    },
+    {
+      "group": "skill",
+      "intent": "use_skill pes-scan",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "use_skill",
+        "think",
+        "io_xyz_to_smiles",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "const_convert",
+        "const_convert",
+        "const_get",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_get",
+        "const_get",
+        "think",
+        "viz_plot_ir",
+        "think"
+      ],
+      "n_steps": 10,
+      "wall_s": 72.9
+    },
+    {
+      "group": "skill",
+      "intent": "使用 opt-freq skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ],
+      "n_steps": 4,
+      "wall_s": 24.87
+    },
+    {
+      "group": "skill",
+      "intent": "应用 tddft skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "calc_orca_tddft",
+        "gaussian_tddft",
+        "calc_psi4_tddft",
+        "calc_psi4_tddft",
+        "finish"
+      ],
+      "n_steps": 6,
+      "wall_s": 37.61
+    },
+    {
+      "group": "skill",
+      "intent": "调用 use_skill soc",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 2,
+      "wall_s": 11.29
+    },
+    {
+      "group": "skill",
+      "intent": "加载 tadf-pipeline skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 21.01
+    },
+    {
+      "group": "skill",
+      "intent": "应用 use skill tadf-pipeline",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": true,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "waiting_for_input",
+      "tool_sequence": [
+        "use_skill",
+        "think",
+        "io_xyz_to_smiles",
+        "ask_user"
+      ],
+      "n_steps": 4,
+      "wall_s": 26.52
+    },
+    {
+      "group": "skill",
+      "intent": "使用 conformer skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "think",
+        "io_smiles_to_xyz",
+        "calc_xtb_optimize",
+        "calc_psi4_single_point",
+        "formula_boltzmann",
+        "finish"
+      ],
+      "n_steps": 7,
+      "wall_s": 36.35
+    },
+    {
+      "group": "skill",
+      "intent": "调用 ts-search skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "list_skills",
+        "use_skill",
+        "finish"
+      ],
+      "n_steps": 3,
+      "wall_s": 15.65
+    },
+    {
+      "group": "skill",
+      "intent": "应用 dlpno-ccsdt skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "list_skills",
+        "use_skill",
+        "use_skill",
+        "think",
+        "io_parse_geometry",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "calc_orca_single_point",
+        "calc_psi4_single_point"
+      ],
+      "n_steps": 10,
+      "wall_s": 52.03
+    },
+    {
+      "group": "skill",
+      "intent": "使用 pka skill",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": false,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "failed",
+      "tool_sequence": [
+        "list_skills",
+        "use_skill",
+        "kb_search",
+        "use_skill",
+        "kb_search",
+        "use_skill",
+        "use_skill",
+        "kb_search",
+        "recommend",
+        "think",
+        "calc_psi4_optimize",
+        "calc_psi4_optimize"
+      ],
+      "n_steps": 10,
+      "wall_s": 68.81
+    },
+    {
+      "group": "skill",
+      "intent": "应用 use_skill pes-scan",
+      "acceptable_tools": [
+        "list_skills",
+        "use_skill"
+      ],
+      "mock_expected_tool": "use_skill",
+      "agent_ok": true,
+      "clarified": false,
+      "routed_ok": true,
+      "mock_criterion_ok": true,
+      "status": "completed",
+      "tool_sequence": [
+        "use_skill",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "calc_psi4_single_point",
+        "const_convert",
+        "const_convert",
+        "think",
+        "finish"
+      ],
+      "n_steps": 8,
+      "wall_s": 103.08
+    }
+  ]
+}

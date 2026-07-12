@@ -300,7 +300,7 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
 
 **中期（对外成长）**：
 
-7. **真实 LLM API 重跑工程指标**：当前故障恢复/路由/稳定性数据是"真 agent loop + mock 路由"；接 ANTHROPIC_API_KEY 重跑并对比。
+7. ~~**真实 LLM API 重跑工程指标**~~ ✅ 已完成（2026-07-12）：MiniMax 真 API 重跑 A/B/C 三项，见 `benchmarks/engineering_metrics/*_real_llm.json`；scalability/stress 保持 mock 基线口径（测系统开销，1 万次真 API 无意义）。
 8. **推荐接受率实验（指标 3b）**：论文里唯一 `not_collected` 的指标，需要 2-3 名被试 × ≥5 anchor 分子（协议见 `docs/BENCHMARK_PROTOCOL.md`）。
 9. **token 级流式输出**：`run_streaming` 目前是事件级伪流且无生产消费者；给 Web 上 SSE/WebSocket 消费端。
 10. **MOMAP / BDF 真机验证**（需 license）；**TADF 应用线重启**（毕设时降级的未来工作，现在没有 scope 约束了）。
@@ -371,6 +371,7 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
   - QUEST 10 分子 20 状态 MAE 0.635 eV（psi4 实跑，>0.4 阈值未达标**如实记录**）
   - 蒽 X2C-1e 三阶段相对论（PySCF 实跑作 BDF 开源 reference）+ naive-vs-ChemMaster head-to-head 对照（v1-v4）
   - 工程指标（真 agent loop + mock 路由）：技术故障处置 25/25（L1 自主恢复或干净升级）、执行正确率 100/100、stress 334/334、scalability **N=10000** 100% 成功 mean 128.9 ms（该数据曾被误覆盖为 N=100，已从 git 历史恢复）、自主步占比 80%、hard cases 11/11、MCP 跨客户端 4/4
+  - **真 LLM 工程指标（2026-07-12，MiniMax-M2.7 × 54 工具）**：路由 98.0%（98/100，语义判据）、故障自愈 96%（17 L1 + 7 干净升级）、自主步 72.7%——`*_real_llm.json`，与 mock 基线并存
   - 推荐接受率（3b）：`not_collected`，待真人被试实验
 - ✅ **测试**：418 collected（unit 408 + integration 10），全绿；新增 web/tui 前端测试(26)、权限分级测试(8)、LLM 重试测试(7)；无 psi4 的 CI 环境已本地模拟验证（371 passed）；单测与真实 `~/.chemaster` 完全隔离
 - ⬜ 下一步见 §8（web/tui 测试盲区、MCP 公共骨架、hpc fetch 修复、BDF 输入重写、真 LLM 指标、TADF 重启、PyPI/CI）

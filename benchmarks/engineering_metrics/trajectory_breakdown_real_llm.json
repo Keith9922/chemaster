@@ -1,0 +1,104 @@
+{
+  "data_source": "real_llm",
+  "provider": "minimax",
+  "model": "(provider default)",
+  "method": "Same 5 anchor tasks as the mock trajectory_breakdown.json, driven by a real LLM over the full registry; counts decision_authority tags on tool responses.",
+  "generated_at": "2026-07-12T15:01:51Z",
+  "authority_totals": {
+    "agent": 16,
+    "user-binary": 4,
+    "user-chemistry": 2,
+    "system": 0
+  },
+  "n_tagged_steps": 22,
+  "autonomous_fraction_pct": 72.7,
+  "acceptance_target_pct": 70.0,
+  "per_task": [
+    {
+      "intent": "Compute the energy of H2",
+      "status": "failed",
+      "authority_counts": {
+        "agent": 9,
+        "user-binary": 1,
+        "user-chemistry": 1,
+        "system": 0
+      },
+      "tool_sequence": [
+        "io_lookup_by_name",
+        "recommend",
+        "io_smiles_to_xyz",
+        "calc_psi4_single_point",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_convert",
+        "const_get",
+        "const_convert"
+      ]
+    },
+    {
+      "intent": "Optimize H2",
+      "status": "completed",
+      "authority_counts": {
+        "agent": 2,
+        "user-binary": 3,
+        "user-chemistry": 0,
+        "system": 0
+      },
+      "tool_sequence": [
+        "io_lookup_by_name",
+        "io_parse_geometry",
+        "gaussian_optimize",
+        "calc_psi4_optimize",
+        "calc_psi4_frequency",
+        "finish"
+      ]
+    },
+    {
+      "intent": "Look up the value of Planck constant",
+      "status": "completed",
+      "authority_counts": {
+        "agent": 2,
+        "user-binary": 0,
+        "user-chemistry": 0,
+        "system": 0
+      },
+      "tool_sequence": [
+        "const_get",
+        "const_get",
+        "finish"
+      ]
+    },
+    {
+      "intent": "Search KB for B3LYP-D3 basis set rules",
+      "status": "completed",
+      "authority_counts": {
+        "agent": 2,
+        "user-binary": 0,
+        "user-chemistry": 0,
+        "system": 0
+      },
+      "tool_sequence": [
+        "kb_search",
+        "kb_search",
+        "finish"
+      ]
+    },
+    {
+      "intent": "Use skill opt-freq",
+      "status": "waiting_for_input",
+      "authority_counts": {
+        "agent": 1,
+        "user-binary": 0,
+        "user-chemistry": 1,
+        "system": 0
+      },
+      "tool_sequence": [
+        "use_skill",
+        "ask_user"
+      ]
+    }
+  ],
+  "wall_s_total": 139.5
+}

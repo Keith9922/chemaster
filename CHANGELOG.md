@@ -57,6 +57,44 @@
   fsync 写入的 fd（此前 fsync 的是一个新打开且未写入的句柄）。
 - 版本号统一为 0.2.0a3（pyproject 此前停在 0.2.0a1，CHANGELOG 已是 0.2.0a2）。
 
+### Added（第二波，同日）
+- **web/tui 测试盲区补齐**：两个前端从零测试 → 26 个（FastAPI TestClient
+  钉死"提交必崩"回归路径全链路；Textual pilot 驱动真事件循环测卡片交互）；
+  `web` / `tui` extras 首次在 pyproject 声明。
+- **LLM 瞬时错误重试**：429/5xx/网络抖动指数退避（max_retries=3）——
+  此前零重试，一次限流就让整个化学任务失败。
+- **GitHub Actions 复活**：CI（ubuntu/macos × py3.11/3.12，ruff + unit）
+  与 PyPI Release workflow 真正入库并首跑全绿——根因是 `.gitignore` 一直
+  把 `.github/workflows/` 忽略，workflow 从未进过任何提交；push 前用无
+  psi4 的干净 venv 模拟 runner，提前修掉 36 个环境依赖失败。
+- **真 LLM 工程指标**（`run_engineering_real_llm.py` + 实测数据）：与
+  mock 版同题库/同故障注入规格/同 anchor，LLM 换成 MiniMax-M2.7 真实 API
+  面对全部 54 个工具。结果（2026-07-12 实采，`*_real_llm.json`，不覆盖
+  mock 数据）：**路由 98.0%（98/100，语义判据；mock 单一判据口径 67%，
+  差值主要是判据 artifact）、故障自愈 96%（17 L1 + 7 干净升级 + 1 失败
+  如实记录）、自主步占比 72.7%（≥70% 达标）**。至此三项旗舰工程指标
+  都有了"真实大模型"版本，不再只有 mock 路由数据。
+- **真的任务取消**：`AgentConfig.should_abort` 协作式中止（sync/streaming
+  双路径，trajectory 记 `cancelled` 并落盘）；Web 取消按钮现在真的停后端
+  （此前只是前端停止轮询），卡在 confirm/recommend 卡片上的线程也会被解放。
+- **引擎日志归档**：psi4 输出日志按 `CHEMASTER_ENGINE_LOG_DIR` 落到
+  `runs/<task>/engine_logs/`（时间戳防覆盖）——恢复 §5.6 复现承诺。
+- **MCP 决策透传**：`chemaster_run` 结果新增 `chemistry_decisions` 块——
+  MCP 模式没有交互通道，L2 决策被自动接受，此前完全隐形；现在显式回传
+  并提示调用方 LLM 转述给它的用户。
+
+### Fixed（第二波，同日）
+- `hpc_slurm.fetch` 功能性坏死：submit 建 `jobname-timestamp` 目录而 fetch
+  按 `*job_id*` 猜文件名，永远匹配不上。现在 submit 把 job_id →
+  remote_workdir 登记进 `~/.chemaster/hpc_jobs.json`，fetch 按索引拉取
+  （`remote_dir=` 参数留作逃生口），rsync 也真正带上配置的 ssh_key。
+- MCP 层 22 处缺失 `suggestion` 的错误返回补齐（gaussian 结构化五工具 /
+  bdf / momap / pyscf / kb）；新增 `chemaster/mcp/_common.py`（`err()` 把
+  suggestion 做成必填、`probe_binary` 消掉 7 份 `_check_engine` 拷贝、
+  `xyz_atom_lines`）。
+- `calc_psi4` 拆出 `parsers.py`（server 1580 → 1391 行）；解析器群在无
+  psi4 环境可测（7 个新测试不再随 psi4 缺席而跳过）。
+
 ### Docs
 - CLAUDE.md → v4.0（答辩后状态；§8 换成新阶段清单）；README 数字与
   benchmark JSON 对齐（路由 100%、故障处置 25/25 双口径注明、N=10000、
