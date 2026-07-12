@@ -110,6 +110,19 @@ ACCEPTABLE_TOOLS: dict[str, set[str]] = {
     "skill": {"use_skill", "list_skills"},
 }
 
+# mock 路由器对"Total energy?"这类未指名分子的表述会硬注入 H2 几何——
+# 表述本身"自带答案"。真 LLM 没有这个后门，裸表述的正确行为其实是
+# ask_user 澄清。为了让两版测的是同一件事（路由能力，而非澄清策略），
+# 给真 LLM 补上等价的任务上下文；ask_user 结局仍单独计数如实报告。
+CONTEXT_SUFFIX = (
+    "\n\n(Benchmark context: if the request does not name a molecule, "
+    "use H2. Geometries —\n"
+    "H2:\n2\nH2\nH 0 0 0\nH 0 0 0.74\n"
+    "water/H2O:\n3\nwater\nO 0 0 0\nH 0.757 -0.587 0\nH -0.757 -0.587 0\n"
+    "Default method HF/sto-3g unless the request says otherwise. "
+    "Do not ask for clarification; proceed.)"
+)
+
 
 def indicator_a(provider: str, model: str | None,
                 limit_phrasings: int | None) -> dict:
@@ -138,7 +151,8 @@ def indicator_a(provider: str, model: str | None,
             t1 = time.time()
             try:
                 agent = _fresh_agent(provider, model, max_turns=10)
-                traj = agent.run(TaskInstance(description=phrasing))
+                traj = agent.run(
+                    TaskInstance(description=phrasing + CONTEXT_SUFFIX))
                 seq = _tool_sequence(traj)
                 usage = _usage_totals(traj)
                 usage_total["input_tokens"] += usage["input_tokens"]
@@ -147,6 +161,7 @@ def indicator_a(provider: str, model: str | None,
                     (traj.meta.get("recommendations") or {}).get("log", []))
                 trial.update({
                     "agent_ok": traj.status == "completed",
+                    "clarified": traj.status == "waiting_for_input",
                     "routed_ok": any(t in seq for t in acceptable),
                     "mock_criterion_ok": group["expected_tool"] in seq,
                     "status": traj.status,
@@ -186,11 +201,16 @@ def indicator_a(provider: str, model: str | None,
         "method": (
             "Same 5 intent groups × bilingual phrasings as the mock-routing "
             "execution_correctness.json, driven by a real LLM over the full "
-            "default tool registry (54 tools). routed_ok: any semantically "
-            "acceptable tool for the group appears in the call sequence "
-            "(see acceptable_tools per trial); mock_criterion_ok kept for "
+            "default tool registry (54 tools). Each phrasing carries a "
+            "benchmark context suffix (default molecule H2 + geometries + "
+            "default method) replicating the information the mock router "
+            "injected implicitly. routed_ok: any semantically acceptable "
+            "tool for the group appears in the call sequence (see "
+            "acceptable_tools per trial); mock_criterion_ok kept for "
             "comparison with the mock harness's single expected_tool."
         ),
+        "context_suffix": CONTEXT_SUFFIX,
+        "n_clarified": sum(r.get("clarified", False) for r in results),
         "generated_at": _now(),
         "n_total": n,
         "agent_ok": n_agent_ok,
