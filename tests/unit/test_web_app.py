@@ -130,9 +130,11 @@ def test_engines_endpoint_shape(client):
     assert r.status_code == 200
     engines = r.json()["engines"]
     assert engines and all({"name", "available", "path"} <= set(e) for e in engines)
-    # psi4 is importable in the test env → must report available
+    # psi4 状态必须与"当前解释器可 import"一致（CI runner 无 psi4 也要过）
+    import importlib.util
+    expected = importlib.util.find_spec("psi4") is not None
     psi4 = next(e for e in engines if e["name"] == "psi4")
-    assert psi4["available"] is True
+    assert psi4["available"] is expected
 
 
 def test_skills_endpoint_lists_dirs(client):

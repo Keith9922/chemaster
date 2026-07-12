@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, replace
 from typing import Any
@@ -59,7 +60,30 @@ class LLMConfig:
     api_key: str | None = None
     base_url: str | None = None
     timeout_s: float = 120.0
+    max_retries: int = 3                   # transient-error retries (429/5xx/网络抖动)
+    retry_base_s: float = 1.0              # 指数退避基数：1s, 2s, 4s, ...
     extra: dict[str, Any] | None = None
+
+
+# 可重试的 HTTP 状态码（限流 / 服务端瞬时故障 / 网关超时）。
+_RETRYABLE_STATUS = {408, 409, 429, 500, 502, 503, 504, 529}
+
+
+def _is_retryable_llm_error(exc: Exception) -> bool:
+    """判定一个 SDK 异常是否值得指数退避后重试。
+
+    "错误是常态"哲学（CLAUDE.md §5.7）在 LLM 层的落地：一次限流或网络
+    抖动不应该让整个化学任务失败。优先看 SDK 异常上的 status_code，
+    退化到异常类型名 / 文案匹配。
+    """
+    status = getattr(exc, "status_code", None)
+    if status in _RETRYABLE_STATUS:
+        return True
+    name = type(exc).__name__.lower()
+    if "connection" in name or "timeout" in name:
+        return True
+    msg = str(exc).lower()
+    return "rate limit" in msg or "overloaded" in msg or "too many requests" in msg
 
 
 def _looks_like_context_overflow(exc: Exception) -> bool:
@@ -117,6 +141,31 @@ class BaseLLM(ABC):
     @property
     def model(self) -> str:
         return self.config.model
+
+    def _request_with_retries(self, do_request):
+        """Run one SDK request with typed error mapping + bounded backoff.
+
+        - context overflow → ContextOverflowError（立即抛，交给 loop 压缩）
+        - 429/5xx/网络抖动 → 指数退避重试（最多 config.max_retries 次）
+        - 其余 → LLMError
+        """
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                return do_request()
+            except Exception as exc:
+                if _looks_like_context_overflow(exc):
+                    raise ContextOverflowError(str(exc)) from exc
+                if attempt < self.config.max_retries and _is_retryable_llm_error(exc):
+                    delay = self.config.retry_base_s * (2 ** attempt)
+                    logger.warning(
+                        "LLM transient error (%s: %s); retry %d/%d in %.1fs",
+                        type(exc).__name__, exc, attempt + 1,
+                        self.config.max_retries, delay,
+                    )
+                    time.sleep(delay)
+                    continue
+                raise LLMError(str(exc)) from exc
+        raise LLMError("unreachable")  # pragma: no cover
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -230,13 +279,12 @@ class AnthropicLLM(BaseLLM):
                 req["system"] = system
             if tools:
                 req["tools"] = tools
-            response = self._client.messages.create(**req)
-        except Exception as exc:
-            # Surface context overflow as a typed error so the loop can compact.
-            if _looks_like_context_overflow(exc):
-                raise ContextOverflowError(str(exc)) from exc
+        except Exception as exc:  # pragma: no cover — request building is trivial
             raise LLMError(str(exc)) from exc
 
+        response = self._request_with_retries(
+            lambda: self._client.messages.create(**req)
+        )
         return self._translate_response(response)
 
     def _translate_dialog(self, dialog: Dialog) -> tuple[str, list[dict]]:
@@ -411,12 +459,12 @@ class OpenAICompatLLM(BaseLLM):
             }
             if tools:
                 req["tools"] = tools
-            response = self._client.chat.completions.create(**req)
-        except Exception as exc:
-            if _looks_like_context_overflow(exc):
-                raise ContextOverflowError(str(exc)) from exc
+        except Exception as exc:  # pragma: no cover — request building is trivial
             raise LLMError(str(exc)) from exc
 
+        response = self._request_with_retries(
+            lambda: self._client.chat.completions.create(**req)
+        )
         return self._translate_response(response)
 
     @staticmethod

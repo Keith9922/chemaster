@@ -372,7 +372,7 @@ SCF 不收敛、虚频、几何卡死、内存爆、磁盘满 —— 这些不�
   - 蒽 X2C-1e 三阶段相对论（PySCF 实跑作 BDF 开源 reference）+ naive-vs-ChemMaster head-to-head 对照（v1-v4）
   - 工程指标（真 agent loop + mock 路由）：技术故障处置 25/25（L1 自主恢复或干净升级）、执行正确率 100/100、stress 334/334、scalability **N=10000** 100% 成功 mean 128.9 ms（该数据曾被误覆盖为 N=100，已从 git 历史恢复）、自主步占比 80%、hard cases 11/11、MCP 跨客户端 4/4
   - 推荐接受率（3b）：`not_collected`，待真人被试实验
-- ✅ **测试**：411 collected（unit 401 + integration 10），全绿；新增 web/tui 前端测试(26)与权限分级测试(8)；单测与真实 `~/.chemaster` 完全隔离
+- ✅ **测试**：418 collected（unit 408 + integration 10），全绿；新增 web/tui 前端测试(26)、权限分级测试(8)、LLM 重试测试(7)；无 psi4 的 CI 环境已本地模拟验证（371 passed）；单测与真实 `~/.chemaster` 完全隔离
 - ⬜ 下一步见 §8（web/tui 测试盲区、MCP 公共骨架、hpc fetch 修复、BDF 输入重写、真 LLM 指标、TADF 重启、PyPI/CI）
 
 ---

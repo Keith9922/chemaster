@@ -3,12 +3,20 @@
 用 unittest.mock.patch 模拟 psi4 函数调用，不真跑 psi4。
 psi4 是 C 扩展模块，所以对 psi4.core.get_active_wavefunction 等
 compiled 属性用 create=True + 手动赋值 mock。
+
+注意：patch("psi4.…") 需要 psi4 模块本身可导入（conda-only，pip 装不了），
+所以在无 psi4 的环境（如 GitHub CI runner）整文件跳过。纯文本解析器的
+无-psi4 测试放到未来的 calc_psi4/parsers.py 拆分里补。
 """
 
 from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+pytest.importorskip("psi4", reason="psi4 not importable (conda-only dependency)")
 
 # ─── 测试用 H2O XYZ（标准 xyz：首行原子数 + 注释行） ─────────────────────
 H2O_XYZ = """3
