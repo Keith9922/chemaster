@@ -7,6 +7,7 @@ single_point tool 的参考实现。
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 import time
 from pathlib import Path
