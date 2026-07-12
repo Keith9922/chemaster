@@ -190,8 +190,18 @@ def _psi4_session(
     psi4.set_memory(f"{int(memory_gb)} GB")
     psi4.set_num_threads(n_threads)
 
-    out_dir = Path(tempfile.mkdtemp(prefix="chemaster_psi4_"))
-    output_path = str(out_dir / log_name)
+    # Agent 在 _initialize 里把 CHEMASTER_ENGINE_LOG_DIR 指到
+    # runs/<task>/engine_logs/ —— 日志随任务归档（§5.6 复现承诺）。
+    # 无 agent 语境（直接调工具 / 单测）时退回独立临时目录。
+    archive = os.environ.get("CHEMASTER_ENGINE_LOG_DIR")
+    if archive:
+        out_dir = Path(archive)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # 时间戳前缀防同任务多次同类调用互相覆盖
+        output_path = str(out_dir / f"{int(time.time() * 1000)}_{log_name}")
+    else:
+        out_dir = Path(tempfile.mkdtemp(prefix="chemaster_psi4_"))
+        output_path = str(out_dir / log_name)
     psi4.core.set_output_file(output_path, False)
 
     # 强制 symmetry c1 防对称性突跳（PITFALLS §2.6）。

@@ -23,6 +23,9 @@ def _isolated_user_kb(tmp_path_factory, monkeypatch):
     monkeypatch.setenv(
         "CHEMASTER_HOME", str(tmp_path_factory.mktemp("chemaster_home"))
     )
+    # agent._initialize 会设置引擎日志归档目录（进程级 env）——逐测清掉，
+    # 避免上一个测试的 runs 目录泄漏到下一个测试的 psi4 会话里。
+    monkeypatch.delenv("CHEMASTER_ENGINE_LOG_DIR", raising=False)
     from chemaster.mcp.kb.server import reset_doc_cache
 
     reset_doc_cache()

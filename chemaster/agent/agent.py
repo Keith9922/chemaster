@@ -29,6 +29,7 @@ import asyncio
 import inspect
 import json
 import logging
+import os
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -109,6 +110,7 @@ class AgentConfig:
     async_confirm_callback: AsyncConfirmCallback | None = None  # used by run_streaming
     recommend_callback: RecommendCallback | None = None  # v3.0: recommend mode handler
     policy: Policy | None = None   # None = lazy-load ~/.chemaster/policy.yaml
+    should_abort: Callable[[], bool] | None = None  # 协作式取消（每轮询问一次）
     max_tool_observation_chars: int = 30_000
     finish_on_no_tool_calls: bool = False        # treat plain text as completion?
 
@@ -180,6 +182,13 @@ class BaseAgent:
         assert self.trajectory is not None
         try:
             for turn in range(self.config.max_turns):
+                if self.config.should_abort and self.config.should_abort():
+                    # 协作式取消：Web 的取消按钮此前只是前端停止轮询，
+                    # 后端线程照跑到 max_turns —— 现在真的停。
+                    logger.info("Abort requested — cancelling task cleanly")
+                    self.trajectory.finish("cancelled",
+                                           {"reason": "user_cancelled"})
+                    break
                 logger.info("─" * 60)
                 logger.info("Step %d / %d", turn + 1, self.config.max_turns)
                 done = self._step()
@@ -234,6 +243,11 @@ class BaseAgent:
         assert self.trajectory is not None
         try:
             for turn in range(self.config.max_turns):
+                if self.config.should_abort and self.config.should_abort():
+                    logger.info("Abort requested — cancelling streaming task")
+                    self.trajectory.finish("cancelled",
+                                           {"reason": "user_cancelled"})
+                    break
                 step_id = turn + 1
                 yield StepStartedEvent(step_id=step_id)
                 logger.info("─" * 60)
@@ -940,7 +954,12 @@ class BaseAgent:
         self._finish_payload = None
         # Ensure runs dir exists.
         self.config.runs_dir.mkdir(parents=True, exist_ok=True)
-        (self.config.runs_dir / task.task_id).mkdir(parents=True, exist_ok=True)
+        task_dir = self.config.runs_dir / task.task_id
+        task_dir.mkdir(parents=True, exist_ok=True)
+        # 引擎日志（psi4 等）归档到 runs/<task>/engine_logs/，恢复 §5.6 的
+        # 复现承诺（psi4 会话隔离后日志曾只落在临时目录）。进程级 env —
+        # 同进程内 MCP 引擎调用本就是单飞的（psi4 全局状态），可接受。
+        os.environ["CHEMASTER_ENGINE_LOG_DIR"] = str(task_dir / "engine_logs")
 
     def _ensure_builtins(self) -> None:
         for name in ("finish", "ask_user", "think", "recommend"):

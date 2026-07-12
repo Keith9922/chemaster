@@ -50,12 +50,13 @@ STATIC_DIR = ROOT / "static"
 class WebTask:
     task_id: str
     intent: str
-    status: str = "queued"         # queued / running / waiting_user / done / failed
+    status: str = "queued"    # queued / running / waiting_user / done / failed / cancelled
     events: list[dict] = field(default_factory=list)
     pending_card: dict | None = None
     result: dict | None = None
     user_response_event: threading.Event = field(default_factory=threading.Event)
     user_response: dict | None = None
+    cancel_requested: bool = False
 
 
 class WebTaskStore:
@@ -190,6 +191,25 @@ def create_app(agent_factory: Any | None = None):
         task.pending_card = None
         return {"ok": True}
 
+    @app.post("/api/task/{task_id}/cancel")
+    async def cancel(task_id: str):
+        """协作式取消：置位后 agent 在当前 step 结束时干净停止。
+
+        此前"取消"只是前端停止轮询，后端线程会跑满 max_turns。
+        """
+        task = store.get(task_id)
+        if task is None:
+            raise HTTPException(status_code=404, detail="task not found")
+        task.cancel_requested = True
+        # 如果任务正卡在 confirm/recommend 卡片上等人，喂一个"取消"响应
+        # 把工作线程解放出来，让 should_abort 检查得以执行。
+        if task.pending_card is not None:
+            task.user_response = {"approved": False, "status": "cancel",
+                                  "user_note": "task cancelled by user"}
+            task.pending_card = None
+            task.user_response_event.set()
+        return {"ok": True, "cancel_requested": True}
+
     @app.get("/api/benchmarks")
     async def benchmarks():
         bench_root = Path(__file__).resolve().parents[2] / "benchmarks"
@@ -242,6 +262,7 @@ def _run_agent_blocking(task: WebTask, agent_factory: Any) -> None:
 
         agent.config.confirm_callback = confirm_cb
         agent.config.recommend_callback = recommend_cb
+        agent.config.should_abort = lambda: task.cancel_requested
 
         def on_step(step, turn, max_turns):
             """每完成一步推一条结构化事件给前端。"""
@@ -270,7 +291,10 @@ def _run_agent_blocking(task: WebTask, agent_factory: Any) -> None:
         # 用 web 的 task_id 作为 agent trajectory id，便于事后用 task_id 找轨迹
         ti = TaskInstance(description=task.intent, task_id=f"task-{task.task_id}")
         result = agent.run(ti, on_step=on_step)
-        task.status = "done" if result.status == "completed" else "failed"
+        task.status = {
+            "completed": "done",
+            "cancelled": "cancelled",
+        }.get(result.status, "failed")
         finish_payload = result.finish_payload or {}
         # 若 Agent 未显式调 finish，至少提取最后一条 assistant_message 的 content 作为总结
         fallback_summary = ""
@@ -754,10 +778,11 @@ function renderTimeline(events) {
 
 function cancelTask() {
   if (!currentTask) return;
-  if (!confirm("确定要取消当前任务吗？已经跑出的中间结果不会丢失，但 Agent 将停止后续步骤。")) return;
+  if (!confirm("确定要取消当前任务吗？已经跑出的中间结果不会丢失，Agent 将在当前 step 结束后停止。")) return;
+  try { fetch(`/api/task/${currentTask}/cancel`, {method: "POST"}); } catch (e) {}
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = null;
-  append(`<span class="err">⛔ 已取消任务（前端停止轮询；后端进程仍会跑完当前 step）</span>`);
+  append(`<span class="err">⛔ 已请求取消（后端将在当前 step 结束后干净停止）</span>`);
   clearThinking();
   currentTask = null;
   renderActive();

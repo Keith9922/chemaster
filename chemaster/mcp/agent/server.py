@@ -126,7 +126,7 @@ def _summarize_trajectory(traj, agent=None) -> dict[str, Any]:
         except (ValueError, TypeError):
             pass
 
-    return {
+    out: dict[str, Any] = {
         "task_id": traj.task_id,
         "status": traj.status,
         "n_steps": len(traj.steps),
@@ -136,6 +136,30 @@ def _summarize_trajectory(traj, agent=None) -> dict[str, Any]:
         "started_at": traj.started_at,
         "finished_at": traj.finished_at,
     }
+
+    # 权限分级透传：MCP 模式下没有交互通道，L2 化学决策会被自动接受。
+    # 把这些决策显式回传给调用方 LLM —— 它有义务转述给它的用户，
+    # 否则"labor-saving collaborator"的决策留痕在 MCP 形态下是隐形的。
+    recs = (traj.meta or {}).get("recommendations")
+    if recs and recs.get("log"):
+        out["chemistry_decisions"] = {
+            "accepted": recs.get("accepted", 0),
+            "modified": recs.get("modified", 0),
+            "cancelled": recs.get("cancelled", 0),
+            "escalated": recs.get("escalated", 0),
+            "log": [
+                {k: r.get(k) for k in
+                 ("decision", "recommendation", "decision_class",
+                  "level", "status", "user_note")}
+                for r in recs["log"]
+            ],
+            "note": (
+                "These chemistry decisions were resolved without an "
+                "interactive user (auto-accepted unless policy demoted them "
+                "to L1 or escalated to L3). Relay them to your user."
+            ),
+        }
+    return out
 
 
 # ──────────────────────────────────────────────────────────────────────────────

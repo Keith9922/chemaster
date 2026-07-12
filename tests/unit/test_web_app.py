@@ -91,7 +91,7 @@ def _poll_until_done(client, task_id, timeout=5.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         r = client.get(f"/api/task/{task_id}").json()
-        if r["status"] in ("done", "failed", "waiting_user"):
+        if r["status"] in ("done", "failed", "waiting_user", "cancelled"):
             return r
         time.sleep(0.02)
     raise AssertionError(f"task {task_id} did not settle within {timeout}s")
@@ -266,3 +266,53 @@ def test_confirm_card_flow(client):
     final = _poll_until_done(c, task_id)
     assert final["status"] == "done"
     assert final["result"]["summary"] == "approved"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 真取消（回归：此前取消只是前端停止轮询，后端线程跑满 max_turns）
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def test_cancel_stops_backend_loop():
+    class _LoopingAgent(_FakeAgent):
+        def run(self, task, on_step=None):
+            for _ in range(300):                       # ~6s 上限
+                if self.config.should_abort and self.config.should_abort():
+                    return _FakeTraj("cancelled", {"reason": "user_cancelled"},
+                                     [_FakeStep(_FakeAssistant("partial"))])
+                time.sleep(0.02)
+            return _FakeTraj("completed", {"summary": "ran to the end"}, [])
+
+    app = create_app(agent_factory=lambda: _LoopingAgent())
+    c = TestClient(app)
+    task_id = c.post("/api/run", json={"intent": "long job"}).json()["task_id"]
+    time.sleep(0.1)                                     # 让 worker 起跑
+    r = c.post(f"/api/task/{task_id}/cancel")
+    assert r.status_code == 200 and r.json()["cancel_requested"] is True
+
+    final = _poll_until_done(c, task_id)
+    assert final["status"] == "cancelled"
+
+
+def test_cancel_unblocks_pending_card():
+    """任务卡在 confirm 卡片上等人时取消 → 工作线程被解放并干净收场。"""
+    class _StuckOnCardAgent(_FakeAgent):
+        def run(self, task, on_step=None):
+            self.config.confirm_callback("g16_run", {}, "long-running")
+            if self.config.should_abort and self.config.should_abort():
+                return _FakeTraj("cancelled", {"reason": "user_cancelled"}, [])
+            return _FakeTraj("completed", {"summary": "went ahead"}, [])
+
+    app = create_app(agent_factory=lambda: _StuckOnCardAgent())
+    c = TestClient(app)
+    task_id = c.post("/api/run", json={"intent": "risky"}).json()["task_id"]
+    st = _poll_until_done(c, task_id)
+    assert st["status"] == "waiting_user"
+
+    c.post(f"/api/task/{task_id}/cancel")
+    final = _poll_until_done(c, task_id)
+    assert final["status"] == "cancelled"
+
+
+def test_cancel_unknown_task_404(client):
+    assert client.post("/api/task/nonexistent/cancel").status_code == 404
