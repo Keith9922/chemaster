@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import logging
 import re
-import shutil
 import subprocess
 import tempfile
 import time
@@ -33,11 +32,9 @@ mcp = FastMCP("chem.analysis_multiwfn")
 
 def _check_engine() -> tuple[str | None, str | None]:
     """Return (Multiwfn binary path, version) or (None, None)."""
-    for cand in ("Multiwfn", "multiwfn"):
-        path = shutil.which(cand)
-        if path:
-            return path, "unknown"          # version detection is fiddly
-    return None, None
+    from chemaster.mcp._common import probe_binary
+    path, version = probe_binary(("Multiwfn", "multiwfn"))
+    return (path, version) if path else (None, None)
 
 
 def _run_multiwfn(*, wfn_file: str, command_script: str,

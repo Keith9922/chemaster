@@ -71,7 +71,7 @@ def _load_jobs_index() -> dict[str, dict[str, Any]]:
     try:
         data = json.loads(p.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}
-    except Exception:  # noqa: BLE001 — 损坏的索引当空处理，不阻塞提交
+    except Exception:
         logger.warning("hpc_jobs.json unreadable; starting a fresh index")
         return {}
 
@@ -85,7 +85,7 @@ def _record_job(job_id: str, entry: dict[str, Any]) -> None:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(index, indent=2, ensure_ascii=False),
                      encoding="utf-8")
-    except Exception as exc:  # noqa: BLE001 — 登记失败不应让提交本身失败
+    except Exception as exc:
         logger.warning("failed to record hpc job %s: %s", job_id, exc)
 
 

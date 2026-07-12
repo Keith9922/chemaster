@@ -35,7 +35,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import time
@@ -55,26 +54,15 @@ mcp = FastMCP("chem.calc_momap")
 
 def _check_engine() -> tuple[str | None, str | None, str | None]:
     """Return (binary, version, MOMAPHOME) or (None, None, None)."""
-    for cand in ("momap", "MOMAP"):
-        path = shutil.which(cand)
-        if path:
-            break
-    else:
+    from chemaster.mcp._common import probe_binary
+    path, version = probe_binary(
+        ("momap", "MOMAP"), version_args=["--version"],
+        version_regex=r"MOMAP[^\d]*(\d+\.\d+(?:\.\d+)?)",
+    )
+    if not path:
         return None, None, None
-    momaphome = os.environ.get("MOMAPHOME") or os.environ.get("MOMAP_HOME")
-    version = "unknown"
-    try:
-        proc = subprocess.run(
-            [path, "--version"],
-            capture_output=True, text=True, timeout=10,
-        )
-        out = (proc.stdout or "") + (proc.stderr or "")
-        m = re.search(r"MOMAP[^\d]*(\d+\.\d+(?:\.\d+)?)", out)
-        if m:
-            version = m.group(1)
-    except Exception:
-        pass
-    return path, version, momaphome
+    return path, version, (os.environ.get("MOMAPHOME")
+                           or os.environ.get("MOMAP_HOME"))
 
 
 def _engine_unavailable_response() -> dict[str, Any]:
@@ -450,10 +438,15 @@ def tvcf_spec(
         )
     except subprocess.TimeoutExpired:
         return {"ok": False, "error_code": "TIMEOUT",
-                "details": f"MOMAP exceeded {timeout_s}s"}
+                "details": f"MOMAP exceeded {timeout_s}s",
+                "suggestion": "Increase timeout_s; spectrum grids with many "
+                              "points integrate slowly."}
     if proc.returncode != 0:
         return {"ok": False, "error_code": "MOMAP_RUNTIME_ERROR",
-                "details": (proc.stderr or proc.stdout)[-1500:]}
+                "details": (proc.stderr or proc.stdout)[-1500:],
+                "suggestion": "Inspect the MOMAP output tail; run with "
+                              "dry_run=True to check the generated .inp "
+                              "against your MOMAP version's manual."}
     spec_data = _parse_spectrum(proc.stdout or "", wd)
 
     return {
@@ -482,7 +475,10 @@ def parse_output(output_path: str) -> dict[str, Any]:
     p = Path(output_path)
     if not p.is_file():
         return {"ok": False, "error_code": "FILE_NOT_FOUND",
-                "details": f"{p} does not exist"}
+                "details": f"{p} does not exist",
+                "suggestion": "Pass the absolute path to the MOMAP .log/.out "
+                              "file (e.g. fetched back from HPC via "
+                              "hpc_fetch)."}
     text = p.read_text(encoding="utf-8", errors="replace")
     rate_data = _parse_rate(text)
     spec_data = _parse_spectrum(text, p.parent)

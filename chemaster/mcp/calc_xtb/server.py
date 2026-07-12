@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import time
@@ -38,20 +37,9 @@ def _write_xyz(xyz: str, path: str) -> None:
 
 def _check_engine() -> str | None:
     """检查 xtb 是否在 PATH。返回版本字符串或 None。"""
-    xtb_path = shutil.which("xtb")
-    if xtb_path is None:
-        return None
-    try:
-        result = subprocess.run(
-            ["xtb", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        version = result.stdout.strip() or result.stderr.strip() or "unknown"
-        return version
-    except Exception:
-        return "unknown"
+    from chemaster.mcp._common import probe_binary
+    path, version = probe_binary(("xtb",), version_args=["--version"])
+    return version if path else None
 
 
 def _parse_singlepoint(stdout: str, stderr: str) -> dict[str, Any]:

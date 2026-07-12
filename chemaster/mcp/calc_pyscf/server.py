@@ -117,6 +117,8 @@ def single_point(
             "error_code": "INVALID_OPTION",
             "details": f"relativistic={relativistic!r} not in "
                        "('none', 'scalar', 'soc')",
+            "suggestion": "Pass relativistic='none' (non-rel), 'scalar' "
+                          "(X2C-1e scalar) or 'soc' (two-component GKS).",
         }
 
     from pyscf import dft, gto, scf

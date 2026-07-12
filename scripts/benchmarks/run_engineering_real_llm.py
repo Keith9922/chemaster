@@ -97,6 +97,19 @@ def _fresh_agent(provider: str, model: str | None, registry=None,
 # 指标 A — execution correctness（真 LLM 路由 100 条双语意图）
 # ══════════════════════════════════════════════════════════════════════════════
 
+# 每组"语义正确"的合法工具集合。mock 版的 expected_tool 是为确定性路由器
+# 定制的单一目标（其中 optimize 组甚至写的是 mock 路由器的 SP fallback）；
+# 真 LLM 用 const_convert 回答单位换算、用 use_skill 直接读 skill 都属于
+# 正确路由，按单一 expected_tool 判会把评测 artifact 算成模型错误。
+# JSON 里同时记录两种口径（semantic / mock_criterion）。
+ACCEPTABLE_TOOLS: dict[str, set[str]] = {
+    "energy": {"calc_psi4_single_point"},
+    "constant": {"const_get", "const_convert"},
+    "kb": {"kb_search", "use_skill", "list_skills"},
+    "optimize": {"calc_psi4_optimize"},
+    "skill": {"use_skill", "list_skills"},
+}
+
 
 def indicator_a(provider: str, model: str | None,
                 limit_phrasings: int | None) -> dict:
@@ -112,16 +125,19 @@ def indicator_a(provider: str, model: str | None,
     n_recommends = 0
 
     for group in groups:
+        acceptable = ACCEPTABLE_TOOLS.get(
+            group["group"], {group["expected_tool"]})
         phrasings = group["phrasings"]
         if limit_phrasings:
             phrasings = phrasings[:limit_phrasings]
         for phrasing in phrasings:
             from chemaster.agent.types import TaskInstance
             trial = {"group": group["group"], "intent": phrasing,
-                     "expected_tool": group["expected_tool"]}
+                     "acceptable_tools": sorted(acceptable),
+                     "mock_expected_tool": group["expected_tool"]}
             t1 = time.time()
             try:
-                agent = _fresh_agent(provider, model)
+                agent = _fresh_agent(provider, model, max_turns=10)
                 traj = agent.run(TaskInstance(description=phrasing))
                 seq = _tool_sequence(traj)
                 usage = _usage_totals(traj)
@@ -131,7 +147,8 @@ def indicator_a(provider: str, model: str | None,
                     (traj.meta.get("recommendations") or {}).get("log", []))
                 trial.update({
                     "agent_ok": traj.status == "completed",
-                    "routed_ok": group["expected_tool"] in seq,
+                    "routed_ok": any(t in seq for t in acceptable),
+                    "mock_criterion_ok": group["expected_tool"] in seq,
                     "status": traj.status,
                     "tool_sequence": seq,
                     "n_steps": len(traj.steps),
@@ -139,18 +156,20 @@ def indicator_a(provider: str, model: str | None,
             except Exception as exc:  # noqa: BLE001 — 记录为失败，不中断批次
                 trial.update({
                     "agent_ok": False, "routed_ok": False,
+                    "mock_criterion_ok": False,
                     "status": "exception",
                     "error": f"{type(exc).__name__}: {exc}",
                 })
             trial["wall_s"] = round(time.time() - t1, 2)
             results.append(trial)
-            ok = "✓" if trial.get("routed_ok") else "✗"
-            print(f"  [{group['group']:<10}] {ok} {phrasing[:50]!r} "
+            mark = "✓" if trial.get("routed_ok") else "✗"
+            print(f"  [{group['group']:<10}] {mark} {phrasing[:50]!r} "
                   f"({trial['wall_s']}s)", flush=True)
 
     n = len(results)
     n_agent_ok = sum(r["agent_ok"] for r in results)
     n_routed = sum(r["routed_ok"] for r in results)
+    n_mock_crit = sum(r["mock_criterion_ok"] for r in results)
     per_group = {}
     for g in groups:
         rs = [r for r in results if r["group"] == g["group"]]
@@ -166,9 +185,11 @@ def indicator_a(provider: str, model: str | None,
         "model": model or "(provider default)",
         "method": (
             "Same 5 intent groups × bilingual phrasings as the mock-routing "
-            "execution_correctness.json, but driven by a real LLM over the "
-            "full default tool registry. Success: agent completes AND the "
-            "expected tool appears in the call sequence."
+            "execution_correctness.json, driven by a real LLM over the full "
+            "default tool registry (54 tools). routed_ok: any semantically "
+            "acceptable tool for the group appears in the call sequence "
+            "(see acceptable_tools per trial); mock_criterion_ok kept for "
+            "comparison with the mock harness's single expected_tool."
         ),
         "generated_at": _now(),
         "n_total": n,
@@ -176,6 +197,8 @@ def indicator_a(provider: str, model: str | None,
         "agent_ok_rate_pct": round(100 * n_agent_ok / n, 1) if n else 0,
         "routed_ok": n_routed,
         "routing_rate_pct": round(100 * n_routed / n, 1) if n else 0,
+        "mock_criterion_ok": n_mock_crit,
+        "mock_criterion_rate_pct": round(100 * n_mock_crit / n, 1) if n else 0,
         "per_group": per_group,
         "n_recommend_cards_auto_accepted": n_recommends,
         "usage_totals": usage_total,

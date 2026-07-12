@@ -479,6 +479,9 @@ def use_skill(skill_name: str, action: str = "get_info", reference: str = "") ->
                 "ok": False,
                 "error_code": "MISSING_REFERENCE",
                 "details": "action='get_reference' requires reference=<filename>.",
+                "suggestion": "Call use_skill(name, action='get_info') first "
+                              "— the skill body lists its references/ files; "
+                              "then pass one as reference=.",
             }
         ref_path = Path(skill_doc.meta["skill_dir"]) / "references" / reference
         if not ref_path.exists():

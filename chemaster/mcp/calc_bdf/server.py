@@ -20,7 +20,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import time
@@ -35,26 +34,14 @@ mcp = FastMCP("chem.calc_bdf")
 
 def _check_engine() -> tuple[str | None, str | None, str | None]:
     """Return (binary_path, version, BDFHOME) or (None, None, None)."""
-    for cand in ("bdfdrv.py", "bdf"):
-        path = shutil.which(cand)
-        if path:
-            break
-    else:
+    from chemaster.mcp._common import probe_binary
+    path, version = probe_binary(
+        ("bdfdrv.py", "bdf"), version_args=["--version"],
+        version_regex=r"BDF\s+(?:Version\s+)?(\S+)",
+    )
+    if not path:
         return None, None, None
-
-    bdfhome = os.environ.get("BDFHOME")
-    version = "unknown"
-    try:
-        proc = subprocess.run(
-            [path, "--version"], capture_output=True, text=True, timeout=10,
-        )
-        out = (proc.stdout or "") + (proc.stderr or "")
-        m = re.search(r"BDF\s+(?:Version\s+)?(\S+)", out)
-        if m:
-            version = m.group(1)
-    except Exception:
-        pass
-    return path, version, bdfhome
+    return path, version, os.environ.get("BDFHOME")
 
 
 def _xyz_to_bdf_geom(xyz: str, charge: int, multiplicity: int) -> str:
@@ -290,7 +277,10 @@ def optimize(
         }
     if not bdfhome:
         return {"ok": False, "error_code": "NO_BDFHOME",
-                "details": "BDFHOME not set"}
+                "details": "BDFHOME not set",
+                "suggestion": "export BDFHOME=<BDF install root> (the "
+                              "bdfdrv.py launcher requires it); see the BDF "
+                              "install guide."}
 
     geom = _xyz_to_bdf_geom(geometry_xyz, charge, multiplicity)
     inp = _bdf_input_for_opt(geom, method, basis)
@@ -309,10 +299,15 @@ def optimize(
         except subprocess.TimeoutExpired:
             return {"ok": False, "error_code": "TIMEOUT",
                     "details": f"BDF opt exceeded {timeout_s}s",
+                    "suggestion": "Increase timeout_s or start from a "
+                                  "pre-optimized (e.g. xTB) geometry.",
                     "meta": {"bdf_version": version}}
         if proc.returncode != 0:
             return {"ok": False, "error_code": "BDF_RUNTIME_ERROR",
                     "details": (proc.stderr or proc.stdout)[-1500:],
+                    "suggestion": "Inspect the BDF output tail; try "
+                                  "dry_run=True to validate the generated "
+                                  "input against the BDF manual first.",
                     "meta": {"bdf_version": version}}
         stdout = proc.stdout or ""
         energy = _parse_scf_energy(stdout)
@@ -352,10 +347,16 @@ def tddft(
     bdf_path, version, bdfhome = _check_engine()
     if bdf_path is None:
         return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
-                "details": "BDF not on PATH"}
+                "details": "BDF not on PATH",
+                "suggestion": "Install BDF and set BDFHOME; for SOC-class "
+                              "tasks calc_pyscf_x2c_soc is the open-source "
+                              "fallback."}
     if not bdfhome:
         return {"ok": False, "error_code": "NO_BDFHOME",
-                "details": "BDFHOME not set"}
+                "details": "BDFHOME not set",
+                "suggestion": "export BDFHOME=<BDF install root> (the "
+                              "bdfdrv.py launcher requires it); see the BDF "
+                              "install guide."}
 
     geom = _xyz_to_bdf_geom(geometry_xyz, charge, multiplicity)
     inp = _bdf_input_for_tddft(geom, method, basis, n_states, int(spin_flip))
@@ -373,10 +374,15 @@ def tddft(
             )
         except subprocess.TimeoutExpired:
             return {"ok": False, "error_code": "TIMEOUT",
-                    "details": f"BDF TDDFT exceeded {timeout_s}s"}
+                    "details": f"BDF TDDFT exceeded {timeout_s}s",
+                    "suggestion": "Increase timeout_s, request fewer "
+                                  "n_states, or use a smaller basis."}
         if proc.returncode != 0:
             return {"ok": False, "error_code": "BDF_RUNTIME_ERROR",
-                    "details": (proc.stderr or proc.stdout)[-1500:]}
+                    "details": (proc.stderr or proc.stdout)[-1500:],
+                    "suggestion": "Inspect the BDF output tail; verify the "
+                                  "$tddft block (istore/nroot) matches your "
+                                  "BDF version's manual."}
         states = _parse_excited_energies(proc.stdout or "")
 
     return {
