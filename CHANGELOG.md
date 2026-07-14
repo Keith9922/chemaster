@@ -95,6 +95,33 @@
 - `calc_psi4` 拆出 `parsers.py`（server 1580 → 1391 行）；解析器群在无
   psi4 环境可测（7 个新测试不再随 psi4 缺席而跳过）。
 
+### Fixed（第三波：真机测试 + 对抗式审查发现的 7 个真 bug）
+> 合并前用真 MiniMax + 真 psi4 把 CLI/Web 跑起来，并对整个 PR diff 做对抗式
+> 审查。真机测试独立确认了其中的 XYZ 解析 bug（真 LLM 给裸原子行被拒）。
+- **recommend 取消误标 completed**：用户在化学决策卡上取消，trajectory
+  终态本应 `cancelled`（web 却显示"任务完成"，与 confirmations.jsonl 的
+  cancel 记录矛盾）。sync/streaming 双路径都修，配回归测试。
+- **XYZ 解析双套容忍度**：`_common.xyz_atom_lines` 接受裸原子行、`calc_psi4`
+  的旧解析器却硬要原子数 header——真 LLM 常给裸几何，导致 agent 白白重试。
+  统一走 `xyz_atom_lines`，改用**内容判据**（元素符号 + 3 个浮点）区分注释
+  行，既接受裸几何、又能抓出"声明 N 个实际 N-1 个"的真错误（旧的纯计数逻辑
+  会把注释吞成原子）。
+- **hpc_slurm 远端 shell 注入**：jobname / job_id / remote_dir 直接拼进远端
+  登录 shell，推翻模块自己"无任意 shell 执行"的设计承诺。jobname/job_id
+  白名单校验，remote_dir 用 `shlex.quote`；索引改原子写（tmp + os.replace）
+  防截断导致的全量 fetch 坏死。
+- **web 取消竞态**：`confirm_cb`/`recommend_cb` 现在先 `clear()` 再发布卡片、
+  且入口先查 `cancel_requested` 短路——取消请求在"发布卡片"与"clear"之间
+  到达时不再把工作线程永久挂死（无 UI 恢复路径）。
+- **web `waiting_for_input` 误标 failed**：agent 调 ask_user 挂起不是失败；
+  映射为 `needs_input`、把问题带进结果，前端也在 cancelled/needs_input 停轮询。
+- **Anthropic 上下文溢出文案不匹配**：真实报错是 "prompt is too long"（不含
+  "context"），紧急截断兜底在主 provider 上从不触发；已补匹配。
+- **chemaster_run 返回已删的 trajectory_path**：finally 默认 rmtree 掉 runs
+  目录，返回值里的路径指向不存在的文件；改为默认 None、仅 KEEP 时给路径。
+- 附带：psi4 scratch（`psi.*.clean`）经 IOManager.set_default_path 收进会话
+  目录，`*_output.log` 加进 .gitignore——"零仓库根污染"真机复核通过。
+
 ### Docs
 - CLAUDE.md → v4.0（答辩后状态；§8 换成新阶段清单）；README 数字与
   benchmark JSON 对齐（路由 100%、故障处置 25/25 双口径注明、N=10000、
