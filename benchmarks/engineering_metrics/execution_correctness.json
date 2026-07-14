@@ -3,7 +3,7 @@
   "method": "Drive ChemAgent.run() with a MockLLM that routes on intent keywords; psi4 is the real backend for energy tasks. For each anchor intent we test 10 natural-language phrasings and count (a) agent did not crash, (b) the expected tool appears in the trajectory's non-builtin tool sequence.",
   "n_total": 100,
   "agent_ok_rate": 1.0,
-  "execution_correctness_rate": 0.98,
+  "execution_correctness_rate": 1.0,
   "by_group": {
     "energy": {
       "n": 20,
@@ -20,8 +20,8 @@
     "kb": {
       "n": 20,
       "agent_ok": 20,
-      "correct": 18,
-      "rate": 0.9
+      "correct": 20,
+      "rate": 1.0
     },
     "optimize": {
       "n": 20,
@@ -48,7 +48,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.462
+      "wall_s": 0.496
     },
     {
       "group": "energy",
@@ -59,7 +59,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.135
+      "wall_s": 0.131
     },
     {
       "group": "energy",
@@ -81,7 +81,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.132
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -92,7 +92,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.133
+      "wall_s": 0.128
     },
     {
       "group": "energy",
@@ -103,7 +103,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.13
+      "wall_s": 0.131
     },
     {
       "group": "energy",
@@ -114,7 +114,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.134
+      "wall_s": 0.133
     },
     {
       "group": "energy",
@@ -125,7 +125,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.129
+      "wall_s": 0.128
     },
     {
       "group": "energy",
@@ -136,7 +136,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.132
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -147,7 +147,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.132
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -158,7 +158,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.133
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -169,7 +169,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.129
+      "wall_s": 0.131
     },
     {
       "group": "energy",
@@ -191,7 +191,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.131
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -202,7 +202,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.13
+      "wall_s": 0.131
     },
     {
       "group": "energy",
@@ -213,7 +213,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.132
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -224,7 +224,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.131
+      "wall_s": 0.13
     },
     {
       "group": "energy",
@@ -235,7 +235,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.134
+      "wall_s": 0.129
     },
     {
       "group": "energy",
@@ -246,7 +246,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.13
+      "wall_s": 0.128
     },
     {
       "group": "energy",
@@ -257,7 +257,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.13
+      "wall_s": 0.129
     },
     {
       "group": "constant",
@@ -389,7 +389,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "constant",
@@ -466,7 +466,7 @@
         "const_get"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.001
     },
     {
       "group": "constant",
@@ -488,7 +488,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.022
+      "wall_s": 0.025
     },
     {
       "group": "kb",
@@ -510,7 +510,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -521,7 +521,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -532,7 +532,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -543,7 +543,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -551,10 +551,10 @@
       "intent": "Look up basis set rules",
       "agent_ok": true,
       "tool_sequence": [
-        "const_get"
+        "kb_search"
       ],
-      "correct": false,
-      "wall_s": 0.002
+      "correct": true,
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -576,7 +576,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -587,7 +587,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -598,7 +598,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -609,7 +609,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -620,7 +620,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -631,7 +631,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -642,7 +642,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.003
     },
     {
       "group": "kb",
@@ -653,7 +653,7 @@
         "kb_search"
       ],
       "correct": true,
-      "wall_s": 0.003
+      "wall_s": 0.002
     },
     {
       "group": "kb",
@@ -661,9 +661,9 @@
       "intent": "查基组规则",
       "agent_ok": true,
       "tool_sequence": [
-        "const_get"
+        "kb_search"
       ],
-      "correct": false,
+      "correct": true,
       "wall_s": 0.002
     },
     {
@@ -708,7 +708,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.077
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -719,7 +719,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.078
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -730,7 +730,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.075
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -752,7 +752,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.075
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -763,7 +763,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.075
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -774,7 +774,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.079
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -785,7 +785,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.078
+      "wall_s": 0.076
     },
     {
       "group": "optimize",
@@ -796,7 +796,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.131
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -807,7 +807,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.076
+      "wall_s": 0.078
     },
     {
       "group": "optimize",
@@ -818,7 +818,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.077
+      "wall_s": 0.082
     },
     {
       "group": "optimize",
@@ -829,7 +829,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.077
+      "wall_s": 0.08
     },
     {
       "group": "optimize",
@@ -840,7 +840,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.077
+      "wall_s": 0.079
     },
     {
       "group": "optimize",
@@ -851,7 +851,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.077
+      "wall_s": 0.075
     },
     {
       "group": "optimize",
@@ -862,7 +862,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.076
+      "wall_s": 0.073
     },
     {
       "group": "optimize",
@@ -873,7 +873,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.078
+      "wall_s": 0.073
     },
     {
       "group": "optimize",
@@ -884,7 +884,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.076
+      "wall_s": 0.075
     },
     {
       "group": "optimize",
@@ -895,7 +895,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.076
+      "wall_s": 0.074
     },
     {
       "group": "optimize",
@@ -906,7 +906,7 @@
         "calc_psi4_single_point"
       ],
       "correct": true,
-      "wall_s": 0.076
+      "wall_s": 0.077
     },
     {
       "group": "optimize",
@@ -1027,7 +1027,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.001
     },
     {
       "group": "skill",
@@ -1071,7 +1071,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.002
+      "wall_s": 0.001
     },
     {
       "group": "skill",
@@ -1093,7 +1093,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.001
+      "wall_s": 0.002
     },
     {
       "group": "skill",
@@ -1104,7 +1104,7 @@
         "use_skill"
       ],
       "correct": true,
-      "wall_s": 0.001
+      "wall_s": 0.002
     },
     {
       "group": "skill",

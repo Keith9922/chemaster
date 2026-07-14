@@ -1,0 +1,142 @@
+{
+  "task_id": "task-c669ea25",
+  "status": "completed",
+  "started_at": "2026-05-20T06:41:46.037212+00:00",
+  "finished_at": "2026-05-20T06:42:10.993395+00:00",
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-05-20T06:42:05.221024+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "I'll compute the single-point energy of H2 at the specified geometry.",
+        "tool_calls": [
+          {
+            "id": "toolu_012DwkXaxqHrAepFvPwzLi1n",
+            "name": "calc_psi4_single_point",
+            "arguments": {
+              "geometry_xyz": "2\n\nH 0.0 0.0 0.0\nH 0.0 0.0 0.74\n",
+              "method": "B3LYP",
+              "basis": "sto-3g",
+              "charge": "0",
+              "multiplicity": "1"
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "claude-opus-4-7",
+          "usage": {
+            "input_tokens": 15991,
+            "output_tokens": 227
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "toolu_012DwkXaxqHrAepFvPwzLi1n",
+          "name": "calc_psi4_single_point",
+          "content": "[OK] calc_psi4_single_point\n{\n  \"energy\": {\n    \"value\": -1.16546163,\n    \"unit\": \"Hartree\"\n  },\n  \"n_basis_functions\": null,\n  \"n_iterations\": null,\n  \"homo_lumo_gap\": null,\n  \"dipole\": null\n}",
+          "is_error": false,
+          "meta": {
+            "decision_authority": "user-binary",
+            "data": {
+              "ok": true,
+              "result": {
+                "energy": {
+                  "value": -1.16546163,
+                  "unit": "Hartree"
+                },
+                "n_basis_functions": null,
+                "n_iterations": null,
+                "homo_lumo_gap": null,
+                "dipole": null
+              },
+              "warnings": [],
+              "meta": {
+                "psi4_version": "1.10",
+                "wall_time_s": 0.13,
+                "output_path": "single_point_output.log"
+              }
+            }
+          }
+        }
+      ],
+      "meta": {}
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-05-20T06:42:10.993385+00:00",
+      "assistant_message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "toolu_012NiHLUGJzUBRoqqYggap1q",
+            "name": "finish",
+            "arguments": {
+              "summary": "Computed the single-point electronic energy of H2 at B3LYP/STO-3G with the user-specified geometry (two H atoms on the z-axis at 0.0 and 0.74 Å, charge 0, singlet). Psi4 returned E = -1.16546163 Hartree. No optimization or frequency was requested; this is a vertical single-point at the given bond length.",
+              "key_results": {
+                "h2_b3lyp_sto3g_Ha": -1.16546163,
+                "method": "B3LYP",
+                "basis": "sto-3g"
+              }
+            }
+          }
+        ],
+        "meta": {
+          "stop_reason": "tool_use",
+          "model": "claude-opus-4-7",
+          "usage": {
+            "input_tokens": 16329,
+            "output_tokens": 255
+          }
+        }
+      },
+      "tool_responses": [
+        {
+          "role": "tool",
+          "tool_call_id": "toolu_012NiHLUGJzUBRoqqYggap1q",
+          "name": "finish",
+          "content": "[finished]",
+          "is_error": false,
+          "meta": {
+            "finish_payload": {
+              "summary": "Computed the single-point electronic energy of H2 at B3LYP/STO-3G with the user-specified geometry (two H atoms on the z-axis at 0.0 and 0.74 Å, charge 0, singlet). Psi4 returned E = -1.16546163 Hartree. No optimization or frequency was requested; this is a vertical single-point at the given bond length.",
+              "key_results": {
+                "h2_b3lyp_sto3g_Ha": -1.16546163,
+                "method": "B3LYP",
+                "basis": "sto-3g"
+              }
+            }
+          }
+        }
+      ],
+      "meta": {}
+    }
+  ],
+  "finish_payload": null,
+  "meta": {
+    "agent_version": "0.2.0",
+    "task_type": "chemistry",
+    "confirmations": {
+      "approved": 1,
+      "declined": 0,
+      "log": [
+        {
+          "tool": "calc_psi4_single_point",
+          "args": {
+            "geometry_xyz": "2\n\nH 0.0 0.0 0.0\nH 0.0 0.0 0.74\n",
+            "method": "B3LYP",
+            "basis": "sto-3g",
+            "charge": "0",
+            "multiplicity": "1"
+          },
+          "reason": "long-running (>30 s expected)",
+          "approved": true
+        }
+      ]
+    }
+  }
+}

@@ -7,9 +7,9 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-import cclib  # noqa: E402  must be imported before patch.object resolves cclib.io.ccread
+import cclib
 import numpy as np
 
 

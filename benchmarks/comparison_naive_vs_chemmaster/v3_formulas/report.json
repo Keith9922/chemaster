@@ -1,0 +1,61 @@
+{
+  "paper_data": {
+    "compound": "DMAC-TRZ-X (representative 2025 TADF data)",
+    "method_level": "TD-CAM-B3LYP/def2-SVP + state-specific SOC",
+    "delta_E_ST_eV": 0.085,
+    "soc_cm_inv": 0.32,
+    "reorganization_energy_eV": 0.18,
+    "oscillator_strength": 0.012,
+    "emission_energy_eV": 2.65,
+    "temperature_K": 298.15
+  },
+  "ground_truth": {
+    "k_RISC_s_inv": 1399700.0,
+    "k_F_s_inv": 3711300.0,
+    "tau_r_ns": 269.45,
+    "source": "chemaster.kb.formulas (direct Python)"
+  },
+  "results": [
+    {
+      "label": "naive",
+      "approach": "LLM hand-computes Marcus & Strickler-Berg from formulas",
+      "n_tool_calls": 4,
+      "wall_s": 98.89,
+      "reported": {
+        "k_RISC_s_inv": 1400000.0,
+        "k_F_s_inv": 3660000.0,
+        "tau_r_ns": 273.0
+      },
+      "note": "Used simplified Strickler-Berg form (0.667·f·ν̃²) rather than precise version → 1.4% error in k_F."
+    },
+    {
+      "label": "chemmaster",
+      "approach": "calls formula_krisc_marcus + formula_kf_strickler_berg MCP tools",
+      "n_tool_calls": 3,
+      "wall_s": 23.04,
+      "reported": {
+        "k_RISC_s_inv": 1400000.0,
+        "k_F_s_inv": 3710000.0,
+        "tau_r_ns": 269.45
+      },
+      "note": "Direct Python formula via MCP → exact within sig figs."
+    }
+  ],
+  "naive_reproducibility": {
+    "runs": [
+      {
+        "run": 1,
+        "k_RISC_s_inv": 1400000.0,
+        "k_F_s_inv": 3660000.0,
+        "tau_r_ns": 273.0
+      },
+      {
+        "run": 2,
+        "k_RISC_s_inv": 1400000.0,
+        "k_F_s_inv": 3660000.0,
+        "tau_r_ns": 273.4
+      }
+    ],
+    "note": "Two independent naive-LLM runs give slightly different τ_r (273.0 vs 273.4 ns). Same systematic 1.4% offset on k_F (LLM keeps picking the simplified Strickler-Berg form). ChemMaster path is deterministic — same Python formula = same answer every time."
+  }
+}

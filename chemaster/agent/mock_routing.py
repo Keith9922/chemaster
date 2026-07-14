@@ -14,7 +14,8 @@ real LLM — methods/basis sets are chosen by keyword match, not chemistry.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 # Same H2 geometry the benchmark script uses, kept tiny so test runs stay fast.
 _DEFAULT_H2_XYZ = "2\nH2\nH 0.0 0.0 0.0\nH 0.0 0.0 0.74\n"
@@ -100,8 +101,9 @@ def build_routing_responder(
 
         if any(k in intent for k in (
                 "skill", "playbook", "search", "kb", "knowledge",
+                "basis set", "rule", "rules",
                 # Chinese
-                "知识库", "搜索", "搜 ", "查 ", "找 ", "检索", "playbook")):
+                "知识库", "搜索", "搜 ", "查", "找 ", "检索", "规则", "playbook")):
             return ToolCall(id="c1", name="kb_search",
                             arguments={"query": intent[:30] or "tddft"})
 

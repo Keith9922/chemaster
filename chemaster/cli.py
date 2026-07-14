@@ -66,25 +66,25 @@ def main(ctx: click.Context, version: bool, check_engines: bool, tui: bool) -> N
 
 
 @click.command(name="tui")
-def tui_cmd() -> None:
+@click.option("--llm-provider",
+              type=click.Choice(["mock", "anthropic", "minimax", "qwen",
+                                 "deepseek", "openai_compat"]),
+              default=None,
+              help="LLM provider. Defaults to anthropic / minimax / qwen / "
+                   "deepseek (auto-detected from env vars) → mock.")
+@click.option("--llm-model", default=None,
+              help="Override LLM model id (e.g. claude-sonnet-4-6, MiniMax-M2.7).")
+def tui_cmd(llm_provider: str | None, llm_model: str | None) -> None:
     """Launch the Textual TUI (interactive terminal UI)."""
     try:
         from chemaster.tui.app import main as tui_main
     except ImportError as exc:
         click.secho(f"TUI dependencies missing: {exc}", fg="red", err=True)
         sys.exit(1)
-    # Build a minimal agent for the TUI to use, if possible.
+
     try:
-        from chemaster.agent.agent import AgentConfig, ChemAgent
-        from chemaster.agent.llm_client import LLMConfig, create_llm
-        from chemaster.agent.tool_loader import build_default_registry
-        registry = build_default_registry()
-        llm_config = LLMConfig(provider="mock", model="mock")
-        llm = create_llm(llm_config)
-        agent = ChemAgent(
-            llm=llm, tools=registry,
-            config=AgentConfig(),
-        )
+        from chemaster.agent.factory import build_chem_agent
+        agent = build_chem_agent(provider=llm_provider, model=llm_model)
         tui_main(agent=agent)
     except Exception:
         # Fall through to display-only mode
@@ -108,13 +108,8 @@ def web_cmd(host: str, port: int, llm_provider: str) -> None:
         sys.exit(1)
 
     def agent_factory():
-        from chemaster.agent.agent import AgentConfig, ChemAgent
-        from chemaster.agent.llm_client import LLMConfig, create_llm
-        from chemaster.agent.tool_loader import build_default_registry
-        registry = build_default_registry()
-        llm_config = LLMConfig(provider=llm_provider, model=None)
-        llm = create_llm(llm_config)
-        return ChemAgent(llm=llm, tools=registry, config=AgentConfig())
+        from chemaster.agent.factory import build_chem_agent
+        return build_chem_agent(provider=llm_provider)
 
     web_main(host=host, port=port, agent_factory=agent_factory)
 
@@ -160,26 +155,15 @@ def run(
         chemaster run "Compute the energy of benzene"
         chemaster run "Optimize ethanol" --no-confirm
     """
-    import os
-
-    from chemaster.agent.agent import AgentConfig, ChemAgent
-    from chemaster.agent.llm_client import LLMConfig, create_llm
-    from chemaster.agent.tool_loader import build_default_registry
+    from chemaster.agent.factory import (
+        build_chem_agent,
+        default_model_for,
+        detect_provider,
+    )
     from chemaster.agent.types import TaskInstance
 
     # Pick provider (auto-detect from env vars unless explicitly overridden).
-    provider = llm_provider
-    if provider is None:
-        if os.environ.get("ANTHROPIC_API_KEY"):
-            provider = "anthropic"
-        elif os.environ.get("MINIMAX_API_KEY"):
-            provider = "minimax"
-        elif os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY"):
-            provider = "qwen"
-        elif os.environ.get("DEEPSEEK_API_KEY"):
-            provider = "deepseek"
-        else:
-            provider = "mock"
+    provider = llm_provider or detect_provider()
 
     if provider == "mock":
         click.secho(
@@ -192,35 +176,24 @@ def run(
             fg="yellow", err=True,
         )
 
-    # Sensible default model per provider.
-    default_model = {
-        "anthropic": "claude-sonnet-4-6",
-        "minimax": "MiniMax-M2.7",
-        "qwen": "qwen-max",
-        "deepseek": "deepseek-chat",
-        "mock": "mock",
-    }.get(provider, "")
-    cfg = LLMConfig(provider=provider, model=llm_model or default_model)
+    confirm_cb = (lambda *_: True) if no_confirm else _interactive_confirm
     try:
-        llm = create_llm(cfg)
+        agent = build_chem_agent(
+            provider=provider,
+            model=llm_model,
+            runs_dir=Path(runs_dir),
+            max_turns=max_turns,
+            confirm_callback=confirm_cb,
+            enabled_tools=list(enabled_tool) or None,
+        )
     except Exception as exc:
         click.secho(f"Failed to initialize LLM: {exc}", fg="red", err=True)
         sys.exit(2)
 
-    registry = build_default_registry()
-    confirm_cb = (lambda *_: True) if no_confirm else _interactive_confirm
-
-    agent_cfg = AgentConfig(
-        max_turns=max_turns,
-        runs_dir=Path(runs_dir),
-        confirm_callback=confirm_cb,
-        enabled_tools=list(enabled_tool) or None,
-    )
-    agent = ChemAgent(llm=llm, tools=registry, config=agent_cfg)
-
     console.print(Panel(
         f"[bold]{intent}[/bold]\n"
-        f"provider={provider}  model={cfg.model}  tools={len(registry)}",
+        f"provider={provider}  model={llm_model or default_model_for(provider)}  "
+        f"tools={len(agent.tools)}",
         title="ChemMaster Agent",
         border_style="cyan",
     ))
@@ -247,18 +220,19 @@ def run(
     try:
         traj = agent.run(TaskInstance(description=intent), on_step=_on_step)
     except Exception as exc:
-        _render_agent_error(exc, agent_cfg.runs_dir, getattr(agent, "trajectory", None))
+        _render_agent_error(exc, agent.config.runs_dir, getattr(agent, "trajectory", None))
         sys.exit(3)
 
-    _print_summary(traj, agent_cfg.runs_dir)
-    _write_markdown_report(traj, agent_cfg.runs_dir)
+    _print_summary(traj, agent.config.runs_dir)
+    _write_markdown_report(traj, agent.config.runs_dir)
 
     # Desktop notification on task completion (no-op when CHEMASTER_NO_NOTIFY=1
     # or when the host platform has no notification mechanism). Wrapped so a
     # broken notifier never breaks a successful CLI run.
     try:
-        from chemaster.notify import notify_task_done
         from datetime import datetime
+
+        from chemaster.notify import notify_task_done
 
         elapsed_s = None
         if traj.started_at and traj.finished_at:
@@ -647,7 +621,8 @@ def show(task_id: str, runs_dir: str) -> None:
                             border_style="cyan"))
     if payload.get("key_results"):
         kr = Table(title="Key results")
-        kr.add_column("name"); kr.add_column("value")
+        kr.add_column("name")
+        kr.add_column("value")
         for k, v in payload["key_results"].items():
             kr.add_row(str(k), str(v))
         console.print(kr)
@@ -773,7 +748,6 @@ def doctor_cmd(quiet: bool) -> None:
     Designed to be the first command a new user runs.  Non-zero exit code
     means at least one check failed in a way that blocks ``chemaster run``.
     """
-    import importlib
     import platform as _platform
     import shutil
 
@@ -799,8 +773,10 @@ def doctor_cmd(quiet: bool) -> None:
 
     # ── 1. Python / package manager ──────────────────────────────────────
     t1 = Table(title="Runtime", show_lines=False)
-    t1.add_column("", width=2); t1.add_column("check", style="cyan")
-    t1.add_column("detail"); t1.add_column("hint", style="dim")
+    t1.add_column("", width=2)
+    t1.add_column("check", style="cyan")
+    t1.add_column("detail")
+    t1.add_column("hint", style="dim")
     py_ver = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     _row(t1, "python", "ok" if sys.version_info >= (3, 11) else "fail",
          py_ver, "Need Python ≥ 3.11")
@@ -814,35 +790,22 @@ def doctor_cmd(quiet: bool) -> None:
     console.print(t1)
 
     # ── 2. Chemistry engines ────────────────────────────────────────────
+    from chemaster.engines import probe_engines
+
     t2 = Table(title="Chemistry engines", show_lines=False)
-    t2.add_column("", width=2); t2.add_column("engine", style="cyan")
-    t2.add_column("path"); t2.add_column("how to install", style="dim")
-    install_hints = {
-        "psi4":     "mamba install -c psi4 psi4",
-        "xtb":      "mamba install -c conda-forge xtb",
-        "orca":     "vendor binary; ensure on $PATH (free for academic)",
-        "g16":      "Gaussian commercial; ensure g16 on $PATH",
-        "bdf":      "free for academic; ensure bdf on $PATH",
-        "momap":    "commercial; ensure momap on $PATH",
-    }
+    t2.add_column("", width=2)
+    t2.add_column("engine", style="cyan")
+    t2.add_column("path")
+    t2.add_column("how to install", style="dim")
     have_any = False
-    for engine in ("psi4", "xtb", "orca", "g16", "bdf", "momap"):
-        p = shutil.which(engine)
-        _row(t2, engine, "ok" if p else "warn",
-             p or "(not on $PATH)",
-             install_hints[engine] if not p else "")
-        if p:
+    for status in probe_engines():
+        detail = status.path or "(not available)"
+        if status.detail and not status.available:
+            detail += f" — {status.detail}"
+        _row(t2, status.name, "ok" if status.available else "warn",
+             detail, status.spec.install_hint if not status.available else "")
+        if status.available:
             have_any = True
-    # pyscf is a Python lib, check differently
-    try:
-        importlib.import_module("pyscf")
-        pyscf_ver = importlib.import_module("pyscf").__version__
-        _row(t2, "pyscf", "ok", f"v{pyscf_ver}",
-             "")
-        have_any = True
-    except ImportError:
-        _row(t2, "pyscf", "warn", "(not installed)",
-             "pip install pyscf")
     if not have_any:
         # Promote to a hard fail: agent cannot do any real chemistry.
         n_fail += 1
@@ -850,7 +813,9 @@ def doctor_cmd(quiet: bool) -> None:
 
     # ── 3. LLM API keys (auto-detect from env) ──────────────────────────
     t3 = Table(title="LLM API keys", show_lines=False)
-    t3.add_column("", width=2); t3.add_column("key", style="cyan"); t3.add_column("detail")
+    t3.add_column("", width=2)
+    t3.add_column("key", style="cyan")
+    t3.add_column("detail")
     api_keys = {
         "ANTHROPIC_API_KEY": "Anthropic Claude",
         "MINIMAX_API_KEY":   "MiniMax",
@@ -873,7 +838,8 @@ def doctor_cmd(quiet: bool) -> None:
 
     # ── 4. User config layout ────────────────────────────────────────────
     t4 = Table(title="User config", show_lines=False)
-    t4.add_column("", width=2); t4.add_column("path", style="cyan")
+    t4.add_column("", width=2)
+    t4.add_column("path", style="cyan")
     t4.add_column("status")
     try:
         from chemaster.agent.user_kb import user_kb_root
@@ -896,7 +862,9 @@ def doctor_cmd(quiet: bool) -> None:
     sinfo = shutil.which("sinfo")
     if sinfo:
         t5 = Table(title="HPC (SLURM)", show_lines=False)
-        t5.add_column("", width=2); t5.add_column("check", style="cyan"); t5.add_column("detail")
+        t5.add_column("", width=2)
+        t5.add_column("check", style="cyan")
+        t5.add_column("detail")
         _row(t5, "sinfo", "ok", sinfo)
         console.print(t5)
 
@@ -976,14 +944,16 @@ def _interactive_repl() -> None:
     """
     import os
 
-    has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    has_minimax = bool(os.environ.get("MINIMAX_API_KEY"))
+    from chemaster.agent.factory import build_chem_agent, detect_provider
+    from chemaster.agent.types import TaskInstance
+
+    provider = detect_provider()
 
     console.print(Panel(
         "[bold cyan]ChemMaster[/bold cyan] — natural-language computational "
         "chemistry agent\n\n"
         f"version  [dim]{__version__}[/dim]\n"
-        f"provider [dim]{'anthropic' if has_anthropic else ('minimax' if has_minimax else 'NONE — set ANTHROPIC_API_KEY or MINIMAX_API_KEY')}[/dim]\n\n"
+        f"provider [dim]{provider if provider != 'mock' else 'NONE — set ANTHROPIC_API_KEY / MINIMAX_API_KEY / DASHSCOPE_API_KEY / DEEPSEEK_API_KEY'}[/dim]\n\n"
         "Type a chemistry task in plain language. Examples:\n"
         "  [cyan]Compute the energy of methane[/cyan]\n"
         "  [cyan]Optimize benzene at B3LYP/def2-SVP and run TDDFT[/cyan]\n"
@@ -994,27 +964,19 @@ def _interactive_repl() -> None:
         border_style="cyan",
     ))
 
-    if not (has_anthropic or has_minimax):
+    if provider == "mock":
         console.print("[red]No LLM API key found.[/red] Run "
                       "[cyan]chemaster init[/cyan] to set one up, then re-run.")
         return
 
-    from chemaster.agent.agent import AgentConfig, ChemAgent
-    from chemaster.agent.llm_client import LLMConfig, create_llm
-    from chemaster.agent.tool_loader import build_default_registry
-    from chemaster.agent.types import TaskInstance
-
-    provider = "anthropic" if has_anthropic else "minimax"
-    default_model = {"anthropic": "claude-sonnet-4-6",
-                    "minimax": "MiniMax-M2.7"}[provider]
-    llm = create_llm(LLMConfig(provider=provider, model=default_model))
-    registry = build_default_registry()
-    cfg = AgentConfig(
+    runs_dir = Path(os.environ.get("CHEMASTER_RUNS_DIR", "./runs"))
+    agent = build_chem_agent(
+        provider=provider,
+        runs_dir=runs_dir,
         max_turns=30,
-        runs_dir=Path(os.environ.get("CHEMASTER_RUNS_DIR", "./runs")),
         confirm_callback=_interactive_confirm,
     )
-    agent = ChemAgent(llm=llm, tools=registry, config=cfg)
+    registry = agent.tools
 
     while True:
         try:
@@ -1041,30 +1003,24 @@ def _interactive_repl() -> None:
 
         try:
             traj = agent.run(TaskInstance(description=line))
-            _print_summary(traj, cfg.runs_dir)
-            _write_markdown_report(traj, cfg.runs_dir)
+            _print_summary(traj, runs_dir)
+            _write_markdown_report(traj, runs_dir)
         except Exception as exc:
             console.print(f"[red]Agent crashed:[/red] {type(exc).__name__}: {exc}")
 
 
 def _check_engines() -> None:
-    import shutil
+    from chemaster.engines import probe_engines
 
-    checks = [
-        ("psi4", "psi4"),
-        ("xtb", "xtb"),
-        ("crest", "crest"),
-        ("orca", "orca"),
-        ("multiwfn", "Multiwfn"),
-    ]
     click.echo(f"ChemMaster {__version__} environment check")
     click.echo(f"  ✓ Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-    for label, exe in checks:
-        path = shutil.which(exe)
-        mark = "✓" if path else "⚠"
-        line = f"  {mark} {label}: {'OK' if path else 'not found'}"
-        if path:
-            line += f"  ({path})"
+    for status in probe_engines():
+        mark = "✓" if status.available else "⚠"
+        line = f"  {mark} {status.name}: {'OK' if status.available else 'not found'}"
+        if status.path:
+            line += f"  ({status.path})"
+        if status.detail and not status.available:
+            line += f"  [{status.detail}]"
         click.echo(line)
 
 

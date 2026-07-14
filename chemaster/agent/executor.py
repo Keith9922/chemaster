@@ -17,9 +17,12 @@ For new code use `ChemAgent.run(TaskInstance(description=...))`.
 from __future__ import annotations
 
 import importlib
+import json
 import logging
 import os
 import subprocess
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -72,8 +75,9 @@ class Executor:
         """
         # 预先初始化 psi4 全局状态（rdkit 兼容性 hack，PITFALLS §8）
         try:
-            import psi4
             import os
+
+            import psi4
             os.environ.setdefault("OMP_NUM_THREADS", "1")
             psi4.set_num_threads(1)
             logger.debug("psi4 全局线程数已预设为 1")
@@ -127,7 +131,7 @@ class Executor:
         """
         if "geometry_xyz" not in args:
             for key in ("optimized_geometry_xyz", "xyz"):
-                if key in state and state[key]:
+                if state.get(key):
                     args = {**args, "geometry_xyz": state[key]}
                     break
         return args
@@ -135,14 +139,8 @@ class Executor:
     def _collect_meta(self) -> dict:
         """收集版本快照，写入 meta.json。"""
         meta: dict[str, Any] = {
-            "timestamp": subprocess.run(
-                ["date", "-u", "+%Y-%m-%dT%H:%M:%SZ"],
-                capture_output=True, text=True,
-            ).stdout.strip(),
-            "python_version": subprocess.run(
-                ["python", "--version"],
-                capture_output=True, text=True,
-            ).stdout.strip(),
+            "timestamp": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "python_version": f"Python {sys.version.split()[0]}",
         }
 
         # Git commit（若有）
@@ -165,11 +163,10 @@ class Executor:
 
     def _write_json_sync(self, path: Path, data: dict) -> None:
         """写 JSON 并 fsync 确保持久化。"""
-        path.write_text(
-            __import__("json").dumps(data, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        os.fsync(path.open())
+        with path.open("w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2, ensure_ascii=False)
+            fh.flush()
+            os.fsync(fh.fileno())
 
     # ------------------------------------------------------------------
     # 公共 API

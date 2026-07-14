@@ -142,7 +142,7 @@ def plot_ir(
         warnings.append(f"IMAGINARY_FREQUENCIES_SKIPPED: n={n_imaginary}")
 
     freqs = np.array([f for f in frequencies_cm_inv if f >= 0])
-    ints = np.array([i for f, i in zip(frequencies_cm_inv, intensities_km_per_mol) if f >= 0])
+    ints = np.array([i for f, i in zip(frequencies_cm_inv, intensities_km_per_mol, strict=False) if f >= 0])
 
     if freqs.size == 0:
         return {
@@ -156,7 +156,7 @@ def plot_ir(
     x = np.linspace(x_min, x_max, 2000)
     sigma = broadening_cm_inv / (2 * np.sqrt(2 * np.log(2)))  # FWHM -> sigma
     spectrum = np.zeros_like(x)
-    for f, i in zip(freqs, ints):
+    for f, i in zip(freqs, ints, strict=False):
         spectrum += i * np.exp(-0.5 * ((x - f) / sigma) ** 2)
 
     # 绘图

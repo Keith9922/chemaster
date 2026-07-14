@@ -2,15 +2,20 @@
 
 本文档记录 ChemMaster 毕设论文 §4 测试与验证章节中所有数据点的复现方式。
 
+> **2026-07-11 更新**：论文最终版数据来自 **psi4 实跑**脚本（下方按现状修
+> 订）；早期 Gaussian 版 `run_s22.py` 仅在有 g16/g09 许可时可用。工程指标
+> 最新数字（答辩后重跑口径）见 `benchmarks/engineering_metrics/*.json`。
+
 ## 1. 化学层 benchmark
 
 ### 1.1 S22 弱相互作用集
 
 ```bash
-# 运行所有 5 个体系
-python scripts/benchmarks/run_s22.py
+# psi4 实跑（论文最终数据源）：全 22 体系
+python scripts/benchmarks/run_s22_full_from_ase.py     # → summary_full.json
+python scripts/benchmarks/run_s22_psi4.py              # 子集快跑
 
-# 运行单个体系
+# 早期 Gaussian 版（需要本地 g16/g09）
 python scripts/benchmarks/run_s22.py water_dimer
 ```
 

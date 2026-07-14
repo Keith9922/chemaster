@@ -1,5 +1,16 @@
 {
-  "data_source": "real_simulation",
-  "ok": false,
-  "note": "No tool calls observed; mock LLM may not have triggered tools."
+  "data_source": "real_agent_loop",
+  "method": "5 anchor tasks run through ChemAgent with build_routing_responder; counts decision_authority tags in trajectory.",
+  "n_tasks_run": 5,
+  "n_tasks_completed": 5,
+  "across_all_tasks": {
+    "total_tool_calls": 10,
+    "agent_silent": 8,
+    "user_binary_confirm": 2,
+    "user_chemistry_decision": 0,
+    "system_events": 0
+  },
+  "agent_step_ratio_pct": 80.0,
+  "acceptance_target_pct": 70.0,
+  "pass_overall": true
 }

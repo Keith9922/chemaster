@@ -113,12 +113,13 @@ if TEXTUAL_AVAILABLE:
             return "\n".join(lines)
 
         def _render_engine_status(self) -> str:
-            import shutil
-            engines = ["g16", "g09", "bdf", "momap", "psi4", "orca", "xtb"]
-            available = [e for e in engines if shutil.which(e)]
-            unavailable = [e for e in engines if e not in available]
+            from chemaster.engines import probe_engines
+
+            statuses = probe_engines()
+            available = [s.name for s in statuses if s.available]
+            unavailable = [s.name for s in statuses if not s.available]
             return (
-                "[b]Engines on PATH[/b]\n"
+                "[b]Engines[/b]\n"
                 f"[green]ready[/green]: {' '.join(available) if available else '(none)'}\n"
                 f"[dim red]missing[/dim red]: {' '.join(unavailable[:4])}..."
             )
@@ -141,7 +142,9 @@ if TEXTUAL_AVAILABLE:
             if self._pending_card:
                 self._handle_card_input(text, chat)
                 return
-            asyncio.create_task(self._run_agent_task(text, chat))
+            self._agent_task = asyncio.create_task(
+                self._run_agent_task(text, chat)
+            )
 
         def _handle_command(self, text: str, chat: RichLog) -> None:
             cmd = text.lower().strip()
@@ -215,10 +218,35 @@ if TEXTUAL_AVAILABLE:
             self._task_history.append({"task": text, "ok": None})
             self._refresh_panels()
 
+            def _on_step(step, turn, max_turns):
+                """Called from the worker thread on every agent loop iteration."""
+                lines: list[str] = []
+                lines.append(f"[dim]── step {turn}/{max_turns} ──[/dim]")
+                am = getattr(step, "assistant_message", None)
+                if am is not None:
+                    if am.content:
+                        body = am.content.strip()
+                        if len(body) > 600:
+                            body = body[:600] + "…"
+                        lines.append(f"[b]assistant[/b]: {body}")
+                    for tc in getattr(am, "tool_calls", []) or []:
+                        args = getattr(tc, "arguments", None) or getattr(tc, "args", None) or {}
+                        args_str = str(args)
+                        if len(args_str) > 200:
+                            args_str = args_str[:200] + "…"
+                        lines.append(f"[cyan]→ tool[/cyan] {tc.name}({args_str})")
+                for tr in getattr(step, "tool_responses", []) or []:
+                    obs = (tr.content or "").strip()
+                    if len(obs) > 400:
+                        obs = obs[:400] + "…"
+                    lines.append(f"[green]← obs[/green]: {obs}")
+                msg = "\n".join(lines)
+                self.call_from_thread(chat.write, msg)
+
             try:
                 from chemaster.agent.types import TaskInstance
-                task = TaskInstance(intent=text)
-                result = await asyncio.to_thread(self._agent.run, task)
+                task = TaskInstance(description=text)
+                result = await asyncio.to_thread(self._agent.run, task, _on_step)
                 ok = (result.status == "completed")
                 chat.write(f"[green]✓ task done[/green] (status={result.status})")
                 if hasattr(self._agent, "_finish_payload") and self._agent._finish_payload:

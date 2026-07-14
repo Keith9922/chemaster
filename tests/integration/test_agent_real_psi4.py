@@ -35,11 +35,9 @@ from chemaster.agent.tool_loader import build_default_registry
 from chemaster.agent.types import (
     AssistantMessage,
     Dialog,
-    Role,
     TaskInstance,
     ToolMessage,
 )
-
 
 # ──────────────────────────────────────────────────────────────────────────
 # Simulated chemist responder

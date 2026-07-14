@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import logging
 import re
-import shutil
 import subprocess
 import tempfile
 import time
@@ -43,12 +42,37 @@ mcp = FastMCP("chem.calc_gaussian")
 
 
 def _check_engine() -> tuple[str | None, str | None]:
-    """Return (g16 / g09 path, version) or (None, None)."""
-    for cand in ("g16", "g09"):
-        path = shutil.which(cand)
-        if path:
-            return path, cand
-    return None, None
+    """Return (g16 / g09 path, binary name) or (None, None)."""
+    from chemaster.mcp._common import probe_binary
+    path, _ = probe_binary(("g16", "g09"))
+    if not path:
+        return None, None
+    return path, path.rsplit("/", 1)[-1]
+
+
+def _engine_missing() -> dict[str, Any]:
+    from chemaster.mcp._common import err
+    return err(
+        "ENGINE_NOT_FOUND",
+        "g16 / g09 not on PATH",
+        "Gaussian is commercial and commonly absent — fall back to the "
+        "psi4 equivalents (calc_psi4_optimize / _frequency / _tddft / "
+        "_single_point), or add g16 to PATH if licensed.",
+    )
+
+
+def _run_failed(gaussian_err: str, log_path: str) -> dict[str, Any]:
+    from chemaster.mcp._common import err
+    if gaussian_err == "TIMEOUT":
+        return err("TIMEOUT", gaussian_err,
+                   "Increase timeout_s and resubmit; large systems may also "
+                   "need fewer states or a smaller basis.",
+                   log_path=log_path)
+    return err("GAUSSIAN_FAILED", gaussian_err,
+               "Read the log tail: common causes are a basis set missing "
+               "for an element, SCF non-convergence (try guess=read or a "
+               "smaller basis first), or an inconsistent charge/multiplicity.",
+               log_path=log_path)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -554,7 +578,7 @@ def _execute_gaussian_job(
     timeout_s: int,
 ) -> tuple[bool, str, str]:
     """Drive g16 on a generated input. Returns (ok, stdout_path, stderr)."""
-    g_path, g_name = _check_engine()
+    g_path, _g_name = _check_engine()
     if not g_path:
         return False, "", "ENGINE_NOT_FOUND"
 
@@ -617,11 +641,7 @@ def optimize(
     ok, log_path, err = _execute_gaussian_job(inp, wd, "opt", timeout_s)
     wall = round(time.time() - wall_start, 1)
     if not ok:
-        if err == "TIMEOUT":
-            return {"ok": False, "error_code": "TIMEOUT",
-                    "details": f"timeout after {timeout_s}s", "log_path": log_path}
-        return {"ok": False, "error_code": "GAUSSIAN_FAILED",
-                "details": err, "log_path": log_path}
+        return _run_failed(err, log_path)
 
     log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
     converged = "Stationary point found" in log_text
@@ -666,8 +686,7 @@ def frequency(
     """
     g_path, g_name = _check_engine()
     if not g_path:
-        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
-                "details": "g16 / g09 not on PATH"}
+        return _engine_missing()
 
     wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_freq_"))
     geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
@@ -679,8 +698,7 @@ def frequency(
     ok, log_path, err = _execute_gaussian_job(inp, wd, "freq", timeout_s)
     wall = round(time.time() - wall_start, 1)
     if not ok:
-        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
-                "details": err, "log_path": log_path}
+        return _run_failed(err, log_path)
 
     log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
     freqs = _parse_frequencies(log_text)
@@ -726,8 +744,7 @@ def tddft(
     """
     g_path, g_name = _check_engine()
     if not g_path:
-        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
-                "details": "g16 / g09 not on PATH"}
+        return _engine_missing()
 
     wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_tddft_"))
     geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
@@ -744,8 +761,7 @@ def tddft(
     ok, log_path, err = _execute_gaussian_job(inp, wd, "tddft", timeout_s)
     wall = round(time.time() - wall_start, 1)
     if not ok:
-        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
-                "details": err, "log_path": log_path}
+        return _run_failed(err, log_path)
 
     log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
     states = _parse_excited_states(log_text)
@@ -779,8 +795,7 @@ def opt_excited_state(
     """TD-opt: optimize a specific excited-state geometry."""
     g_path, g_name = _check_engine()
     if not g_path:
-        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
-                "details": "g16 / g09 not on PATH"}
+        return _engine_missing()
 
     wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_topt_"))
     geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
@@ -793,8 +808,7 @@ def opt_excited_state(
     ok, log_path, err = _execute_gaussian_job(inp, wd, "topt", timeout_s)
     wall = round(time.time() - wall_start, 1)
     if not ok:
-        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
-                "details": err, "log_path": log_path}
+        return _run_failed(err, log_path)
 
     log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
     converged = "Stationary point found" in log_text
@@ -830,8 +844,7 @@ def single_point(
     """Single-point energy at a fixed geometry."""
     g_path, g_name = _check_engine()
     if not g_path:
-        return {"ok": False, "error_code": "ENGINE_NOT_FOUND",
-                "details": "g16 / g09 not on PATH"}
+        return _engine_missing()
 
     wd = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="chemaster_g16_sp_"))
     geom = _xyz_to_gaussian_geom(geometry_xyz, charge, multiplicity)
@@ -843,8 +856,7 @@ def single_point(
     ok, log_path, err = _execute_gaussian_job(inp, wd, "sp", timeout_s)
     wall = round(time.time() - wall_start, 1)
     if not ok:
-        return {"ok": False, "error_code": "TIMEOUT" if err == "TIMEOUT" else "GAUSSIAN_FAILED",
-                "details": err, "log_path": log_path}
+        return _run_failed(err, log_path)
 
     log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
     energy = _parse_scf_energy(log_text)

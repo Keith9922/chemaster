@@ -20,11 +20,9 @@ focus on the tool-level contract.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Shared lazy imports — load the module once per test session
@@ -104,13 +102,16 @@ class TestChemasterRun:
     def test_runs_dir_cleaned_up_by_default(self, srv, monkeypatch, tmp_path):
         """Without CHEMASTER_KEEP_MCP_RUNS, the temp runs dir is rm-rf'd."""
         monkeypatch.delenv("CHEMASTER_KEEP_MCP_RUNS", raising=False)
-        # Spy on tempfile.mkdtemp to capture the path used
+        # Spy on tempfile.mkdtemp to capture the path used. Filter by the
+        # server's prefix: other layers (e.g. calc_psi4 log dirs) also call
+        # mkdtemp during the run and have their own lifecycle.
         import tempfile as _tf
         captured = {}
         real_mkdtemp = _tf.mkdtemp
         def spy(*args, **kw):
             p = real_mkdtemp(*args, **kw)
-            captured["path"] = p
+            if "chemaster_mcp_runs_" in p:
+                captured["path"] = p
             return p
         monkeypatch.setattr(srv.tempfile, "mkdtemp", spy)
         srv.chemaster_run("compute H2 energy", provider="mock", max_turns=5)
@@ -126,7 +127,8 @@ class TestChemasterRun:
         real_mkdtemp = _tf.mkdtemp
         def spy(*args, **kw):
             p = real_mkdtemp(*args, **kw)
-            captured["path"] = p
+            if "chemaster_mcp_runs_" in p:
+                captured["path"] = p
             return p
         monkeypatch.setattr(srv.tempfile, "mkdtemp", spy)
         try:
@@ -183,7 +185,10 @@ class TestSummarizeTrajectory:
         """Build a minimal Trajectory by hand with a finish tool call, then
         verify the summarizer picks up the payload."""
         from chemaster.agent.types import (
-            AssistantMessage, StepRecord, ToolCall, Trajectory,
+            AssistantMessage,
+            StepRecord,
+            ToolCall,
+            Trajectory,
         )
         traj = Trajectory()
         traj.add_step(StepRecord(
@@ -208,7 +213,7 @@ class TestSummarizeTrajectory:
     def test_agent_attr_takes_priority_over_trajectory(self, srv):
         """If the agent has _finish_payload set (the normal happy path),
         it should win over the trajectory's finish_payload."""
-        from chemaster.agent.types import StepRecord, Trajectory
+        from chemaster.agent.types import Trajectory
         traj = Trajectory()
         traj.finish("completed", {"from": "trajectory"})
 

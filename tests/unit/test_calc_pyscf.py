@@ -5,13 +5,12 @@ import pytest
 
 pyscf = pytest.importorskip("pyscf", reason="PySCF not installed")
 
-from chemaster.mcp.calc_pyscf.server import (
+from chemaster.mcp.calc_pyscf.server import (  # noqa: E402
     _check_engine,
     _xyz_to_pyscf_atom,
     single_point,
     x2c_soc,
 )
-
 
 H2_XYZ = """2
 H2 minimal

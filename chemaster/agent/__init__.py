@@ -85,7 +85,7 @@ from chemaster.agent.types import (
     UserMessage,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022 — 按功能分组排列比字母序更易读
     # V2 agent
     "AgentConfig",
     "BaseAgent",

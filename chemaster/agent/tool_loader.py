@@ -70,6 +70,75 @@ TOOL_MANIFEST: list[_ToolDecl] = [
         is_read_only=True,
     ),
 
+    # formulas ─────────────────────────────────────────────────────────────
+    # Deterministic chemistry formulas. CLAUDE.md §5.1: LLM does not do
+    # floating-point math. These tools wrap chemaster.kb.formulas.* so the
+    # agent gets exact numerical results instead of LLM arithmetic.
+    _ToolDecl(
+        exposed_name="formula_krisc_marcus",
+        module="chemaster.mcp.formulas.server",
+        function="compute_krisc_marcus",
+        description=(
+            "RISC (reverse intersystem crossing) rate constant k_RISC via Marcus "
+            "high-T limit. Inputs: ΔE_ST (eV), SOC (cm⁻¹), reorganization energy "
+            "λ (eV), T (K). Use whenever you have these four quantities — never "
+            "hand-compute the exponential/sqrt."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_kf_strickler_berg",
+        module="chemaster.mcp.formulas.server",
+        function="compute_kf_strickler_berg",
+        description=(
+            "Radiative rate constant k_F via Strickler-Berg. Inputs: emission "
+            "energy E (eV), oscillator strength f. Returns k_F (s⁻¹) and "
+            "radiative lifetime (ns)."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_kisc_marcus",
+        module="chemaster.mcp.formulas.server",
+        function="compute_kisc_marcus",
+        description="ISC (S→T) rate via Marcus high-T limit. Same input shape as k_RISC.",
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_plqy",
+        module="chemaster.mcp.formulas.server",
+        function="compute_plqy",
+        description="Photoluminescence quantum yield Φ_F = k_F / (k_F + k_NR + k_ISC).",
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_boltzmann",
+        module="chemaster.mcp.formulas.server",
+        function="compute_boltzmann_weights",
+        description=(
+            "Boltzmann conformer populations from relative energies (kcal/mol). "
+            "Always use for multi-conformer averaging — DO NOT take arithmetic mean."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_eyring",
+        module="chemaster.mcp.formulas.server",
+        function="compute_eyring",
+        description=(
+            "Eyring rate constant k = κ·(kBT/h)·exp(-ΔG‡/RT). Inputs: ΔG‡ in "
+            "kJ/mol, T in K. Use for any TST rate from activation free energy."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="formula_arrhenius",
+        module="chemaster.mcp.formulas.server",
+        function="compute_arrhenius",
+        description="Arrhenius rate k = A·exp(-Ea/RT). Use when you have A and Ea.",
+        is_read_only=True,
+    ),
+
     # io_ase ────────────────────────────────────────────────────────────────
     _ToolDecl(
         exposed_name="io_smiles_to_xyz",
@@ -151,6 +220,41 @@ TOOL_MANIFEST: list[_ToolDecl] = [
             "S1/T1 energies, oscillator strengths, and ΔE_ST for TADF analysis. "
             "Default tda=True (Tamm-Dancoff) avoids triplet-instability issues "
             "(PITFALLS §2.8). For charge-transfer states, prefer ωB97X-D over B3LYP."
+        ),
+        is_long_running=True,
+    ),
+    _ToolDecl(
+        exposed_name="io_compute_descriptors",
+        module="chemaster.mcp.io_ase.server",
+        function="compute_descriptors",
+        description=(
+            "Compute deterministic geometry descriptors (bond lengths, "
+            "bond angles, dihedrals) from an XYZ block. **Use this whenever "
+            "you need to report any bond length, angle, or torsion** — do NOT "
+            "compute these yourself from coordinates. LLMs routinely get the "
+            "trigonometry subtly wrong (this is the 'LLM doesn't do math' "
+            "rule from CLAUDE.md §5.1, applied to geometry). Atom indices are "
+            "0-based in the order atoms appear in the XYZ. Pass `bonds=[[i,j]]`, "
+            "`angles=[[i,j,k]]` (j is the vertex), `dihedrals=[[i,j,k,l]]`."
+        ),
+        is_read_only=True,
+    ),
+    _ToolDecl(
+        exposed_name="calc_psi4_optimize_excited_state",
+        module="chemaster.mcp.calc_psi4.server",
+        function="optimize_excited_state",
+        description=(
+            "Excited-state geometry optimization (TDA only) via psi4. Use this "
+            "AFTER calc_psi4_optimize (ground state) to get the *adiabatic* "
+            "S1/T1/Sn/Tn geometry — the input to adiabatic ΔE_ST and Stokes "
+            "shift. Args: target_state (1=S1/T1, 2=S2/T2, ...), "
+            "target_spin ('singlet' / 'triplet'), n_states (≥ target_state). "
+            "WARNING: psi4 1.10 has FD-only TDDFT gradients, so cost scales as "
+            "3·N_atom per opt step. ≤20 atoms is realistic on a laptop; bigger "
+            "needs HPC. Tip: for molecules that break symmetry on excitation "
+            "(HCHO pyramidalization etc.), pre-perturb the input geometry by "
+            "~0.2 Å along the expected distortion mode, otherwise the optimizer "
+            "may converge in 1 step at the GS stationary point."
         ),
         is_long_running=True,
     ),
@@ -549,4 +653,4 @@ def _try_register_kb(registry: ToolRegistry) -> None:
         ))
 
 
-__all__ = ["build_default_registry", "TOOL_MANIFEST"]
+__all__ = ["TOOL_MANIFEST", "build_default_registry"]

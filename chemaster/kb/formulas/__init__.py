@@ -10,4 +10,4 @@
 
 from chemaster.kb.formulas import constants, kinetics, photophysics, thermo, units
 
-__all__ = ["constants", "units", "thermo", "kinetics", "photophysics"]
+__all__ = ["constants", "kinetics", "photophysics", "thermo", "units"]

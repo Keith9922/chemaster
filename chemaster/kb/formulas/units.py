@@ -60,7 +60,7 @@ def with_unit(value: float, unit: str) -> dict:
 
 # ---- 化学常用快捷换算 ----
 # 全部基于 constants.py 中的精确比例，比 pint 走通用换算更快也更可读。
-from chemaster.kb.formulas.constants import get as _get_const   # noqa: E402
+from chemaster.kb.formulas.constants import get as _get_const  # noqa: E402
 
 
 def hartree_to_kcal_per_mol(x: float) -> float:

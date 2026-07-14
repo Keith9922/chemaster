@@ -44,7 +44,7 @@ def _check_engine() -> tuple[str | None, str | None]:
 
 def _xyz_to_pyscf_atom(xyz: str) -> str:
     """Convert standard XYZ string to PySCF 'C 0 0 0; H 0 0 1' format."""
-    lines = [l for l in xyz.strip().splitlines() if l.strip()]
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Empty XYZ")
     # Skip atom-count + comment lines if present
@@ -56,7 +56,7 @@ def _xyz_to_pyscf_atom(xyz: str) -> str:
         atom_lines = lines
     if not atom_lines:
         raise ValueError("No atom lines found in XYZ")
-    return "; ".join(l.strip() for l in atom_lines)
+    return "; ".join(ln.strip() for ln in atom_lines)
 
 
 @mcp.tool()
@@ -117,9 +117,11 @@ def single_point(
             "error_code": "INVALID_OPTION",
             "details": f"relativistic={relativistic!r} not in "
                        "('none', 'scalar', 'soc')",
+            "suggestion": "Pass relativistic='none' (non-rel), 'scalar' "
+                          "(X2C-1e scalar) or 'soc' (two-component GKS).",
         }
 
-    from pyscf import gto, dft, scf
+    from pyscf import dft, gto, scf
 
     spin = multiplicity - 1
     mol = gto.M(
@@ -159,13 +161,29 @@ def single_point(
     wall = time.time() - t0
     converged = bool(mf.converged)
 
-    warnings: list[str] = []
     if not converged:
-        warnings.append(
-            f"SCF did not converge in {max_cycle} cycles. "
-            "Consider increasing max_cycle, switching guess, or starting "
-            "from a smaller-basis converged density."
-        )
+        # 与其余 server 的契约一致：失败 → ok=False（此前 ok=True 与
+        # error_code 并存，agent 侧按 ok 判读会把不收敛当成功；x2c_soc
+        # 也会拿不收敛的能量继续算修正值）。
+        return {
+            "ok": False,
+            "error_code": "SCF_NOT_CONVERGED",
+            "details": f"SCF did not converge in {max_cycle} cycles.",
+            "suggestion": (
+                "Increase max_cycle, switch the initial guess, or start "
+                "from a smaller-basis converged density."
+            ),
+            "data_source": "real_pyscf",
+            "engine": f"pyscf {version}",
+            "method": method,
+            "basis": basis,
+            "relativistic": relativistic,
+            "charge": charge,
+            "multiplicity": multiplicity,
+            "energy_hartree_unconverged": float(energy),
+            "converged": False,
+            "wall_time_s": round(wall, 3),
+        }
 
     return {
         "ok": True,
@@ -178,12 +196,11 @@ def single_point(
         "multiplicity": multiplicity,
         "energy_hartree": float(energy),
         "energy_eV": float(energy) * HARTREE_TO_EV,
-        "converged": converged,
+        "converged": True,
         "n_basis": int(mol.nao_nr()),
         "n_electrons": int(mol.nelectron),
         "wall_time_s": round(wall, 3),
-        "warnings": warnings,
-        "error_code": "SCF_NOT_CONVERGED" if not converged else None,
+        "warnings": [],
     }
 
 
@@ -218,8 +235,8 @@ def x2c_soc(
             "suggestion": "pip install pyscf",
         }
 
-    common = dict(geometry_xyz=geometry_xyz, method=method, basis=basis,
-                  charge=charge, multiplicity=multiplicity, max_cycle=max_cycle)
+    common = {"geometry_xyz": geometry_xyz, "method": method, "basis": basis,
+              "charge": charge, "multiplicity": multiplicity, "max_cycle": max_cycle}
     nr = single_point(relativistic="none", **common)
     if not nr.get("ok"):
         return {**nr, "stage_failed": "nr"}

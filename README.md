@@ -9,7 +9,7 @@
 > 本地运行、由大模型驱动、与终端环境集成的计算化学 Agent 系统。
 > 设计原则：**Agent 承担操作性工作（输入构造、提交、解析、错误重试），化学决策权（方法/基组/泛函/溶剂模型）通过推荐机制保留给研究者。**
 
-[![Tests](https://img.shields.io/badge/tests-336%20passed-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-429%20unit%20passed-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
@@ -89,7 +89,7 @@ ChemMaster 自己就是一个 MCP server——把下面这段加到 Claude Code 
 
 ```bash
 python -m pytest tests/unit/ -q
-# 336 passed, 2 skipped
+# 429 passed, 2 skipped
 ```
 
 ## 已支持的计算后端
@@ -111,19 +111,29 @@ python -m pytest tests/unit/ -q
 
 ### 系统层指标（ChemMaster 自己负责）
 
+**真实大模型端到端**（MiniMax-M2.7 真实 API，面对全部 54 个注册工具，2026-07-12 采集）：
+
 | 指标 | 结果 | 数据源 |
 |---|---|---|
-| **应答率 + 工具调用正确性** | **5 类任务 × 20 条中英文 phrasing = 100 测试，agent_ok 100%，路由正确率 98.0%** | [`benchmarks/engineering_metrics/execution_correctness.json`](benchmarks/engineering_metrics/execution_correctness.json) |
+| **路由正确性（真 LLM）** | **98.0%（98/100）**，同一套 5 类 × 中英双语题库；语义合法工具集判据（同批数据在 mock 版"单一期望工具"判据下为 67%——差值主要是判据 artifact，例如用 const_convert 回答单位换算本就正确） | [`execution_correctness_real_llm.json`](benchmarks/engineering_metrics/execution_correctness_real_llm.json) |
+| **故障自愈（真 LLM）** | **96%（24/25 妥善处置：17 次 L1 依 suggestion 自主恢复 + 7 次干净升级 ask_user；1 次失败如实记录）** | [`fault_recovery_real_llm.json`](benchmarks/engineering_metrics/fault_recovery_real_llm.json) |
+| **自主步占比·指标 3c（真 LLM）** | **72.7%**（≥70% 目标达成；5 anchor 任务 22 次带权步：16 自主 / 4 二元确认 / 2 化学决策） | [`trajectory_breakdown_real_llm.json`](benchmarks/engineering_metrics/trajectory_breakdown_real_llm.json) |
+
+**系统稳定性基线**（真 agent loop + mock 确定性路由——测系统而非基座模型）：
+
+| 指标 | 结果 | 数据源 |
+|---|---|---|
+| 应答率 + 工具调用正确性 | 5 类任务 × 20 条中英文 phrasing = 100 测试，agent_ok 100%，路由正确率 100% | [`benchmarks/engineering_metrics/execution_correctness.json`](benchmarks/engineering_metrics/execution_correctness.json) |
 | **压力测试（扩展集）** | **10 分子 × ~33 phrasings = 334 测试，路由正确率 100%，agent_ok 100%** | [`benchmarks/engineering_metrics/stress_test.json`](benchmarks/engineering_metrics/stress_test.json) |
-| **大规模调用稳定性** | **N = 2000 次重复同一任务，0 失败，唯一工具调用序列；mean 131 ms ± 4.9 ms，p99 = 150 ms，散点+滚动均值无漂移** | [`benchmarks/engineering_metrics/scalability.json`](benchmarks/engineering_metrics/scalability.json) |
-| **操作性故障自动恢复率** | **84%（21/25）**，5 类故障（SCF guess / 磁盘满 / 输入语法 / 网络瞬时异常 / 超时）×  5 次注入 | [`benchmarks/engineering_metrics/fault_recovery.json`](benchmarks/engineering_metrics/fault_recovery.json) |
+| **大规模调用稳定性** | **N = 10000 次重复同一任务，0 失败，唯一工具调用序列；mean 128.9 ms ± 4.5 ms，p99 = 139 ms，无漂移** | [`benchmarks/engineering_metrics/scalability.json`](benchmarks/engineering_metrics/scalability.json) |
+| **操作性故障处置成功率** | **25/25（100%）**，5 类故障（SCF guess / 磁盘满 / 输入语法 / 网络瞬时异常 / 超时）× 5 次注入；判定口径 = L1 三次内自主恢复 **或** 干净升级 ask_user（论文 §4.3.1 采用更严格的"纯 L1 恢复"口径，为 84%） | [`benchmarks/engineering_metrics/fault_recovery.json`](benchmarks/engineering_metrics/fault_recovery.json) |
 | **MCP 跨客户端协议合规** | **4/4 server 通过 initialize → list_tools → call_tool**（const / kb / calc_psi4 + 整个 agent 内核作为 `chemaster.mcp.agent.server`）| [`benchmarks/use_cases/mcp_cross_client/probe_results.json`](benchmarks/use_cases/mcp_cross_client/probe_results.json) |
 | **硬例子真跑（不同元素/电荷/自旋）** | **11/11 case 在 psi4 上 OK**（含 HCl / H2S / O₂ 三重态 / 苯 / 乙醇 / OH⁻ / NH₄⁺）| [`benchmarks/engineering_metrics/hard_cases.json`](benchmarks/engineering_metrics/hard_cases.json) |
-| **单元测试** | **336 passed, 2 skipped**（covers agent loop, MCP servers, KB, user_kb, method_selection, notify, mcp.agent.server）| `python -m pytest tests/unit/` |
+| **单元测试** | **429 passed, 2 skipped**（覆盖 agent loop、L1/L2/L3 权限分级、17 个 MCP server、KB、user_kb、web/tui 前端、协作式取消、LLM 重试）| `python -m pytest tests/unit/` |
 | **方法选择规则可用户覆盖** | 11 条内置规则；用户 `~/.chemaster/user_kb/rules/method_selection.yaml` 按 id 覆盖；命中规则的 id + rationale 在 L2 recommend 卡片中显式回显 | `chemaster kb method-rules` |
+| Trajectory 自主步占比（mock 路由基线）| 80%（5 anchor 任务 10 次工具调用：8 自主 / 2 二元确认 / 0 化学决策）| [`benchmarks/engineering_metrics/trajectory_breakdown.json`](benchmarks/engineering_metrics/trajectory_breakdown.json) |
 | 提交摩擦时间节省率（指标 5）| 协议固化，未采集 — 需要 2-3 名真人被试 | [`docs/BENCHMARK_PROTOCOL.md`](docs/BENCHMARK_PROTOCOL.md) §3.2 |
 | 化学决策推荐接受率（指标 3b）| 协议固化，未采集 — 需要真人被试 | 同上 §3.4 |
-| Trajectory 自主步占比（指标 3c）| 协议固化，未采集 — 需要真实 LLM API key | 同上 §3.5 |
 
 ### 软件层（化学精度，由后端化学软件决定）
 
@@ -148,7 +158,7 @@ chemaster/
 │   │   ├── test_fixtures.py   # 334-prompt 交叉积（10 分子 × 5 任务 × 多语 phrasing）
 │   │   └── user_kb.py         # 用户级 KB 与偏好管理
 │   ├── notify.py              # 任务完成桌面通知（跨平台）
-│   ├── mcp/                   # 15 个 MCP server
+│   ├── mcp/                   # 17 个 MCP server
 │   │   ├── agent/             # ★ ChemMaster-as-MCP-server（agent 内核也对外暴露）
 │   │   └── ...                # const / kb / calc_psi4 / calc_gaussian / calc_bdf / ...
 │   ├── kb/                    # 知识库
@@ -195,7 +205,7 @@ chemaster/
 
 ![对比](paper/figures/v4/fig_comparison.png)
 
-完整对比与讨论见毕业论文 §1.2 与 §4.6（[paper/thesis_draft.docx](paper/thesis_draft.docx)）。
+完整对比与讨论见毕业论文 §1.2 与 §4.5（[paper/thesis_draft.docx](paper/thesis_draft.docx)）。
 
 ## 开发状态
 
@@ -204,7 +214,7 @@ chemaster/
 | 部分 | 状态 |
 |---|---|
 | Agent 内核（tool-use, 权限分级, trajectory）| ✅ |
-| 13 个 MCP server | ✅ |
+| 17 个 MCP server / 54 个注册工具 | ✅ |
 | psi4、xTB 实测可用 | ✅ |
 | Gaussian、BDF、MOMAP 真实接入测试 | ⏸ 软件许可受限，留作后续工作 |
 | CLI / TUI / Web 三前端 | ✅ |

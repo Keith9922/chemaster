@@ -7,12 +7,29 @@ single_point tool 的参考实现。
 from __future__ import annotations
 
 import logging
-import re
+import os
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+
+from chemaster.mcp.calc_psi4.parsers import (
+    get_ir_intensities as _get_ir_intensities,
+)
+from chemaster.mcp.calc_psi4.parsers import (
+    parse_frequencies_from_output as _parse_frequencies_from_output,
+)
+from chemaster.mcp.calc_psi4.parsers import (
+    parse_opt_iterations_from_output as _parse_opt_iterations_from_output,
+)
+from chemaster.mcp.calc_psi4.parsers import (
+    parse_tdscf_from_output as _parse_tdscf_from_output,
+)
+from chemaster.mcp.calc_psi4.parsers import (
+    parse_thermal_from_output as _parse_thermal_from_output,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +67,7 @@ def _au_to_debye() -> float:
 
 def _electron_count(xyz: str, charge: int) -> int:
     """从 XYZ 几何字串推算总价电子数（用于多重度校验）。"""
-    lines = [l.strip() for l in xyz.strip().split("\n") if l.strip()]
+    lines = [ln.strip() for ln in xyz.strip().split("\n") if ln.strip()]
     total = 0
     for line in lines:
         parts = line.split()
@@ -101,44 +118,92 @@ def _xyz_to_geom_block(xyz: str, charge: int, multiplicity: int) -> str:
       - 有 comment 行：'3\\nWater\\nO ...\\nH ...\\nH ...'
       - 无 comment 行：'3\\nO ...\\nH ...\\nH ...'
     """
-    lines = [l for l in xyz.strip().splitlines() if l.strip()]
+    from chemaster.mcp._common import xyz_atom_lines
+
+    lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Empty geometry_xyz")
 
-    # 检查是否已经是 xyz+ 格式（第 1 行含两个整数 Token）
+    # 已经是 psi4 xyz+ 格式（第 1 行是 "charge multiplicity"）→ 原样透传。
     first = lines[0].strip().split()
     if len(first) == 2:
         try:
             int(first[0])
             int(first[1])
-            # 已经是 xyz+ 格式，直接追加 symmetry 行
             coords = "\n".join(lines) + "\n"
             return f"{coords}symmetry c1\n"
         except ValueError:
             pass
 
-    # 标准 XYZ：第 1 行是原子数，第 2 行是 comment 或首条坐标
-    try:
-        n_atoms = int(lines[0].strip())
-    except ValueError:
-        raise ValueError(
-            f"geometry_xyz first line must be atom count (int), got {lines[0]!r}"
-        )
-
-    if len(lines) == n_atoms + 1:
-        # 无 comment 行：lines[0]=n_atoms, lines[1:]=coordinates
-        coord_lines = lines[1:]
-    elif len(lines) == n_atoms + 2:
-        # 有 comment 行：lines[0]=n_atoms, lines[1]=comment, lines[2:]=coordinates
-        coord_lines = lines[2:]
-    else:
-        raise ValueError(
-            f"geometry_xyz length {len(lines)} does not match "
-            f"n_atoms={n_atoms} (expected {n_atoms+1} or {n_atoms+2} lines)"
-        )
-
+    # 标准 XYZ（带/不带原子数 header、带/不带注释行）或裸原子行 —— 统一走
+    # 共享解析器（内容判据，接受真 LLM 常给的裸原子行；calc 与 _common 不再
+    # 两套容忍度）。
+    coord_lines = xyz_atom_lines(xyz)
     coords = "\n".join(coord_lines)
     return f"{charge} {multiplicity}\n{coords}\nsymmetry c1\n"
+
+
+def _psi4_session(
+    geometry_xyz: str,
+    charge: int,
+    multiplicity: int,
+    memory_gb: float,
+    n_threads: int,
+    log_name: str,
+    options: dict[str, Any],
+):
+    """为一次工具调用准备隔离的 psi4 会话。
+
+    psi4 的 options / scratch 是进程级全局状态：不重置的话，同进程里上一个
+    工具设置的选项会泄漏进来（实测：TD-opt 留下的 optking + tdscf 选项会毒化
+    随后的普通 tddft 调用，表现为依赖测试顺序的失败）。
+
+    输出日志写到每次调用独立的临时目录——并发调用不会互相覆盖，CWD 也不再
+    被 *_output.log 弄脏。
+
+    Returns:
+        (psi4 module, psi4 version str, molecule handle, output log path)
+    """
+    import psi4
+    from psi4 import __version__ as psi4_version
+
+    try:
+        psi4.core.clean()  # 清掉上一次计算的 scratch
+    except Exception:
+        pass
+    psi4.core.clean_options()  # 所有选项回到 psi4 默认值
+
+    psi4.set_memory(f"{int(memory_gb)} GB")
+    psi4.set_num_threads(n_threads)
+
+    # Agent 在 _initialize 里把 CHEMASTER_ENGINE_LOG_DIR 指到
+    # runs/<task>/engine_logs/ —— 日志随任务归档（§5.6 复现承诺）。
+    # 无 agent 语境（直接调工具 / 单测）时退回独立临时目录。
+    archive = os.environ.get("CHEMASTER_ENGINE_LOG_DIR")
+    if archive:
+        out_dir = Path(archive)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # 时间戳前缀防同任务多次同类调用互相覆盖
+        output_path = str(out_dir / f"{int(time.time() * 1000)}_{log_name}")
+    else:
+        out_dir = Path(tempfile.mkdtemp(prefix="chemaster_psi4_"))
+        output_path = str(out_dir / log_name)
+
+    # 把 psi4 自己的 scratch（psi.<pid>.clean / timer.dat 等）也收进 out_dir，
+    # 否则它们会落到 CWD 弄脏仓库根——"零仓库根污染"才名副其实。
+    try:
+        psi4.core.IOManager.shared_object().set_default_path(str(out_dir))
+    except Exception:
+        pass
+    psi4.core.set_output_file(output_path, False)
+
+    # 强制 symmetry c1 防对称性突跳（PITFALLS §2.6）。
+    # psi4.geometry() 会以副作用方式设置全局 active molecule。
+    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
+    mol = psi4.geometry(geom_block)
+
+    psi4.set_options(options)
+    return psi4, psi4_version, mol, output_path
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -233,28 +298,16 @@ def single_point(
         }
 
     # ── 2. 初始化 psi4（内部 import 避免导入开销）───────────────────────
-    import psi4
-
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-
-    output_path = "single_point_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # psi4.geometry() mutates the global active molecule as a side effect;
-    # the returned handle is unused here, so we discard it explicitly.
-    psi4.geometry(geom_block)
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "reference": reference,
-        "scf_type": "df",
-        "guess": scf_guess.lower(),
-    })
+    psi4, psi4_version, _mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "single_point_output.log",
+        {
+            "reference": reference,
+            "scf_type": "df",
+            "guess": scf_guess.lower(),
+        },
+    )
 
     # ── 4. 运行 SCF ────────────────────────────────────────────────────
     wall_start = time.time()
@@ -474,29 +527,19 @@ def optimize(
     opt_coordinates = opt_coords_map.get(coordinate_system.lower(), "INTERNAL")
 
     # ── 4. 初始化 psi4 ─────────────────────────────────────────────────
-    import psi4
-
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-
-    output_path = "optimize_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    # ── 5. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # `mol` is needed downstream by psi4.optimize() and mol.save_string_xyz().
-    mol = psi4.geometry(geom_block)  # noqa: F841 — used in psi4.optimize() and .save_string_xyz()
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "g_convergence": g_convergence,
-        "geom_maxiter": max_iter,
-        "opt_coordinates": opt_coordinates,
-        "scf_type": "df",
-        "reference": reference,
-    })
+    # `mol` is needed downstream by psi4.optimize() and mol.save_string_xyz().
+    psi4, psi4_version, mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "optimize_output.log",
+        {
+            "g_convergence": g_convergence,
+            "geom_maxiter": max_iter,
+            "opt_coordinates": opt_coordinates,
+            "scf_type": "df",
+            "reference": reference,
+        },
+    )
 
     # ── 6. 运行优化 ───────────────────────────────────────────────────
     wall_start = time.time()
@@ -714,26 +757,16 @@ def frequency(
         }
 
     # ── 2. 初始化 psi4 ─────────────────────────────────────────────────
-    import psi4
-
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-
-    output_path = "frequency_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    # ── 3. 构建分子（强制 symmetry c1 防对称性突跳，PITFALLS §2.6）────
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # `mol` is needed downstream as the `molecule=` arg of psi4.frequencies().
-    mol = psi4.geometry(geom_block)  # noqa: F841 — passed to psi4.frequencies() below
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "reference": reference,
-        "scf_type": "df",
-    })
+    # `mol` is needed downstream as the `molecule=` arg of psi4.frequencies().
+    psi4, psi4_version, mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "frequency_output.log",
+        {
+            "reference": reference,
+            "scf_type": "df",
+        },
+    )
 
     # ── 4. 运行频率计算 ────────────────────────────────────────────────
     wall_start = time.time()
@@ -768,7 +801,7 @@ def frequency(
             if not freqs_cm_inv:
                 raise RuntimeError(
                     "psi4 wavefunction access failed and frequency parser found no frequencies in output"
-                )
+                ) from None
             ir_intensities = [0.0] * len(freqs_cm_inv)
 
         # 虚频判定：< -10 cm^-1
@@ -842,129 +875,6 @@ def frequency(
             "output_path": output_path,
         },
     }
-
-
-def _parse_frequencies_from_output(log_path: str) -> list[float]:
-    """从 psi4 输出文件解析频率（cm^-1）。
-
-    psi4 频率输出格式（psi4 1.9+）：
-        Freq [cm^-1]                1618.2540           3834.8812           3931.8836
-    也兼容旧格式（每行一个 Frequency 关键字）。
-    若解析失败返回空 list。
-    """
-    try:
-        text = Path(log_path).read_text()
-    except Exception:
-        return []
-
-    freqs: list[float] = []
-
-    # 新格式：提取所有含 'Freq [cm^-1]' 行中的数字。
-    # 注意：高对称分子（如 CH4 / Td）会按 irrep 分块输出多组 'Freq [cm^-1]'，
-    # 不能只取第一行（早期 bug：methane 9 个模式只解析出 3 个）。
-    for line in text.splitlines():
-        if "Freq [cm^-1]" in line:
-            nums = re.findall(r"([-+]?\d+\.\d+)", line)
-            for s in nums:
-                v = float(s)
-                if v != 0.0:
-                    freqs.append(v)
-    if freqs:
-        return freqs
-
-    # 旧格式：逐行匹配 'Frequency' 关键字
-    pattern = re.compile(r"^\s*Frequency\s+([-+]?\d+\.\d+)", re.MULTILINE)
-    for m in pattern.finditer(text):
-        val = float(m.group(1))
-        if val != 0.0:
-            freqs.append(val)
-
-    return freqs
-
-
-def _get_ir_intensities(wfn, n_freqs: int) -> list[float]:
-    """从 wavefunction 获取 IR 强度，处理 psi4 版本差异。
-
-    psi4 不同版本访问 IR_intensity 的方式不同，做 fallback。
-    """
-    try:
-        fa = wfn.frequency_analysis
-        if fa is not None and "IR_intensity" in fa:
-            data = fa["IR_intensity"].data
-            if hasattr(data, "tolist"):
-                return [float(x) for x in data.tolist()]
-            return [float(x) for x in data]
-    except Exception:
-        pass
-    # fallback：返回零强度列表
-    return [0.0] * n_freqs
-
-
-def _parse_thermal_from_output(log_path: str) -> dict[str, Any]:
-    """Parse psi4's thermochemistry summary block.
-
-    Extracts the corrections (H, G, internal-E thermal) and the absolute
-    enthalpy / Gibbs at temperature. Returns a dict with each value tagged
-    by unit; missing fields stay None.
-
-    psi4 prints, e.g.:
-        Correction H    15.928 [kcal/mol] ... 0.02538285 [Eh]
-        Total H, Enthalpy at  298.15 [K]  ... -76.33282512 [Eh]
-        Correction G     2.488 [kcal/mol] ... 0.00396527 [Eh]
-        Total G, Gibbs energy at  298.15 [K] ... -76.35424270 [Eh]
-        Correction E    15.335 [kcal/mol] ... 0.02443866 [Eh]
-        Total E, Thermal (internal) energy at  298.15 [K] ... -76.33376930 [Eh]
-    """
-    out = {
-        "h_corr": None,            # H_corr (Hartree, includes ZPE + thermal H)
-        "g_corr": None,            # G_corr
-        "e_corr": None,            # internal energy correction
-        "ts": None,                # T·S = H_corr - G_corr (derived)
-        "total_h": None,           # absolute enthalpy at T (Hartree)
-        "total_g": None,           # absolute Gibbs at T (Hartree)
-        "total_e": None,           # absolute internal E at T (Hartree)
-    }
-    try:
-        text = Path(log_path).read_text(errors="replace")
-    except Exception:
-        return out
-
-    # Correction X    XX.XXX [kcal/mol]    XX.XXX [kJ/mol]    0.0XXXXXXX [Eh]
-    corr = re.compile(
-        r"Correction\s+([HGES])\b[^\n]*?([-+]?\d+\.\d+)\s*\[Eh\]",
-        re.MULTILINE,
-    )
-    for m in corr.finditer(text):
-        kind = m.group(1)
-        val = float(m.group(2))
-        if kind == "H":
-            out["h_corr"] = {"value": val, "unit": "Hartree"}
-        elif kind == "G":
-            out["g_corr"] = {"value": val, "unit": "Hartree"}
-        elif kind == "E":
-            out["e_corr"] = {"value": val, "unit": "Hartree"}
-
-    total = re.compile(
-        r"Total\s+(\w+)[^\n]*?at\s+\d+\.\d+\s*\[K\][^\n]*?"
-        r"([-+]?\d+\.\d+)\s*\[Eh\]",
-        re.MULTILINE,
-    )
-    for m in total.finditer(text):
-        kind = m.group(1)
-        val = float(m.group(2))
-        if kind == "H":
-            out["total_h"] = {"value": val, "unit": "Hartree"}
-        elif kind == "G":
-            out["total_g"] = {"value": val, "unit": "Hartree"}
-        elif kind == "E":
-            out["total_e"] = {"value": val, "unit": "Hartree"}
-
-    # T·S derived from H_corr - G_corr (since G = H - T·S → T·S = H - G).
-    if out["h_corr"] is not None and out["g_corr"] is not None:
-        ts_Eh = out["h_corr"]["value"] - out["g_corr"]["value"]
-        out["ts"] = {"value": round(ts_Eh, 8), "unit": "Hartree"}
-
-    return out
 
 
 @mcp.tool()
@@ -1053,27 +963,18 @@ def tddft(
             "suggestion": "Closed-shell singlet needs multiplicity=1.",
         }
 
-    import psi4
-    from psi4 import __version__ as psi4_version
-
-    psi4.set_memory(f"{int(memory_gb)} GB")
-    psi4.set_num_threads(n_threads)
-    output_path = "tddft_output.log"
-    psi4.core.set_output_file(output_path, False)
-
-    geom_block = _xyz_to_geom_block(geometry_xyz, charge, multiplicity)
-    # psi4.geometry() mutates the global active molecule as a side effect;
-    # the returned handle is unused here, so we discard it explicitly.
-    psi4.geometry(geom_block)
-
     reference = "uhf" if multiplicity != 1 else "rhf"
-    psi4.set_options({
-        "reference": reference,
-        "scf_type": "df",
-        "tdscf_states": int(n_states),
-        "tdscf_triplets": "ALSO" if triplets else "NONE",
-        "tdscf_tda": bool(tda),
-    })
+    psi4, psi4_version, _mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "tddft_output.log",
+        {
+            "reference": reference,
+            "scf_type": "df",
+            "tdscf_states": int(n_states),
+            "tdscf_triplets": "ALSO" if triplets else "NONE",
+            "tdscf_tda": bool(tda),
+        },
+    )
 
     wall_start = time.time()
     warnings: list[str] = []
@@ -1167,66 +1068,328 @@ def tddft(
     }
 
 
-def _parse_tdscf_from_output(
-    output_path: str,
-    want_triplets: bool,
-) -> tuple[list[dict], list[dict]]:
-    """Regex-parse psi4's TDDFT printout. Tolerant to formatting drift.
+@mcp.tool()
+def optimize_excited_state(
+    geometry_xyz: str,
+    target_state: int = 1,
+    target_spin: str = "singlet",
+    charge: int = 0,
+    multiplicity: int = 1,
+    method: str = "B3LYP-D3(BJ)",
+    basis: str = "def2-SVP",
+    n_states: int = 3,
+    convergence: str = "normal",
+    coordinate_system: str = "internal",
+    max_iter: int = 100,
+    memory_gb: float = 4.0,
+    n_threads: int = 1,
+) -> dict[str, Any]:
+    """Excited-state geometry optimization (TDA only, psi4).
 
-    psi4 prints (≥1.9):
-        Excited State    1 (3 A):   0.25504 au   178.65 nm f = 0.0000
-                                ^^^      ^^^      ^^^         ^^^
-                              spin#  excitation  wavelength  oscillator
-    where spin# == 1 → singlet, 3 → triplet.
+    Optimizes a TDA excited-state root via psi4's `td-{method}` driver +
+    finite-difference gradients (psi4 1.10 has no analytic TDDFT gradient,
+    so this falls back to FD — slow but works for small/medium molecules).
+
+    Use this AFTER `optimize` (ground state) to get **adiabatic** S1/T1
+    geometries. Adiabatic ΔE_ST = E(T1@T1_geom) - E(S1@S1_geom) is the
+    physically correct singlet-triplet gap for TADF, vs the *vertical*
+    ΔE_ST you get from one-shot `tddft` on the S0 geometry.
+
+    Args:
+        geometry_xyz: starting geometry (usually the optimized S0 geometry).
+        target_state: which excited root to optimize (1 = S1 / T1, 2 = S2 / T2,
+            ...). Must satisfy 1 ≤ target_state ≤ n_states.
+        target_spin: "singlet" or "triplet". For triplet opt, the underlying
+            TDA reference stays restricted (RHF) but `tdscf_triplets="ONLY"`
+            is used; the final wavefunction represents the triplet excited
+            state on top of the closed-shell GS.
+        charge / multiplicity: GROUND state charge / multiplicity. The
+            excited state is built on top of this reference. Triplet excited
+            states require multiplicity=1 (closed-shell GS).
+        method: DFT functional. `td-{method}` is sent to the driver. For
+            charge-transfer states (TADF donor-acceptor), prefer ωB97X-D
+            over B3LYP — see PITFALLS §2.7.
+        basis: basis set; def2-SVP for screening, def2-TZVP for publication.
+        n_states: how many excited roots TDDFT should solve at each opt
+            step. Must be ≥ target_state. More states cost more memory but
+            stabilize root following.
+        convergence: opt convergence preset (loose / normal / tight /
+            very_tight). normal is recommended for excited states because
+            tight + finite-difference gradients = very slow.
+        coordinate_system: internal / redundant_internal / cartesian.
+        max_iter: max optimization steps.
+        memory_gb / n_threads: as for `optimize`.
+
+    Returns:
+        ok=True:
+          {
+            "ok": True,
+            "result": {
+              "target_state": int,
+              "target_spin": str,
+              "final_total_energy": {"value": float, "unit": "Hartree"},
+                  # GROUND-STATE energy at the optimized excited-state geometry
+                  # (psi4's td-{method} driver returns E_GS, not E_S1!).
+                  # To get the absolute S1/T1 energy:
+                  #   E_excited_abs = final_total_energy
+                  #                 + excitation_energy_at_opt / hartree_to_eV
+              "excitation_energy_at_opt": {"value": float, "unit": "eV"} | null,
+                  # E(target) - E(GS) at the OPTIMIZED excited-state geometry;
+                  # subtract from the vertical excitation to get the geometry-
+                  # relaxation contribution (ΔE_relax = ΔE_vert − ΔE_adiab)
+                  # which is what feeds into the Stokes shift.
+                  # null if not parseable
+              "optimized_geometry_xyz": str,
+              "n_iterations": int,
+              "converged": bool,
+            },
+            "warnings": [...],
+            "meta": {...},
+          }
+        ok=False:
+          {"ok": False, "error_code": "...", "details": str, "suggestion": str}
+
+    Error codes:
+        - INVALID_TARGET_STATE: target_state out of range or n_states < target_state.
+        - SCF_NOT_CONVERGED, GEOMETRY_NOT_CONVERGED, INVALID_MULTIPLICITY,
+          PSI4_INTERNAL_ERROR (same semantics as `optimize`).
+        - TDDFT_GRADIENT_UNAVAILABLE: tda=False was requested or analytic
+          gradient missing for this combination. Currently we always use TDA
+          (psi4 1.10 supports TDA gradients only; full TDDFT gradients are
+          NYI). Suggestion: stick with TDA.
+
+    Notes:
+        - Cost: psi4 1.10 uses finite-difference gradients (3-point), so each
+          opt step costs ~3·N_atom TDDFT energies. For 3-atom H2O at sto-3g
+          this finishes in ~10 s; for a 50-atom TADF at def2-SVP this is
+          1-2 hours. Plan accordingly.
+        - The `tda` flag is forced True. Full TDDFT (RPA) opt is not
+          supported by psi4 1.10.
+        - **Starting-geometry sensitivity**: if the GS-optimized geometry is
+          a stationary point on the excited-state PES (common when the GS and
+          S1/T1 minima share a high-symmetry geometry), OPTKING may converge
+          in 1 step without actually relaxing on the excited state. For
+          molecules known to break symmetry on excitation (e.g. HCHO S1
+          pyramidalizes), pre-perturb the input geometry slightly along the
+          expected distortion mode (~0.2 Å on relevant atoms) to nudge the
+          optimizer onto the excited-state PES. The ``n_iterations`` field
+          can be used to detect this: ``< 3`` macro steps from a GS-optimized
+          start usually means the optimizer never left the GS minimum.
+        - To recover the S1 → S0 emission (Stokes-shifted) energy in eV:
+          ``E_emission_eV = excitation_energy_at_opt["value"]``
+          (this is the vertical S1→S0 gap *at the S1 geometry*).
+
+    Examples:
+        >>> r = optimize_excited_state(
+        ...     opt_xyz, target_state=1, target_spin="singlet",
+        ...     method="ωB97X-D", basis="def2-SVP", n_states=3)
+        >>> r["result"]["converged"]
+        True
+        >>> r["result"]["target_state"]
+        1
     """
-    try:
-        text = Path(output_path).read_text(errors="replace")
-    except Exception:
-        return [], []
-
-    eV_per_au = 27.211386245988
-
-    pattern = re.compile(
-        r"Excited\s+State\s+(\d+)\s*\(\s*(\d+)\s*[A-Za-z']*\s*\)\s*:\s*"
-        r"([-+]?\d+\.\d+)\s*au\s+([-+]?\d+\.\d+)\s*nm\s+f\s*=\s*([-+]?\d+\.\d+)",
-        re.MULTILINE,
-    )
-    singlets: list[dict] = []
-    triplets: list[dict] = []
-    seen_keys: set[tuple[int, int]] = set()   # (spin, state) — psi4 prints twice
-
-    for m in pattern.finditer(text):
-        idx = int(m.group(1))
-        spin = int(m.group(2))
-        e_au = float(m.group(3))
-        wl_nm = float(m.group(4))
-        f_osc = float(m.group(5))
-        e_eV = e_au * eV_per_au
-
-        key = (spin, idx)
-        if key in seen_keys:
-            continue
-        seen_keys.add(key)
-
-        entry = {
-            "state": idx,
-            "excitation_energy": {"value": round(e_eV, 4), "unit": "eV"},
-            "wavelength_nm": round(wl_nm, 2),
-            "oscillator_strength": round(f_osc, 6),
+    # ── 1. arg sanity ──────────────────────────────────────────────────
+    if target_spin not in ("singlet", "triplet"):
+        return {
+            "ok": False,
+            "error_code": "INVALID_TARGET_STATE",
+            "details": f"target_spin must be 'singlet' or 'triplet', got {target_spin!r}",
+            "suggestion": "Use target_spin='singlet' for S1/S2/..., 'triplet' for T1/T2/...",
         }
-        if spin == 1:
-            singlets.append(entry)
-        elif spin == 3 and want_triplets:
-            triplets.append(entry)
+    if target_state < 1 or target_state > n_states:
+        return {
+            "ok": False,
+            "error_code": "INVALID_TARGET_STATE",
+            "details": (
+                f"target_state={target_state} is out of range "
+                f"[1, n_states={n_states}]."
+            ),
+            "suggestion": (
+                "Set n_states ≥ target_state. For TADF S1 opt use "
+                "target_state=1, n_states=3 (extra states stabilize root following)."
+            ),
+        }
 
-    # Re-number per spin (psi4 numbers across all states; we want S1, S2, ...
-    # and T1, T2, ... independently).
-    for i, e in enumerate(singlets, 1):
-        e["state"] = i
-    for i, e in enumerate(triplets, 1):
-        e["state"] = i
+    n_el = _electron_count(geometry_xyz, charge)
+    valid, err_msg = _validate_multiplicity(multiplicity, n_el)
+    if not valid:
+        return {
+            "ok": False,
+            "error_code": "INVALID_MULTIPLICITY",
+            "details": err_msg,
+            "suggestion": "Excited-state opt requires a closed-shell GS reference (multiplicity=1).",
+        }
+    if multiplicity != 1:
+        return {
+            "ok": False,
+            "error_code": "INVALID_MULTIPLICITY",
+            "details": (
+                f"Excited-state TDA opt requires closed-shell singlet GS "
+                f"(multiplicity=1); got multiplicity={multiplicity}."
+            ),
+            "suggestion": (
+                "For open-shell GS (radicals, high-spin) use a different workflow; "
+                "TDA on top of UHF is not supported by this MCP."
+            ),
+        }
 
-    return singlets, triplets
+    # ── 2. convergence + coords mapping (same as `optimize`) ──────────
+    g_convergence_map = {
+        "loose": "gau_loose", "normal": "gau",
+        "tight": "gau_tight", "very_tight": "gau_verytight",
+    }
+    g_convergence = g_convergence_map.get(convergence.lower(), "gau")
+    opt_coords_map = {
+        "internal": "INTERNAL",
+        "redundant_internal": "REDUNDANT_INTERNAL",
+        "cartesian": "CARTESIAN",
+    }
+    opt_coordinates = opt_coords_map.get(coordinate_system.lower(), "INTERNAL")
+
+    # Pass tdscf_states as a length-1 list matching c1 symmetry's single irrep.
+    # Plain int triggers psi4's internal expansion which can mis-fire
+    # during the FD-gradient driver loop and yield ValidationError
+    # "States requested ([3, 3]) do not match number of irreps (1)".
+    psi4, psi4_version, mol, output_path = _psi4_session(
+        geometry_xyz, charge, multiplicity, memory_gb, n_threads,
+        "optimize_es_output.log",
+        {
+            "reference": "rhf",
+            "scf_type": "df",
+            "tdscf_states": [int(n_states)],
+            "tdscf_tda": True,
+            "tdscf_triplets": "ONLY" if target_spin == "triplet" else "NONE",
+            "follow_root": int(target_state),
+            "g_convergence": g_convergence,
+            "geom_maxiter": int(max_iter),
+            "opt_coordinates": opt_coordinates,
+        },
+    )
+
+    wall_start = time.time()
+    warnings: list[str] = []
+    final_total_energy: float | None = None
+    optimized_xyz: str | None = None
+    converged = False
+
+    try:
+        td_method = method if method.lower().startswith("td-") else f"td-{method}"
+        e_total = psi4.optimize(td_method, basis=basis, molecule=mol)
+        final_total_energy = float(e_total)
+        optimized_xyz = mol.save_string_xyz()
+        converged = True
+    except psi4.OptimizationConvergenceError as e:
+        wall_time = time.time() - wall_start
+        try:
+            optimized_xyz = mol.save_string_xyz()
+        except Exception:
+            pass
+        return {
+            "ok": False,
+            "error_code": "GEOMETRY_NOT_CONVERGED",
+            "details": f"Excited-state optimization did not converge: {e}",
+            "suggestion": (
+                "Excited-state PES is often shallower / has more saddles. Try: "
+                "(1) loosen convergence to 'normal'; "
+                "(2) start from a slightly distorted geometry "
+                "(displace along the dominant TDDFT NTO); "
+                "(3) reduce trust radius."
+            ),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+    except psi4.SCFConvergenceError as e:
+        wall_time = time.time() - wall_start
+        return {
+            "ok": False,
+            "error_code": "SCF_NOT_CONVERGED",
+            "details": f"GS SCF did not converge during excited-state opt: {e}",
+            "suggestion": (
+                "Try guess=GWH, switch to def2-SVP first, or pre-converge with "
+                "calc_psi4_single_point + damping."
+            ),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+    except Exception as exc:
+        wall_time = time.time() - wall_start
+        msg = str(exc).lower()
+        if "index" in msg and "out of bounds" in msg:
+            return {
+                "ok": False,
+                "error_code": "INVALID_TARGET_STATE",
+                "details": (
+                    f"psi4's TDA Davidson solver returned fewer roots than "
+                    f"requested (n_states={n_states}). This usually means the "
+                    f"system has fewer accessible excitations than n_states "
+                    f"(common for very small systems or minimal basis)."
+                ),
+                "suggestion": (
+                    "Reduce n_states, or use a larger basis (def2-SVP instead "
+                    "of sto-3g)."
+                ),
+                "meta": {"psi4_version": psi4_version,
+                         "wall_time_s": round(wall_time, 2),
+                         "output_path": output_path},
+            }
+        logger.exception("psi4 optimize_excited_state internal error")
+        return {
+            "ok": False,
+            "error_code": "PSI4_INTERNAL_ERROR",
+            "details": f"{type(exc).__name__}: {exc}",
+            "suggestion": (
+                "Inspect the psi4 output log; common causes are missing TDA "
+                "gradient for the chosen functional, basis without ECP for "
+                "heavy atoms, or symmetry mishandling."
+            ),
+            "meta": {"psi4_version": psi4_version,
+                     "wall_time_s": round(wall_time, 2),
+                     "output_path": output_path},
+        }
+
+    wall_time = time.time() - wall_start
+
+    # ── 3. parse the LAST TDDFT block from the log to get E_excitation
+    # at the converged geometry.
+    singlets, triplets = _parse_tdscf_from_output(
+        output_path, want_triplets=(target_spin == "triplet")
+    )
+    pool = triplets if target_spin == "triplet" else singlets
+    e_excitation_eV: float | None = None
+    if pool and len(pool) >= target_state:
+        e_excitation_eV = pool[target_state - 1]["excitation_energy"]["value"]
+
+    # ── 4. opt iteration count from log ──────────────────────────────
+    n_iter = _parse_opt_iterations_from_output(output_path)
+
+    return {
+        "ok": True,
+        "result": {
+            "target_state": target_state,
+            "target_spin": target_spin,
+            "final_total_energy": {
+                "value": round(final_total_energy, 8), "unit": "Hartree"
+            },
+            "excitation_energy_at_opt": (
+                {"value": round(e_excitation_eV, 4), "unit": "eV"}
+                if e_excitation_eV is not None else None
+            ),
+            "optimized_geometry_xyz": optimized_xyz or "",
+            "n_iterations": n_iter,
+            "converged": converged,
+            "method": method,
+            "basis": basis,
+            "tda": True,
+        },
+        "warnings": warnings,
+        "meta": {
+            "psi4_version": psi4_version,
+            "wall_time_s": round(wall_time, 2),
+            "output_path": output_path,
+        },
+    }
 
 
 def main() -> None:

@@ -66,33 +66,22 @@ def _build_agent(provider: str, max_turns: int, runs_dir: Path):
     out-of-the-box without an API key, suitable for cross-client
     protocol-compliance demos.
     """
-    from chemaster.agent.agent import AgentConfig, ChemAgent
-    from chemaster.agent.llm_client import LLMConfig, MockLLM, create_llm
-    from chemaster.agent.tool_loader import build_default_registry
+    from chemaster.agent.factory import build_chem_agent
 
+    responder = None
     if provider == "mock":
         from chemaster.agent.mock_routing import build_routing_responder
         responder = build_routing_responder()
         responder.reset()
-        llm = MockLLM(responder=responder)
-    else:
-        default_model = {
-            "anthropic": "claude-3-5-sonnet-20241022",
-            "openai_compat": "gpt-4o-mini",
-            "minimax": "MiniMax-Text-01",
-            "qwen": "qwen-max",
-            "deepseek": "deepseek-chat",
-        }.get(provider, "")
-        llm_cfg = LLMConfig(provider=provider, model=default_model)
-        llm = create_llm(llm_cfg)
 
-    registry = build_default_registry()
-    cfg = AgentConfig(
-        max_turns=max_turns,
+    agent = build_chem_agent(
+        provider=provider,
         runs_dir=runs_dir,
+        max_turns=max_turns,
         confirm_callback=lambda *_a, **_kw: True,  # auto-approve (caller is an LLM)
+        mock_responder=responder,
     )
-    return ChemAgent(llm=llm, tools=registry, config=cfg), registry
+    return agent, agent.tools
 
 
 def _summarize_trajectory(traj, agent=None) -> dict[str, Any]:
@@ -137,7 +126,7 @@ def _summarize_trajectory(traj, agent=None) -> dict[str, Any]:
         except (ValueError, TypeError):
             pass
 
-    return {
+    out: dict[str, Any] = {
         "task_id": traj.task_id,
         "status": traj.status,
         "n_steps": len(traj.steps),
@@ -147,6 +136,30 @@ def _summarize_trajectory(traj, agent=None) -> dict[str, Any]:
         "started_at": traj.started_at,
         "finished_at": traj.finished_at,
     }
+
+    # 权限分级透传：MCP 模式下没有交互通道，L2 化学决策会被自动接受。
+    # 把这些决策显式回传给调用方 LLM —— 它有义务转述给它的用户，
+    # 否则"labor-saving collaborator"的决策留痕在 MCP 形态下是隐形的。
+    recs = (traj.meta or {}).get("recommendations")
+    if recs and recs.get("log"):
+        out["chemistry_decisions"] = {
+            "accepted": recs.get("accepted", 0),
+            "modified": recs.get("modified", 0),
+            "cancelled": recs.get("cancelled", 0),
+            "escalated": recs.get("escalated", 0),
+            "log": [
+                {k: r.get(k) for k in
+                 ("decision", "recommendation", "decision_class",
+                  "level", "status", "user_note")}
+                for r in recs["log"]
+            ],
+            "note": (
+                "These chemistry decisions were resolved without an "
+                "interactive user (auto-accepted unless policy demoted them "
+                "to L1 or escalated to L3). Relay them to your user."
+            ),
+        }
+    return out
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -220,10 +233,15 @@ def chemaster_run(
 
     # Isolated per-request runs dir so concurrent calls never collide.
     runs_dir = Path(tempfile.mkdtemp(prefix="chemaster_mcp_runs_"))
+    # Whether the finally-block keeps the runs dir. If not, any on-disk path
+    # we return would point at a file we're about to delete — so only surface
+    # paths when the caller opted to keep the runs.
+    keep_runs = os.environ.get("CHEMASTER_KEEP_MCP_RUNS", "").strip().lower() in (
+        "1", "true", "yes")
 
     try:
-        from chemaster.agent.types import TaskInstance
         from chemaster.agent.agent import BaseAgent
+        from chemaster.agent.types import TaskInstance
 
         try:
             agent, registry = _build_agent(provider, max_turns, runs_dir)
@@ -246,13 +264,17 @@ def chemaster_run(
                 "ok": False,
                 "error_code": "AGENT_RUN_FAILED",
                 "details": f"Agent loop raised: {type(exc).__name__}: {exc}",
-                "suggestion": "Inspect runs_dir for partial trajectory.",
-                "meta": {"runs_dir": str(runs_dir)},
+                "suggestion": (
+                    "Re-run with CHEMASTER_KEEP_MCP_RUNS=1 to preserve the "
+                    "partial trajectory for inspection (it is deleted by default)."
+                ),
             }
 
         summary = _summarize_trajectory(traj, agent=agent)
         traj_path = runs_dir / traj.task_id / "trajectory.json"
-        summary["trajectory_path"] = str(traj_path) if traj_path.exists() else None
+        # Only report the path if it will still exist after this call returns.
+        summary["trajectory_path"] = (
+            str(traj_path) if (keep_runs and traj_path.exists()) else None)
 
         return {
             "ok": True,
@@ -270,9 +292,8 @@ def chemaster_run(
             },
         }
     finally:
-        # Best-effort cleanup: keep runs dir if the user asked for it
-        # explicitly via env, otherwise discard.
-        if os.environ.get("CHEMASTER_KEEP_MCP_RUNS", "").strip().lower() not in ("1", "true", "yes"):
+        # Best-effort cleanup: keep runs dir only if the user opted in.
+        if not keep_runs:
             shutil.rmtree(runs_dir, ignore_errors=True)
 
 
@@ -389,22 +410,12 @@ def chemaster_list_engines() -> dict[str, Any]:
             "meta": {"engine": "chemaster.agent"}
         }``
     """
-    engines = ["psi4", "xtb", "gaussian", "orca", "bdf", "momap"]
-    out: dict[str, Any] = {}
-    for name in engines:
-        # Gaussian's binary is `g16` or `g09` — accept either as a hit.
-        candidates = (
-            ["g16", "g09", "gaussian"] if name == "gaussian"
-            else [name]
-        )
-        found_path = None
-        for cand in candidates:
-            p = shutil.which(cand)
-            if p:
-                found_path = p
-                break
-        out[name] = {"available": found_path is not None, "path": found_path}
+    from chemaster.engines import probe_engines
 
+    out: dict[str, Any] = {
+        s.name: {"available": s.available, "path": s.path}
+        for s in probe_engines()
+    }
     return {
         "ok": True,
         "result": out,

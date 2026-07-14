@@ -101,7 +101,7 @@ def _run_orca(*, input_text: str, workdir: Path,
     inp_path.write_text(input_text, encoding="ascii")
     proc = subprocess.run(
         [orca_path, str(inp_path)],
-        cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        cwd=workdir, capture_output=True,
         text=True, timeout=timeout_s,
     )
     out_path.write_text(proc.stdout or "")

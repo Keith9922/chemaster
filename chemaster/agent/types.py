@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -169,7 +169,7 @@ class StepRecord:
     step_id: int
     assistant_message: AssistantMessage | None = None
     tool_responses: list[ToolMessage] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -188,7 +188,7 @@ class Trajectory:
 
     task_id: str = field(default_factory=lambda: f"task-{uuid.uuid4().hex[:8]}")
     status: str = "running"               # running | completed | failed | waiting_for_input
-    started_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    started_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     finished_at: str | None = None
     steps: list[StepRecord] = field(default_factory=list)
     finish_payload: dict[str, Any] | None = None
@@ -199,7 +199,7 @@ class Trajectory:
 
     def finish(self, status: str, payload: dict | None = None) -> None:
         self.status = status
-        self.finished_at = datetime.now(timezone.utc).isoformat()
+        self.finished_at = datetime.now(UTC).isoformat()
         if payload is not None:
             self.finish_payload = payload
 
@@ -258,7 +258,7 @@ class TaskInstance:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass

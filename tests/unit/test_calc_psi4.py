@@ -3,6 +3,10 @@
 用 unittest.mock.patch 模拟 psi4 函数调用，不真跑 psi4。
 psi4 是 C 扩展模块，所以对 psi4.core.get_active_wavefunction 等
 compiled 属性用 create=True + 手动赋值 mock。
+
+注意：patch("psi4.…") 需要 psi4 模块本身可导入（conda-only，pip 装不了），
+所以在无 psi4 的环境（如 GitHub CI runner）整文件跳过。纯文本解析器的
+无-psi4 测试放到未来的 calc_psi4/parsers.py 拆分里补。
 """
 
 from __future__ import annotations
@@ -10,6 +14,9 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytest.importorskip("psi4", reason="psi4 not importable (conda-only dependency)")
 
 # ─── 测试用 H2O XYZ（标准 xyz：首行原子数 + 注释行） ─────────────────────
 H2O_XYZ = """3
@@ -964,7 +971,6 @@ class TestThermalParserWithRealLog(unittest.TestCase):
   Total G, Gibbs energy at  298.15 [K]                                    -76.35424270 [Eh]
 """
         # write to a tmp file
-        from pathlib import Path
         import tempfile
         with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as f:
             f.write(sample)
@@ -1021,6 +1027,194 @@ class TestFrequencyZPECalculation(unittest.TestCase):
         self.assertAlmostEqual(
             result["result"]["zpe"]["value"], 0.0205, places=3
         )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# optimize_excited_state — TDA-based excited-state geometry optimization
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestOptimizeExcitedStateValidation(unittest.TestCase):
+    """Argument validation: spin / target_state / multiplicity."""
+
+    def test_invalid_target_spin(self):
+        from chemaster.mcp.calc_psi4.server import optimize_excited_state
+        result = optimize_excited_state(H2O_XYZ, target_spin="quartet")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "INVALID_TARGET_STATE")
+        self.assertIn("singlet", result["details"])
+
+    def test_target_state_above_n_states(self):
+        from chemaster.mcp.calc_psi4.server import optimize_excited_state
+        result = optimize_excited_state(H2O_XYZ, target_state=5, n_states=3)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "INVALID_TARGET_STATE")
+
+    def test_target_state_zero(self):
+        from chemaster.mcp.calc_psi4.server import optimize_excited_state
+        result = optimize_excited_state(H2O_XYZ, target_state=0)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "INVALID_TARGET_STATE")
+
+    def test_open_shell_gs_rejected(self):
+        """TDA on UHF reference is not supported by this MCP."""
+        from chemaster.mcp.calc_psi4.server import optimize_excited_state
+        # NO2 doublet: 23 valence electrons, multiplicity=2
+        no2_xyz = """3
+NO2 doublet
+N  0.0  0.0  0.0
+O  0.0  1.0  0.0
+O  0.0 -1.0  0.0"""
+        result = optimize_excited_state(no2_xyz, multiplicity=2)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "INVALID_MULTIPLICITY")
+        self.assertIn("closed-shell", result["details"])
+
+
+class TestOptimizeExcitedStateOK(unittest.TestCase):
+    """Happy path: opt converges, returns excited-state energy + new geometry."""
+
+    @patch("psi4.geometry", create=True)
+    @patch("psi4.set_options", create=True)
+    @patch("psi4.set_memory", create=True)
+    @patch("psi4.set_num_threads", create=True)
+    @patch("psi4.core.set_output_file", create=True)
+    @patch("psi4.optimize", create=True)
+    def test_ok_singlet_s1(
+        self, mock_optimize, mock_set_output, mock_set_threads,
+        mock_set_mem, mock_set_opts, mock_geom
+    ):
+        # E_total at S1 minimum = -75.32 Ha
+        mock_optimize.return_value = -75.32
+
+        # Stub mol.save_string_xyz so we get back a synthetic optimized geom
+        mock_mol = MagicMock()
+        mock_mol.save_string_xyz.return_value = """3
+H2O S1 opt
+O  0.0  0.0  0.13
+H  0.0  0.77 -0.55
+H  0.0 -0.77 -0.55
+"""
+        mock_geom.return_value = mock_mol
+
+        # Patch the log parsers — return one singlet state at 7.05 eV.
+        with patch(
+            "chemaster.mcp.calc_psi4.server._parse_tdscf_from_output",
+            return_value=(
+                [{"state": 1,
+                  "excitation_energy": {"value": 7.05, "unit": "eV"},
+                  "wavelength_nm": 175.9,
+                  "oscillator_strength": 0.08}],
+                []),
+        ), patch(
+            "chemaster.mcp.calc_psi4.server._parse_opt_iterations_from_output",
+            return_value=4,
+        ):
+            from chemaster.mcp.calc_psi4.server import optimize_excited_state
+            result = optimize_excited_state(
+                H2O_XYZ, target_state=1, target_spin="singlet",
+                method="B3LYP", basis="def2-SVP", n_states=3,
+            )
+
+        self.assertTrue(result["ok"], msg=result)
+        self.assertEqual(result["result"]["target_state"], 1)
+        self.assertEqual(result["result"]["target_spin"], "singlet")
+        self.assertAlmostEqual(
+            result["result"]["final_total_energy"]["value"], -75.32, places=4)
+        self.assertEqual(result["result"]["final_total_energy"]["unit"], "Hartree")
+        self.assertAlmostEqual(
+            result["result"]["excitation_energy_at_opt"]["value"], 7.05, places=4)
+        self.assertEqual(result["result"]["n_iterations"], 4)
+        self.assertTrue(result["result"]["converged"])
+        self.assertTrue(result["result"]["tda"])  # TDA forced True
+
+    @patch("psi4.geometry", create=True)
+    @patch("psi4.set_options", create=True)
+    @patch("psi4.set_memory", create=True)
+    @patch("psi4.set_num_threads", create=True)
+    @patch("psi4.core.set_output_file", create=True)
+    @patch("psi4.optimize", create=True)
+    def test_ok_triplet_t1_uses_tdscf_triplets_only(
+        self, mock_optimize, mock_set_output, mock_set_threads,
+        mock_set_mem, mock_set_opts, mock_geom
+    ):
+        """Triplet target → tdscf_triplets="ONLY" must be set in psi4 options."""
+        mock_optimize.return_value = -75.39
+        mock_mol = MagicMock()
+        mock_mol.save_string_xyz.return_value = "3\nT1\nO 0 0 0\nH 1 0 0\nH -1 0 0\n"
+        mock_geom.return_value = mock_mol
+
+        with patch(
+            "chemaster.mcp.calc_psi4.server._parse_tdscf_from_output",
+            return_value=([], [{"state": 1,
+                                "excitation_energy": {"value": 6.40, "unit": "eV"},
+                                "wavelength_nm": 193.7,
+                                "oscillator_strength": 0.0}]),
+        ), patch(
+            "chemaster.mcp.calc_psi4.server._parse_opt_iterations_from_output",
+            return_value=3,
+        ):
+            from chemaster.mcp.calc_psi4.server import optimize_excited_state
+            result = optimize_excited_state(
+                H2O_XYZ, target_state=1, target_spin="triplet",
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["result"]["target_spin"], "triplet")
+        # Inspect the psi4.set_options call to confirm tdscf_triplets="ONLY"
+        passed_opts = mock_set_opts.call_args[0][0]
+        self.assertEqual(passed_opts["tdscf_triplets"], "ONLY")
+        self.assertEqual(passed_opts["follow_root"], 1)
+        self.assertTrue(passed_opts["tdscf_tda"])
+
+
+class TestOptimizeExcitedStateErrors(unittest.TestCase):
+    """Error paths: davidson out-of-bounds, GS SCF fail, opt fail."""
+
+    @patch("psi4.geometry", create=True)
+    @patch("psi4.set_options", create=True)
+    @patch("psi4.set_memory", create=True)
+    @patch("psi4.set_num_threads", create=True)
+    @patch("psi4.core.set_output_file", create=True)
+    @patch("psi4.optimize", create=True)
+    def test_davidson_out_of_bounds_maps_to_invalid_state(
+        self, mock_optimize, mock_set_output, mock_set_threads,
+        mock_set_mem, mock_set_opts, mock_geom
+    ):
+        """psi4 raising "index out of bounds" → INVALID_TARGET_STATE."""
+        mock_optimize.side_effect = Exception(
+            "IndexError: index 1 is out of bounds for axis 0 with size 1"
+        )
+        mock_geom.return_value = MagicMock()
+
+        from chemaster.mcp.calc_psi4.server import optimize_excited_state
+        result = optimize_excited_state(H2O_XYZ, target_state=2, n_states=2)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "INVALID_TARGET_STATE")
+        self.assertIn("Davidson", result["details"])
+
+    @patch("psi4.geometry", create=True)
+    @patch("psi4.set_options", create=True)
+    @patch("psi4.set_memory", create=True)
+    @patch("psi4.set_num_threads", create=True)
+    @patch("psi4.core.set_output_file", create=True)
+    @patch("psi4.optimize", create=True)
+    def test_geometry_not_converged(
+        self, mock_optimize, mock_set_output, mock_set_threads,
+        mock_set_mem, mock_set_opts, mock_geom
+    ):
+        import psi4 as _psi4
+        mock_optimize.side_effect = _psi4.OptimizationConvergenceError(
+            "max iterations reached", 99, MagicMock(),
+        )
+        mock_mol = MagicMock()
+        mock_mol.save_string_xyz.return_value = "3\nlast\nO 0 0 0\nH 1 0 0\nH -1 0 0\n"
+        mock_geom.return_value = mock_mol
+
+        from chemaster.mcp.calc_psi4.server import optimize_excited_state
+        result = optimize_excited_state(H2O_XYZ, max_iter=99)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error_code"], "GEOMETRY_NOT_CONVERGED")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
 """Unit tests for the user-KB mechanism."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from textwrap import dedent
 

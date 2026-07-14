@@ -26,8 +26,7 @@ want all of them, or use :func:`sample_prompts` for a smaller subset.
 from __future__ import annotations
 
 import random
-from typing import Iterator
-
+from collections.abc import Iterator
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Molecules — small set, hand-curated to be psi4-easy with sto-3g / def2-SVP

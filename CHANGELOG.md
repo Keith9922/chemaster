@@ -3,6 +3,130 @@
 所有面向用户可见的变更记录在此。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0a3] — 答辩后大整合：四路合流 + 内核重构 + 权限分级真接线 (2026-07-11)
+
+> 毕设于 2026-05-21 完成答辩、05-30 论文修订定稿。本版本把答辩前后散落在
+> 4 处的代码统一为一条主线，并完成第一轮答辩后重构。
+
+### Added
+- **权限分级真接线**：`~/.chemaster/policy.yaml` 的 L1/L2/L3 此前只是
+  system prompt 里的文字约定（`policy.py` 是死代码），现在 `_handle_recommend`
+  真按 policy 分流——L1 静默接受（authority=agent，全程留痕）、L2 推荐卡片、
+  **L3 无交互通道时拒绝自动接受，强制升级 ask_user 并挂起任务**。
+  新增 8 个专项测试（此前 recommend 循环路径零测试覆盖）。
+- **`chemaster/agent/factory.py`**：统一的 agent 组装工厂（provider 探测 /
+  默认 model / wiring）。替换 5 处互相漂移的复制粘贴——REPL 此前不认
+  qwen/deepseek 的 key，agent-as-MCP server 用的还是一批旧 model id。
+- **`chemaster/engines.py`**：统一引擎探测（4 处互不一致的引擎清单合一；
+  psi4/pyscf 按"当前解释器可 import"判定，doctor 此前漏检纯模块安装）。
+- **psi4 TD-opt 移植**（来自 objective-meitner worktree 的 8 个 commit）：
+  `calc_psi4_optimize_excited_state`（TDA 激发态几何优化）、
+  `io_compute_descriptors`（键长/键角/二面角确定性计算）、MLJ 速率公式
+  `k_mlj`、HCHO 全流水线 benchmark 证据。开源路径首次具备激发态优化能力。
+- 恢复主仓库工作区滞留 2 个月的未提交修复：TUI `TaskInstance(intent=)`
+  字段错误（提交任务必崩）、TUI 硬编码 mock LLM（改为按环境变量自动探测
+  + `--llm-provider/--llm-model` 选项）、TUI 逐步流式显示。
+
+### Changed
+- **agent 内核重构**：run/continue_run 收敛为 `_run_loop`；sync 与 streaming
+  两条路径的三对镜像方法（~350 行语义重复）收敛到共享 helper——消掉复制后
+  各自演化出的 5 个 bug（streaming 的 recommend 直通 no-op、authority 标签
+  缺失、`continue_run` 异常时 trajectory 不落盘等）。streaming 的工具执行
+  改为 `asyncio.to_thread`，不再阻塞事件循环。
+- **llm_client 表驱动**：MiniMax/Qwen/DeepSeek 三份复制样板收敛为
+  `_normalized_config`；context-overflow 探测合一；anthropic `model=None`
+  兜底默认模型（web/tui 传 None 曾直接把 None 发给 API）；`timeout_s`
+  真正传给 SDK（此前形同虚设）。
+- **psi4 会话隔离**：五个工具的重复 setup 收敛为 `_psi4_session`，每次调用
+  `clean_options()`——修掉 TD-opt 的 optking/tdscf 选项泄漏毒化后续 tddft
+  的顺序依赖 bug；输出日志写独立临时目录（不再把 `*_output.log`、
+  `psi.*.clean` 拉到仓库根，且并发调用不再互相覆盖）。
+
+### Fixed
+- `calc_pyscf` 返回契约：SCF 不收敛此前返回 `ok=True` + `error_code` 并存
+  ——agent 按 `ok` 判读会把不收敛当成功，`x2c_soc` 还会拿不收敛的能量继续
+  算修正值。现在统一 `ok=False` + `suggestion`。
+- `kb/rules/functionals.yaml` 非法 YAML（B2PLYP 条目）导致整个文件从不进
+  检索语料；修复后给用户自带文档加 1.3× 检索加权（实验室自定义规则不再被
+  通用条目挤出 top-k）。
+- `list_skills` 不再把 user_kb 的 notes 当 skill 返回；单测与真实
+  `~/.chemaster`（user_kb 与 policy.yaml）完全隔离。
+- **scalability N=10000 数据找回**：bd1ec99 重新生成时把 be787c2 的
+  N=10000 结果误覆盖为 N=100，已从 git 历史恢复。
+- executor：时间戳/Python 版本不再 shell 出去取；`_write_json_sync` 真正
+  fsync 写入的 fd（此前 fsync 的是一个新打开且未写入的句柄）。
+- 版本号统一为 0.2.0a3（pyproject 此前停在 0.2.0a1，CHANGELOG 已是 0.2.0a2）。
+
+### Added（第二波，同日）
+- **web/tui 测试盲区补齐**：两个前端从零测试 → 26 个（FastAPI TestClient
+  钉死"提交必崩"回归路径全链路；Textual pilot 驱动真事件循环测卡片交互）；
+  `web` / `tui` extras 首次在 pyproject 声明。
+- **LLM 瞬时错误重试**：429/5xx/网络抖动指数退避（max_retries=3）——
+  此前零重试，一次限流就让整个化学任务失败。
+- **GitHub Actions 复活**：CI（ubuntu/macos × py3.11/3.12，ruff + unit）
+  与 PyPI Release workflow 真正入库并首跑全绿——根因是 `.gitignore` 一直
+  把 `.github/workflows/` 忽略，workflow 从未进过任何提交；push 前用无
+  psi4 的干净 venv 模拟 runner，提前修掉 36 个环境依赖失败。
+- **真 LLM 工程指标**（`run_engineering_real_llm.py` + 实测数据）：与
+  mock 版同题库/同故障注入规格/同 anchor，LLM 换成 MiniMax-M2.7 真实 API
+  面对全部 54 个工具。结果（2026-07-12 实采，`*_real_llm.json`，不覆盖
+  mock 数据）：**路由 98.0%（98/100，语义判据；mock 单一判据口径 67%，
+  差值主要是判据 artifact）、故障自愈 96%（17 L1 + 7 干净升级 + 1 失败
+  如实记录）、自主步占比 72.7%（≥70% 达标）**。至此三项旗舰工程指标
+  都有了"真实大模型"版本，不再只有 mock 路由数据。
+- **真的任务取消**：`AgentConfig.should_abort` 协作式中止（sync/streaming
+  双路径，trajectory 记 `cancelled` 并落盘）；Web 取消按钮现在真的停后端
+  （此前只是前端停止轮询），卡在 confirm/recommend 卡片上的线程也会被解放。
+- **引擎日志归档**：psi4 输出日志按 `CHEMASTER_ENGINE_LOG_DIR` 落到
+  `runs/<task>/engine_logs/`（时间戳防覆盖）——恢复 §5.6 复现承诺。
+- **MCP 决策透传**：`chemaster_run` 结果新增 `chemistry_decisions` 块——
+  MCP 模式没有交互通道，L2 决策被自动接受，此前完全隐形；现在显式回传
+  并提示调用方 LLM 转述给它的用户。
+
+### Fixed（第二波，同日）
+- `hpc_slurm.fetch` 功能性坏死：submit 建 `jobname-timestamp` 目录而 fetch
+  按 `*job_id*` 猜文件名，永远匹配不上。现在 submit 把 job_id →
+  remote_workdir 登记进 `~/.chemaster/hpc_jobs.json`，fetch 按索引拉取
+  （`remote_dir=` 参数留作逃生口），rsync 也真正带上配置的 ssh_key。
+- MCP 层 22 处缺失 `suggestion` 的错误返回补齐（gaussian 结构化五工具 /
+  bdf / momap / pyscf / kb）；新增 `chemaster/mcp/_common.py`（`err()` 把
+  suggestion 做成必填、`probe_binary` 消掉 7 份 `_check_engine` 拷贝、
+  `xyz_atom_lines`）。
+- `calc_psi4` 拆出 `parsers.py`（server 1580 → 1391 行）；解析器群在无
+  psi4 环境可测（7 个新测试不再随 psi4 缺席而跳过）。
+
+### Fixed（第三波：真机测试 + 对抗式审查发现的 7 个真 bug）
+> 合并前用真 MiniMax + 真 psi4 把 CLI/Web 跑起来，并对整个 PR diff 做对抗式
+> 审查。真机测试独立确认了其中的 XYZ 解析 bug（真 LLM 给裸原子行被拒）。
+- **recommend 取消误标 completed**：用户在化学决策卡上取消，trajectory
+  终态本应 `cancelled`（web 却显示"任务完成"，与 confirmations.jsonl 的
+  cancel 记录矛盾）。sync/streaming 双路径都修，配回归测试。
+- **XYZ 解析双套容忍度**：`_common.xyz_atom_lines` 接受裸原子行、`calc_psi4`
+  的旧解析器却硬要原子数 header——真 LLM 常给裸几何，导致 agent 白白重试。
+  统一走 `xyz_atom_lines`，改用**内容判据**（元素符号 + 3 个浮点）区分注释
+  行，既接受裸几何、又能抓出"声明 N 个实际 N-1 个"的真错误（旧的纯计数逻辑
+  会把注释吞成原子）。
+- **hpc_slurm 远端 shell 注入**：jobname / job_id / remote_dir 直接拼进远端
+  登录 shell，推翻模块自己"无任意 shell 执行"的设计承诺。jobname/job_id
+  白名单校验，remote_dir 用 `shlex.quote`；索引改原子写（tmp + os.replace）
+  防截断导致的全量 fetch 坏死。
+- **web 取消竞态**：`confirm_cb`/`recommend_cb` 现在先 `clear()` 再发布卡片、
+  且入口先查 `cancel_requested` 短路——取消请求在"发布卡片"与"clear"之间
+  到达时不再把工作线程永久挂死（无 UI 恢复路径）。
+- **web `waiting_for_input` 误标 failed**：agent 调 ask_user 挂起不是失败；
+  映射为 `needs_input`、把问题带进结果，前端也在 cancelled/needs_input 停轮询。
+- **Anthropic 上下文溢出文案不匹配**：真实报错是 "prompt is too long"（不含
+  "context"），紧急截断兜底在主 provider 上从不触发；已补匹配。
+- **chemaster_run 返回已删的 trajectory_path**：finally 默认 rmtree 掉 runs
+  目录，返回值里的路径指向不存在的文件；改为默认 None、仅 KEEP 时给路径。
+- 附带：psi4 scratch（`psi.*.clean`）经 IOManager.set_default_path 收进会话
+  目录，`*_output.log` 加进 .gitignore——"零仓库根污染"真机复核通过。
+
+### Docs
+- CLAUDE.md → v4.0（答辩后状态；§8 换成新阶段清单）；README 数字与
+  benchmark JSON 对齐（路由 100%、故障处置 25/25 双口径注明、N=10000、
+  3c=80%、17 server / 54 工具）；thesis.md 英文摘要与中文正文同步。
+
 ## [0.2.0a2] — Round-2 robustness + Codex-inspired upgrades + thesis sync (2026-05-20)
 
 ### Added — ChemMaster-as-MCP-server (`chemaster.mcp.agent.server`)

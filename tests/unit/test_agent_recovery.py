@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from chemaster.agent.agent import AgentConfig, BaseAgent
 from chemaster.agent.builtins import register_builtins
 from chemaster.agent.llm_client import (

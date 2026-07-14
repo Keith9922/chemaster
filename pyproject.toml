@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "chemaster"
-version = "0.2.0a1"
+version = "0.2.0a3"
 description = "AI agent for computational chemistry: TADF, DFT workflows, HPC integration"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
@@ -80,6 +80,15 @@ dev = [
     "mkdocs-include-markdown-plugin>=6.0",
 ]
 
+web = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "httpx>=0.27",        # required by fastapi.testclient
+]
+tui = [
+    "textual>=0.60",
+]
+
 # Optional: 把现有 PDF 抽取作为 extra
 pdf = [
     "pymupdf>=1.24",
@@ -144,7 +153,19 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "RUF"]
-ignore = ["E501"]   # line-length handled by formatter
+ignore = [
+    "E501",   # line-length handled by formatter
+    # 本项目是中英双语科学计算代码，以下规则在此语境下是噪声：
+    "RUF001", "RUF002", "RUF003",  # 中文字符被判为"歧义 unicode"（正文/注释/docstring 本就是中文）
+    "RUF012",                       # dataclass 的 mutable default 已用 field(default_factory=...) 防护
+    "N802", "N803", "N806", "N812", # 化学惯用变量名（能量 E、气体常数 R、跃迁矩 M 等）
+    "UP042",                        # str+Enum → StrEnum：Role/枚举值会进 trajectory JSON，不改序列化行为
+    "A002",                         # `format` 是 io_parse_geometry 的公开工具参数名，重命名会破坏调用方
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试代码可读性优先：几何索引 i,j,k,l；dict() 字面量；[...][0] 取首元素
+"tests/**" = ["E741", "C408", "RUF015", "RUF059"]
 
 [tool.ruff.format]
 quote-style = "double"

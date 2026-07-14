@@ -277,6 +277,11 @@ def _tokenize(text: str) -> list[str]:
     return [t.lower() for t in _TOKEN_RE.findall(text)]
 
 
+# 实验室自定义文档（~/.chemaster/user_kb/）在同等匹配度下应排在通用参考之前：
+# 用户写进自己 KB 的方法约定，就是希望 agent 优先看到的。
+USER_DOC_BOOST = 1.3
+
+
 def _score(query_tokens: list[str], doc: _Doc) -> float:
     if not query_tokens:
         return 0.0
@@ -294,6 +299,8 @@ def _score(query_tokens: list[str], doc: _Doc) -> float:
         # Substring fallback for terms like "B3LYP" inside compound text.
         if q not in counts and q in haystack:
             score += 0.5
+    if doc.meta.get("user_provided"):
+        score *= USER_DOC_BOOST
     return score
 
 
@@ -381,7 +388,12 @@ def list_skills() -> dict[str, Any]:
         {"ok": True, "result": {"skills": [{"name", "summary", "source"}, ...]}}
     """
     docs = _load_docs()
-    skills = [d for d in docs if d.kind == "skill"]
+    # User notes share kind="skill" so kb_search/use_skill can reach them,
+    # but they are not playbooks — keep them out of the skill catalogue.
+    skills = [
+        d for d in docs
+        if d.kind == "skill" and d.meta.get("doc_type") != "note"
+    ]
     payload = []
     for d in skills:
         fm = d.meta.get("frontmatter", {}) or {}
@@ -467,6 +479,9 @@ def use_skill(skill_name: str, action: str = "get_info", reference: str = "") ->
                 "ok": False,
                 "error_code": "MISSING_REFERENCE",
                 "details": "action='get_reference' requires reference=<filename>.",
+                "suggestion": "Call use_skill(name, action='get_info') first "
+                              "— the skill body lists its references/ files; "
+                              "then pass one as reference=.",
             }
         ref_path = Path(skill_doc.meta["skill_dir"]) / "references" / reference
         if not ref_path.exists():
