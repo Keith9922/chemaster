@@ -152,6 +152,7 @@ class BaseAgent:
         self._step_count = 0
         self._pending_ask_user: dict | None = None
         self._finish_payload: dict | None = None
+        self._recommend_cancelled = False
         self._policy: Policy | None = self.config.policy
 
     # ------------------------------------------------------------------
@@ -200,6 +201,9 @@ class BaseAgent:
                 if done:
                     if self._pending_ask_user:
                         self.trajectory.finish("waiting_for_input", self._pending_ask_user)
+                    elif self._recommend_cancelled:
+                        self.trajectory.finish(
+                            "cancelled", {"reason": "user_cancelled_recommend"})
                     else:
                         self.trajectory.finish("completed", self._finish_payload)
                     break
@@ -262,6 +266,9 @@ class BaseAgent:
                 if done:
                     if self._pending_ask_user:
                         self.trajectory.finish("waiting_for_input", self._pending_ask_user)
+                    elif self._recommend_cancelled:
+                        self.trajectory.finish(
+                            "cancelled", {"reason": "user_cancelled_recommend"})
                     else:
                         self.trajectory.finish("completed", self._finish_payload)
                     break
@@ -377,7 +384,11 @@ class BaseAgent:
                     observation=tool_msg.content,
                     data=dict(tool_msg.meta or {}),
                 )
-                if status in ("cancel", "escalated"):
+                if status == "cancel":
+                    self._recommend_cancelled = True
+                    should_finish = True
+                    break
+                if status == "escalated":
                     should_finish = True
                     break
                 continue
@@ -529,9 +540,12 @@ class BaseAgent:
                 self._append_tool_message(step, tool_msg)
                 # cancel → task termination; escalated (L3, no channel) →
                 # pause via pending ask_user set by _handle_recommend.
-                if tool_msg.meta and tool_msg.meta.get("recommend_status") in (
-                    "cancel", "escalated",
-                ):
+                rec_status = (tool_msg.meta or {}).get("recommend_status")
+                if rec_status == "cancel":
+                    self._recommend_cancelled = True
+                    should_finish = True
+                    break
+                if rec_status == "escalated":
                     should_finish = True
                     break
                 continue
@@ -952,6 +966,7 @@ class BaseAgent:
         self._step_count = 0
         self._pending_ask_user = None
         self._finish_payload = None
+        self._recommend_cancelled = False
         # Ensure runs dir exists.
         self.config.runs_dir.mkdir(parents=True, exist_ok=True)
         task_dir = self.config.runs_dir / task.task_id

@@ -92,3 +92,16 @@ def test_xyz_rejects_empty_and_truncated():
         xyz_atom_lines("   ")
     with pytest.raises(ValueError):
         xyz_atom_lines("5\ncomment\nH 0 0 0")
+
+
+def test_xyz_comment_not_eaten_when_atom_short():
+    """回归（审查发现）：声明 3 原子但只给 2 + 注释行时，注释不能被当成
+    原子——用内容判据抓出真错误。"""
+    with pytest.raises(ValueError, match="declares 3 atoms but 2"):
+        xyz_atom_lines("3\nwater\nO 0 0 0\nH 0 0 0.74")
+
+
+def test_xyz_bare_atom_lines_accepted():
+    """回归（真机确认）：真 LLM 常给无 header 的裸原子行，必须接受。"""
+    atoms = xyz_atom_lines("H 0 0 0\nH 0 0 0.74")
+    assert atoms == ["H 0 0 0", "H 0 0 0.74"]

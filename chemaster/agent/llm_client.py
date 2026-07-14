@@ -96,6 +96,10 @@ def _looks_like_context_overflow(exc: Exception) -> bool:
     return (
         ("context" in msg and ("length" in msg or "window" in msg))
         or "maximum context" in msg
+        # Anthropic 的真实文案是 "prompt is too long: N tokens > M maximum"，
+        # 不含 "context" —— 不加这条，主 provider 上下文溢出的紧急截断兜底失效。
+        or "prompt is too long" in msg
+        or "too many tokens" in msg
     )
 
 

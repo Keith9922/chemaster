@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import time
@@ -77,20 +78,42 @@ def _load_jobs_index() -> dict[str, dict[str, Any]]:
 
 
 def _record_job(job_id: str, entry: dict[str, Any]) -> None:
-    """submit 成功后登记一条 job 映射（fetch 的目录来源）。"""
+    """submit 成功后登记一条 job 映射（fetch 的目录来源）。
+
+    原子写（tmp + os.replace）：崩溃/并发写不会留下截断的 JSON，否则
+    ``_load_jobs_index`` 会静默把整个索引当空重置，让所有历史 job 的
+    fetch 一次性坏死。
+    """
     try:
         index = _load_jobs_index()
         index[str(job_id)] = entry
         p = _jobs_index_path()
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(index, indent=2, ensure_ascii=False),
-                     encoding="utf-8")
+        tmp = p.with_suffix(p.suffix + f".tmp.{os.getpid()}")
+        tmp.write_text(json.dumps(index, indent=2, ensure_ascii=False),
+                       encoding="utf-8")
+        os.replace(tmp, p)   # 原子替换
     except Exception as exc:
         logger.warning("failed to record hpc job %s: %s", job_id, exc)
 
 
 def _lookup_job(job_id: str) -> dict[str, Any] | None:
     return _load_jobs_index().get(str(job_id))
+
+
+# LLM 可控参数直接拼进远端登录 shell 是注入面（模块 docstring 承诺"无任意
+# shell 执行"）——jobname / job_id 一律白名单，remote_dir 用 shlex.quote。
+_SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def _safe_token(value: str, field: str) -> str:
+    v = str(value).strip()
+    if not _SAFE_TOKEN_RE.match(v):
+        raise ValueError(
+            f"{field}={value!r} 含非法字符（只允许字母数字和 . _ -）；"
+            "拒绝拼入远端 shell 命令。"
+        )
+    return v
 
 
 def _load_config() -> dict[str, Any] | None:
@@ -186,6 +209,13 @@ def submit(
         ok=True: {ok, result: {job_id, host, remote_workdir}, ...}
         ok=False: ENGINE_NOT_FOUND / NO_HPC_CONFIG / SSH_ERROR / SBATCH_FAILED
     """
+    try:
+        jobname = _safe_token(jobname, "jobname")
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_JOBNAME",
+                "details": str(exc),
+                "suggestion": "Use only letters, digits, '.', '_', '-' in jobname."}
+
     cfg = _load_config()
     if cfg is None:
         return {
@@ -291,6 +321,13 @@ def status(job_id: str) -> dict[str, Any]:
         ok=True: {ok, result: {job_id, state, time_used, partition, ...}}
         ok=False: NO_HPC_CONFIG / SSH_ERROR / JOB_NOT_FOUND
     """
+    try:
+        job_id = _safe_token(job_id, "job_id")
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_JOB_ID",
+                "details": str(exc),
+                "suggestion": "job_id must be a SLURM id (digits)."}
+
     cfg = _load_config()
     if cfg is None:
         return {"ok": False, "error_code": "NO_HPC_CONFIG",
@@ -383,16 +420,22 @@ def fetch(job_id: str, local_dir: str,
                     "mapping automatically)."
                 ),
             }
-        remote_dir = entry["remote_workdir"]
+        remote_dir = entry.get("remote_workdir")
+        if not remote_dir:
+            return {"ok": False, "error_code": "CORRUPT_JOB_INDEX",
+                    "details": f"job {job_id} index entry has no remote_workdir",
+                    "suggestion": "Pass remote_dir=<path> explicitly."}
 
     host = (entry or {}).get("host") or cfg.get("host")
     user = (entry or {}).get("user") or cfg.get("user")
 
     Path(local_dir).mkdir(parents=True, exist_ok=True)
-    remote = f"{user}@{host}:{remote_dir.rstrip('/')}/"
+    # remote_dir 经远端 shell 求值——quote 掉，堵住 $(...) / ; 之类注入。
+    remote_path = shlex.quote(remote_dir.rstrip("/") + "/")
+    remote = f"{user}@{host}:{remote_path}"
     cmd = ["rsync", "-avz"]
     if cfg.get("ssh_key"):
-        cmd += ["-e", f"ssh -i {os.path.expanduser(cfg['ssh_key'])}"]
+        cmd += ["-e", f"ssh -i {shlex.quote(os.path.expanduser(cfg['ssh_key']))}"]
     cmd += [remote, local_dir]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)

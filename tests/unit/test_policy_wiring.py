@@ -146,6 +146,28 @@ def test_l2_without_callback_auto_accepts(tmp_path):
     assert traj.meta["recommendations"]["accepted"] == 1
 
 
+def test_l2_cancel_finishes_as_cancelled_not_completed(tmp_path):
+    """回归：用户在化学决策卡上点"取消"，任务终态必须是 cancelled，
+    而不是 completed（否则 web 会显示"任务完成"，与审计的 cancel 矛盾）。"""
+    policy = Policy(default_level="L2", decisions={"functional": "L2"})
+
+    def cb(payload):
+        return {"status": "cancel", "user_note": "算了"}
+
+    agent = _agent(
+        policy,
+        responses=[
+            stub_assistant_message("", [_recommend_call("functional")]),
+            _finish(),  # 不应被消费
+        ],
+        tmp_path=tmp_path,
+        recommend_callback=cb,
+    )
+    traj = agent.run(TaskInstance(description="cancel at decision"))
+    assert traj.status == "cancelled"
+    assert traj.meta["recommendations"]["cancelled"] == 1
+
+
 # ── L3：无通道 → 升级 ask_user 挂起 ──────────────────────────────────────────
 
 

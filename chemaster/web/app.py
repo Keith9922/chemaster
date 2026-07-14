@@ -242,22 +242,34 @@ def _run_agent_blocking(task: WebTask, agent_factory: Any) -> None:
         task.status = "running"
 
         def confirm_cb(tool: str, args: dict, reason: str) -> bool:
+            # 已请求取消 → 直接拒绝，不再挂卡片等人（避免 cancel 之后
+            # 又进一张卡片把线程重新挂死）。
+            if task.cancel_requested:
+                return False
+            # 先 clear 再发布卡片：否则 cancel 端点在"发布卡片"与"clear"
+            # 之间到达时，它的 set() 会被随后的 clear() 吞掉 → 永久挂死。
+            task.user_response_event.clear()
             task.pending_card = {"mode": "confirm", "tool": tool,
                                   "args": args, "reason": reason}
             task.events.append({"type": "confirm", **task.pending_card})
             task.status = "waiting_user"
-            task.user_response_event.clear()
             task.user_response_event.wait()
             task.status = "running"
+            if task.cancel_requested:
+                return False
             return bool(task.user_response and task.user_response.get("approved"))
 
         def recommend_cb(payload: dict) -> dict:
+            if task.cancel_requested:
+                return {"status": "cancel", "user_note": "task cancelled"}
+            task.user_response_event.clear()
             task.pending_card = {"mode": "recommend", **payload}
             task.events.append({"type": "recommend", **payload})
             task.status = "waiting_user"
-            task.user_response_event.clear()
             task.user_response_event.wait()
             task.status = "running"
+            if task.cancel_requested:
+                return {"status": "cancel", "user_note": "task cancelled"}
             return task.user_response or {"status": "accept"}
 
         agent.config.confirm_callback = confirm_cb
@@ -294,7 +306,25 @@ def _run_agent_blocking(task: WebTask, agent_factory: Any) -> None:
         task.status = {
             "completed": "done",
             "cancelled": "cancelled",
+            # agent 调 ask_user 挂起（L3 升级或信息不足）——不是失败。
+            # web 尚未接 continue_run，所以这是终态；把问题带进结果让用户
+            # 看到需要补什么，再开新任务。
+            "waiting_for_input": "needs_input",
         }.get(result.status, "failed")
+        if task.status == "needs_input":
+            fp = result.finish_payload or {}
+            qs = fp.get("questions") or []
+            task.result = {
+                "agent_status": result.status,
+                "needs_input": True,
+                "questions": qs,
+                "summary": ("Agent 需要更多信息才能继续：\n- "
+                            + "\n- ".join(str(q) for q in qs)
+                            if qs else "Agent 请求用户补充信息。"),
+                "n_steps": len(result.steps),
+                "trajectory_path": f"runs/task-{task.task_id}/trajectory.json",
+            }
+            return
         finish_payload = result.finish_payload or {}
         # 若 Agent 未显式调 finish，至少提取最后一条 assistant_message 的 content 作为总结
         fallback_summary = ""
@@ -803,11 +833,15 @@ async function pollTask() {
       } catch (e) {}
     }
     if (data.pending_card) renderCard(data.pending_card);
-    if (["done","failed"].includes(data.status)) {
+    if (["done","failed","cancelled","needs_input"].includes(data.status)) {
       clearInterval(pollTimer); pollTimer = null;
       clearThinking();
       const r = data.result || {};
-      if (r.error) {
+      if (data.status === "cancelled") {
+        append(`<span class="err">⛔ 任务已取消（${r.n_steps||0} 步）</span>`);
+      } else if (data.status === "needs_input") {
+        append(`<span class="err">⏸ Agent 需要更多信息：${escapeHtml(r.summary||"请补充后重新提交")}</span>`);
+      } else if (r.error) {
         append(`<span class="err">✗ 任务失败：${escapeHtml(r.error)}</span>`);
       } else if (r.summary) {
         // 用 marked.js 把 markdown 渲染成正常排版

@@ -115,36 +115,56 @@ def probe_binary(
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+def _is_atom_line(s: str) -> bool:
+    """一行是否长得像原子坐标：``<元素> <x> <y> <z>`` （末 3 个可转 float）。"""
+    parts = s.split()
+    if len(parts) < 4:
+        return False
+    try:
+        float(parts[-1])
+        float(parts[-2])
+        float(parts[-3])
+    except ValueError:
+        return False
+    # 首 token 不能是纯数字（那是原子数/电荷行，不是元素符号）
+    return not parts[0].lstrip("+-").isdigit()
+
+
 def xyz_atom_lines(xyz: str) -> list[str]:
     """从"标准 XYZ / 裸原子行"两种输入中取出原子行。
 
-    兼容三种形态：
+    兼容三种形态（用**内容**而非纯行数判据区分注释行——真 LLM 常给裸
+    原子行，而标准 XYZ 的第 2 行是注释）：
       - ``N\\ncomment\\nEl x y z...``（标准，带注释行）
       - ``N\\nEl x y z...``（无注释行）
       - ``El x y z...``（裸原子行）
 
     Raises:
-        ValueError: 空输入、原子数与行数不符。
+        ValueError: 空输入、或带原子数 header 时声明数与实际原子行数不符
+        （能抓出"少写一行原子"这类真错误，而不是把注释吞成原子）。
     """
     lines = [ln.strip() for ln in xyz.strip().splitlines() if ln.strip()]
     if not lines:
         raise ValueError("empty XYZ input")
 
     first = lines[0].split()
-    if len(first) == 1 and first[0].isdigit():
-        n_atoms = int(first[0])
-        if len(lines) == n_atoms + 1:
-            atoms = lines[1:]
-        elif len(lines) >= n_atoms + 2:
-            atoms = lines[2:2 + n_atoms]
-        else:
-            raise ValueError(
-                f"XYZ header claims {n_atoms} atoms but only "
-                f"{len(lines) - 1} content lines present"
-            )
-    else:
-        atoms = lines
+    has_header = len(first) == 1 and first[0].isdigit()
+    if not has_header:
+        # 裸原子行（可能整体就是坐标）。
+        atoms = [ln for ln in lines if _is_atom_line(ln)]
+        if not atoms:
+            raise ValueError("no atom lines found in XYZ")
+        return atoms
 
-    if not atoms:
-        raise ValueError("no atom lines found in XYZ")
+    n_atoms = int(first[0])
+    rest = lines[1:]
+    # 内容判据：紧跟 header 的若不是原子行，就是注释行，丢掉。
+    if rest and not _is_atom_line(rest[0]):
+        rest = rest[1:]
+    atoms = [ln for ln in rest if _is_atom_line(ln)]
+    if len(atoms) != n_atoms:
+        raise ValueError(
+            f"XYZ header declares {n_atoms} atoms but {len(atoms)} atom "
+            f"lines were found"
+        )
     return atoms

