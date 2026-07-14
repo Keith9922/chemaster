@@ -112,3 +112,6 @@ psi.*.clean
 
 # Claude Code worktrees & session state
 .claude/
+
+# psi4 CWD output logs (belt-and-suspenders; agent runs archive to runs/)
+*_output.log

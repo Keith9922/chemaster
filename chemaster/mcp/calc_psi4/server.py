@@ -203,6 +203,13 @@ def _psi4_session(
     else:
         out_dir = Path(tempfile.mkdtemp(prefix="chemaster_psi4_"))
         output_path = str(out_dir / log_name)
+
+    # 把 psi4 自己的 scratch（psi.<pid>.clean / timer.dat 等）也收进 out_dir，
+    # 否则它们会落到 CWD 弄脏仓库根——"零仓库根污染"才名副其实。
+    try:
+        psi4.core.IOManager.shared_object().set_default_path(str(out_dir))
+    except Exception:
+        pass
     psi4.core.set_output_file(output_path, False)
 
     # 强制 symmetry c1 防对称性突跳（PITFALLS §2.6）。
