@@ -65,20 +65,42 @@ def main(ctx: click.Context, version: bool, check_engines: bool, tui: bool) -> N
 
 
 @click.command(name="tui")
-def tui_cmd() -> None:
+@click.option("--llm-provider",
+              type=click.Choice(["mock", "anthropic", "minimax", "qwen",
+                                 "deepseek", "openai_compat"]),
+              default=None,
+              help="LLM provider. Defaults to anthropic / minimax / qwen / "
+                   "deepseek (auto-detected from env vars) → mock.")
+@click.option("--llm-model", default=None,
+              help="Override LLM model id (e.g. claude-sonnet-4-6, MiniMax-M2.7).")
+def tui_cmd(llm_provider: str | None, llm_model: str | None) -> None:
     """Launch the Textual TUI (interactive terminal UI)."""
+    import os
     try:
         from chemaster.tui.app import main as tui_main
     except ImportError as exc:
         click.secho(f"TUI dependencies missing: {exc}", fg="red", err=True)
         sys.exit(1)
-    # Build a minimal agent for the TUI to use, if possible.
+
+    provider = llm_provider
+    if provider is None:
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            provider = "anthropic"
+        elif os.environ.get("MINIMAX_API_KEY"):
+            provider = "minimax"
+        elif os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY"):
+            provider = "qwen"
+        elif os.environ.get("DEEPSEEK_API_KEY"):
+            provider = "deepseek"
+        else:
+            provider = "mock"
+
     try:
         from chemaster.agent.agent import AgentConfig, ChemAgent
         from chemaster.agent.llm_client import LLMConfig, create_llm
         from chemaster.agent.tool_loader import build_default_registry
         registry = build_default_registry()
-        llm_config = LLMConfig(provider="mock", model="mock")
+        llm_config = LLMConfig(provider=provider, model=llm_model)
         llm = create_llm(llm_config)
         agent = ChemAgent(
             llm=llm, tools=registry,
